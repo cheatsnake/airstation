@@ -49,13 +49,13 @@ func (ts *TrackStore) RemoveTracks(IDs []string) error {
 }
 
 func (ts *TrackStore) EditTrack(track track.Track) (*track.Track, error) {
-	ts.mutex.Lock()
-	defer ts.mutex.Unlock()
-
 	t, err := ts.FindTrack(track.ID)
 	if err != nil {
 		return nil, err
 	}
+
+	ts.mutex.Lock()
+	defer ts.mutex.Unlock()
 
 	if track.Name != "" {
 		t.Name = track.Name
