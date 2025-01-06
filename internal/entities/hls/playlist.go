@@ -1,46 +1,72 @@
 package hls
 
-import "fmt"
+import (
+	"strconv"
+)
 
 type Playlist struct {
-	SegmentDuration       int // Duration of each segment in the playlist in seconds
-	CurrentSegmentPaths   []string
-	AvailableSegmentPaths []string
+	liveSegmentsAmount   int
+	maxSegmentDuration   int
+	currentTrackSegments []Segment
+	nextTrackSegments    []Segment
 }
 
-func New(duration int, available []string) *Playlist {
-	current := make([]string, 0, amountCurrentSegments)
-	copy(current, available[0:amountCurrentSegments])
-
+func NewPlaylist(cur, next []Segment, maxDuration, liveAmount int) *Playlist {
 	return &Playlist{
-		SegmentDuration:       duration,
-		CurrentSegmentPaths:   current,
-		AvailableSegmentPaths: available[amountCurrentSegments:],
+		liveSegmentsAmount:   liveAmount,
+		maxSegmentDuration:   maxDuration,
+		currentTrackSegments: cur,
+		nextTrackSegments:    next,
 	}
 }
 
-func (hp *Playlist) Generate() string {
-	playlist := newHeader(hp.SegmentDuration)
+func (p *Playlist) Generate(elapsedTime int) string {
+	playlist := hlsHeader(p.maxSegmentDuration)
+	firstSegmentIndex := elapsedTime / p.maxSegmentDuration
+	liveSegments := p.collectLiveSegments(firstSegmentIndex)
 
-	for _, path := range hp.CurrentSegmentPaths {
-		playlist = playlist + newSegment(hp.SegmentDuration, path)
+	for _, seg := range liveSegments {
+		playlist += hlsSegment(seg.Duration, seg.Path)
 	}
 
 	return playlist
 }
 
-func (hp *Playlist) Update(segmentPaths []string) string {
-	return ""
+func (p *Playlist) Next(next []Segment) {
+	p.currentTrackSegments = p.nextTrackSegments
+	p.nextTrackSegments = next
 }
 
-func newHeader(duration int) string {
-	return fmt.Sprintf(`#EXTM3U
-#EXT-X-VERSION:3
-#EXT-X-TARGETDURATION:%d
-#EXT-X-MEDIA-SEQUENCE:0`, duration)
+func (p *Playlist) AddSegments(segments []Segment) {
+	p.nextTrackSegments = append(p.nextTrackSegments, segments...)
 }
 
-func newSegment(duration int, path string) string {
-	return fmt.Sprintf(`#EXTINF:%d,
-%s`, duration, path)
+// collectLiveSegments gathers enough segments from current and next tracks to meet liveSegmentsAmount
+func (p *Playlist) collectLiveSegments(startIndex int) []Segment {
+	liveSegments := make([]Segment, 0, p.liveSegmentsAmount)
+
+	if startIndex < len(p.currentTrackSegments) {
+		liveSegments = append(liveSegments, p.currentTrackSegments[startIndex:]...)
+	}
+
+	if len(liveSegments) < p.liveSegmentsAmount {
+		required := p.liveSegmentsAmount - len(liveSegments)
+		liveSegments = append(liveSegments, p.nextTrackSegments[:min(len(p.nextTrackSegments), required)]...)
+	}
+
+	return liveSegments
+}
+
+// hlsHeader generates the header string for an HLS playlist with the specified target duration.
+func hlsHeader(dur int) string {
+	return "#EXTM3U\n" +
+		"#EXT-X-VERSION:3\n" +
+		"#EXT-X-TARGETDURATION:" + strconv.Itoa(dur) + "\n" +
+		"#EXT-X-MEDIA-SEQUENCE:0\n"
+}
+
+// hlsSegment generates an HLS segment entry with the specified duration and path.
+func hlsSegment(dur float64, path string) string {
+	duration := strconv.FormatFloat(dur, 'f', -1, 64)
+	return "#EXTINF:" + duration + ",\n" + path + "\n"
 }
