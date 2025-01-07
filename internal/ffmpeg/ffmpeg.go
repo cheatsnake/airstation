@@ -8,14 +8,14 @@ import (
 	"strconv"
 )
 
-func HLSPlaylist(filePath, outDir, segName string, segDur int) error {
+func GenerateHLSPlaylist(trackPath, outDir, segName string, segDur int) error {
 	hlsTime := strconv.Itoa(segDur)
 	hlsSegName := fmt.Sprintf("%s/%s", outDir, segName) + "%d.ts"
 	hlsPlName := fmt.Sprintf("%s/%s", outDir, segName) + ".m3u8"
 
 	cmd := exec.Command(
 		ffmpegBin,
-		"-i", filePath,
+		"-i", trackPath,
 		"-codec:", "copy",
 		"-start_number", "0",
 		"-hls_time", hlsTime,
@@ -36,10 +36,10 @@ func HLSPlaylist(filePath, outDir, segName string, segDur int) error {
 }
 
 // TrackMetadata return track's duration in seconds and bitrate in kbps
-func TrackMetadata(filePath string) (float64, int, error) {
+func TrackMetadata(trackPath string) (float64, int, error) {
 	cmd := exec.Command(
 		ffprobeBin,
-		"-i", filePath,
+		"-i", trackPath,
 		"-v", "error",
 		"-show_entries", "format=duration,bit_rate",
 		"-of", "json",
