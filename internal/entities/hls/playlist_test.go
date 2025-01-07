@@ -8,14 +8,14 @@ import (
 )
 
 func TestNewPlaylist(t *testing.T) {
-	current := []Segment{{Duration: 10.5, Path: "segment1.ts"}}
-	next := []Segment{{Duration: 9.0, Path: "segment2.ts"}}
-	maxDuration := 10
+	current := []*Segment{{Duration: 10.5, Path: "segment1.ts"}}
+	next := []*Segment{{Duration: 9.0, Path: "segment2.ts"}}
+	maxDuration := 10.0
 	liveAmount := 2
 	playlist := NewPlaylist(current, next, maxDuration, liveAmount)
 
 	if playlist.maxSegmentDuration != maxDuration {
-		t.Errorf("Expected maxSegmentDuration to be %d, got %d", maxDuration, playlist.maxSegmentDuration)
+		t.Errorf("Expected maxSegmentDuration to be %f, got %f", maxDuration, playlist.maxSegmentDuration)
 	}
 
 	if playlist.liveSegmentsAmount != liveAmount {
@@ -34,89 +34,89 @@ func TestNewPlaylist(t *testing.T) {
 func TestGenerate(t *testing.T) {
 	cases := []struct {
 		name          string
-		current       []Segment
-		next          []Segment
-		elapsedTime   int
+		current       []*Segment
+		next          []*Segment
+		elapsedTime   float64
 		liveAmount    int
 		expectedPaths []string
 		unexpected    []string
 	}{
 		{
 			name: "full from current track",
-			current: []Segment{
+			current: []*Segment{
 				{Duration: 10.0, Path: "segment1.ts"},
 				{Duration: 10.0, Path: "segment2.ts"},
 				{Duration: 10.0, Path: "segment3.ts"},
 			},
-			next: []Segment{
+			next: []*Segment{
 				{Duration: 10.0, Path: "segment4.ts"},
 			},
-			elapsedTime:   0,
+			elapsedTime:   0.0,
 			liveAmount:    3,
 			expectedPaths: []string{"segment1.ts", "segment2.ts", "segment3.ts"},
 			unexpected:    []string{"segment4.ts"},
 		},
 		{
 			name: "partial from current and next track",
-			current: []Segment{
+			current: []*Segment{
 				{Duration: 10.0, Path: "segment1.ts"},
 				{Duration: 10.0, Path: "segment2.ts"},
 			},
-			next: []Segment{
+			next: []*Segment{
 				{Duration: 10.0, Path: "segment3.ts"},
 				{Duration: 10.0, Path: "segment4.ts"},
 			},
-			elapsedTime:   10,
+			elapsedTime:   10.0,
 			liveAmount:    3,
 			expectedPaths: []string{"segment2.ts", "segment3.ts", "segment4.ts"},
 			unexpected:    []string{"segment1.ts"},
 		},
 		{
 			name: "full from next track",
-			current: []Segment{
+			current: []*Segment{
 				{Duration: 10.0, Path: "segment1.ts"},
 			},
-			next: []Segment{
+			next: []*Segment{
 				{Duration: 10.0, Path: "segment2.ts"},
 				{Duration: 10.0, Path: "segment3.ts"},
 				{Duration: 10.0, Path: "segment4.ts"},
 			},
-			elapsedTime:   20,
+			elapsedTime:   20.0,
 			liveAmount:    3,
 			expectedPaths: []string{"segment2.ts", "segment3.ts", "segment4.ts"},
 			unexpected:    []string{"segment1.ts"},
 		},
 		{
 			name: "not enough segments",
-			current: []Segment{
+			current: []*Segment{
 				{Duration: 10.0, Path: "segment1.ts"},
 			},
-			next: []Segment{
+			next: []*Segment{
 				{Duration: 10.0, Path: "segment2.ts"},
 			},
-			elapsedTime:   0,
+			elapsedTime:   0.0,
 			liveAmount:    5,
 			expectedPaths: []string{"segment1.ts", "segment2.ts"},
 			unexpected:    []string{"segment3.ts"},
 		},
 		{
 			name:          "empty tracks",
-			current:       []Segment{},
-			next:          []Segment{},
-			elapsedTime:   0,
+			current:       []*Segment{},
+			next:          []*Segment{},
+			elapsedTime:   0.0,
 			liveAmount:    3,
 			expectedPaths: []string{},
 			unexpected:    []string{"segment1.ts"},
 		},
 		{
 			name: "start index beyond current track",
-			current: []Segment{
+			current: []*Segment{
 				{Duration: 10.0, Path: "segment1.ts"},
 			},
-			next: []Segment{
+			next: []*Segment{
 				{Duration: 10.0, Path: "segment2.ts"},
 				{Duration: 10.0, Path: "segment3.ts"}},
-			elapsedTime:   20,
+			elapsedTime:   20.0,
 			liveAmount:    3,
 			expectedPaths: []string{"segment2.ts", "segment3.ts"},
 			unexpected:    []string{"segment1.ts"},
@@ -148,19 +148,19 @@ func TestGenerate(t *testing.T) {
 }
 
 func TestNext(t *testing.T) {
-	current := []Segment{
+	current := []*Segment{
 		{Duration: 10.0, Path: "segment1.ts"},
 		{Duration: 10.0, Path: "segment2.ts"},
 	}
-	next := []Segment{
+	next := []*Segment{
 		{Duration: 10.0, Path: "segment3.ts"},
 	}
-	maxDuration := 10
+	maxDuration := 10.0
 	liveAmount := 2
 
 	playlist := NewPlaylist(current, next, maxDuration, liveAmount)
 
-	playlist.Next([]Segment{{Duration: 8.0, Path: "segment4.ts"}})
+	playlist.Next([]*Segment{{Duration: 8.0, Path: "segment4.ts"}})
 
 	if len(playlist.currentTrackSegments) != 1 || playlist.currentTrackSegments[0].Path != "segment3.ts" {
 		t.Errorf("Expected currentTrackSegments to contain nextTrackSegments, got: %v", playlist.currentTrackSegments)
@@ -172,13 +172,13 @@ func TestNext(t *testing.T) {
 }
 
 func TestAddSegments(t *testing.T) {
-	current := []Segment{{Duration: 10.0, Path: "segment1.ts"}}
-	next := []Segment{{Duration: 10.0, Path: "segment2.ts"}}
-	maxDuration := 10
+	current := []*Segment{{Duration: 10.0, Path: "segment1.ts"}}
+	next := []*Segment{{Duration: 10.0, Path: "segment2.ts"}}
+	maxDuration := 10.0
 	liveAmount := 2
 	playlist := NewPlaylist(current, next, maxDuration, liveAmount)
 
-	newSegments := []Segment{
+	newSegments := []*Segment{
 		{Duration: 8.0, Path: "segment3.ts"},
 		{Duration: 7.5, Path: "segment4.ts"},
 	}
@@ -195,12 +195,12 @@ func TestAddSegments(t *testing.T) {
 
 func TestCollectLiveSegments(t *testing.T) {
 	t.Run("full from current track", func(t *testing.T) {
-		current := []Segment{
+		current := []*Segment{
 			{Duration: 10.0, Path: "segment1.ts"},
 			{Duration: 10.0, Path: "segment2.ts"},
 			{Duration: 10.0, Path: "segment3.ts"},
 		}
-		next := []Segment{
+		next := []*Segment{
 			{Duration: 10.0, Path: "segment4.ts"},
 		}
 
@@ -213,12 +213,34 @@ func TestCollectLiveSegments(t *testing.T) {
 		}
 	})
 
-	t.Run("partial from current and next track", func(t *testing.T) {
-		current := []Segment{
+	t.Run("partitial from current track", func(t *testing.T) {
+		current := []*Segment{
+			{Duration: 10.0, Path: "segment1.ts"},
+			{Duration: 10.0, Path: "segment2.ts"},
+			{Duration: 10.0, Path: "segment3.ts"},
+		}
+		next := []*Segment{
+			{Duration: 10.0, Path: "segment4.ts"},
+		}
+
+		playlist := NewPlaylist(current, next, 10, 2)
+		liveSegments := playlist.collectLiveSegments(0)
+		expected := []*Segment{
 			{Duration: 10.0, Path: "segment1.ts"},
 			{Duration: 10.0, Path: "segment2.ts"},
 		}
-		next := []Segment{
+
+		if !reflect.DeepEqual(liveSegments, expected) {
+			t.Errorf("Expected %v, got %v", expected, liveSegments)
+		}
+	})
+
+	t.Run("partial from current and next track", func(t *testing.T) {
+		current := []*Segment{
+			{Duration: 10.0, Path: "segment1.ts"},
+			{Duration: 10.0, Path: "segment2.ts"},
+		}
+		next := []*Segment{
 			{Duration: 10.0, Path: "segment3.ts"},
 			{Duration: 10.0, Path: "segment4.ts"},
 		}
@@ -226,7 +248,7 @@ func TestCollectLiveSegments(t *testing.T) {
 
 		liveSegments := playlist.collectLiveSegments(1)
 
-		expected := []Segment{
+		expected := []*Segment{
 			{Duration: 10.0, Path: "segment2.ts"},
 			{Duration: 10.0, Path: "segment3.ts"},
 			{Duration: 10.0, Path: "segment4.ts"},
@@ -237,10 +259,10 @@ func TestCollectLiveSegments(t *testing.T) {
 	})
 
 	t.Run("full from next track", func(t *testing.T) {
-		current := []Segment{
+		current := []*Segment{
 			{Duration: 10.0, Path: "segment1.ts"},
 		}
-		next := []Segment{
+		next := []*Segment{
 			{Duration: 10.0, Path: "segment2.ts"},
 			{Duration: 10.0, Path: "segment3.ts"},
 			{Duration: 10.0, Path: "segment4.ts"},
@@ -256,17 +278,17 @@ func TestCollectLiveSegments(t *testing.T) {
 	})
 
 	t.Run("not enough segments", func(t *testing.T) {
-		current := []Segment{
+		current := []*Segment{
 			{Duration: 10.0, Path: "segment1.ts"},
 		}
-		next := []Segment{
+		next := []*Segment{
 			{Duration: 10.0, Path: "segment2.ts"},
 		}
 		playlist := NewPlaylist(current, next, 10, 5)
 
 		liveSegments := playlist.collectLiveSegments(0)
 
-		expected := []Segment{
+		expected := []*Segment{
 			{Duration: 10.0, Path: "segment1.ts"},
 			{Duration: 10.0, Path: "segment2.ts"},
 		}
@@ -276,10 +298,10 @@ func TestCollectLiveSegments(t *testing.T) {
 	})
 
 	t.Run("start index beyond current track", func(t *testing.T) {
-		current := []Segment{
+		current := []*Segment{
 			{Duration: 10.0, Path: "segment1.ts"},
 		}
-		next := []Segment{
+		next := []*Segment{
 			{Duration: 10.0, Path: "segment2.ts"},
 			{Duration: 10.0, Path: "segment3.ts"},
 		}
@@ -294,13 +316,13 @@ func TestCollectLiveSegments(t *testing.T) {
 	})
 
 	t.Run("empty tracks", func(t *testing.T) {
-		current := []Segment{}
-		next := []Segment{}
+		current := []*Segment{}
+		next := []*Segment{}
 		playlist := NewPlaylist(current, next, 10, 3)
 
 		liveSegments := playlist.collectLiveSegments(0)
 
-		expected := []Segment{}
+		expected := []*Segment{}
 		if !reflect.DeepEqual(liveSegments, expected) {
 			t.Errorf("Expected %v, got %v", expected, liveSegments)
 		}
@@ -308,18 +330,18 @@ func TestCollectLiveSegments(t *testing.T) {
 }
 
 func TestHLSHeader(t *testing.T) {
-	cases := []int{1, 5, 10, 20}
+	cases := []float64{1, 5.0, 10, 20.5}
 
 	for _, c := range cases {
 		header := hlsHeader(c)
-		if !strings.Contains(header, "#EXT-X-TARGETDURATION:"+strconv.Itoa(c)) {
+		if !strings.Contains(header, "#EXT-X-TARGETDURATION:"+strconv.FormatFloat(c, 'f', -1, 64)) {
 			t.Errorf("HLS header missing expected target duration: %s", header)
 		}
 	}
 }
 
 func TestHLSSegment(t *testing.T) {
-	cases := []Segment{
+	cases := []*Segment{
 		{Duration: 1, Path: "seg1.ts"},
 		{Duration: 5, Path: "path/to/seg2.ts"},
 		{Duration: 7.5, Path: "seg3.ts"},
