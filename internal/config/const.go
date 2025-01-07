@@ -1,10 +1,12 @@
 package config
 
-import "path"
+import (
+	"path/filepath"
+)
 
 var (
-	defaultTracksDir = path.Join("static", "tracks")
-	defaultTmpDir    = path.Join("static", "tmp")
+	defaultTracksDir = filepath.Join("static", "tracks")
+	defaultTmpDir    = filepath.Join("static", "tmp")
 )
 
 const defaultHLSSegmentDuration = 5 // seconds
