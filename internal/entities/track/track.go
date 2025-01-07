@@ -7,7 +7,7 @@ type Track struct {
 	Name     string
 	Path     string
 	Duration float64 // Seconds
-	Bitrate  int     //Kbps
+	Bitrate  int     // Kbps
 }
 
 func New(name, path string, duration float64, bitrate int) *Track {

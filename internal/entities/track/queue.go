@@ -3,12 +3,10 @@ package track
 import (
 	"fmt"
 	"slices"
-	"sync"
 )
 
 type Queue struct {
 	Tracks []Track
-	mutex  sync.Mutex
 }
 
 func NewQueue(tracks []Track) *Queue {
@@ -18,16 +16,10 @@ func NewQueue(tracks []Track) *Queue {
 }
 
 func (q *Queue) Add(tracks []Track) {
-	q.mutex.Lock()
-	defer q.mutex.Unlock()
-
 	q.Tracks = append(q.Tracks, tracks...)
 }
 
 func (q *Queue) Remove(trackIDs []string) {
-	q.mutex.Lock()
-	defer q.mutex.Unlock()
-
 	filtered := make([]Track, 0, len(q.Tracks)-len(trackIDs))
 
 	for _, t := range q.Tracks {
@@ -50,17 +42,12 @@ func (q *Queue) Reorder(trackIDs []string) error {
 		ordered = append(ordered, *track)
 	}
 
-	q.mutex.Lock()
-	defer q.mutex.Unlock()
 	q.Tracks = ordered
 
 	return nil
 }
 
 func (q *Queue) FindTrack(trackID string) *Track {
-	q.mutex.Lock()
-	defer q.mutex.Unlock()
-
 	for _, t := range q.Tracks {
 		if t.ID == trackID {
 			return &t
@@ -71,9 +58,6 @@ func (q *Queue) FindTrack(trackID string) *Track {
 }
 
 func (q *Queue) CurrentTrack() *Track {
-	q.mutex.Lock()
-	defer q.mutex.Unlock()
-
 	if len(q.Tracks) == 0 {
 		return nil
 	}
@@ -82,9 +66,6 @@ func (q *Queue) CurrentTrack() *Track {
 }
 
 func (q *Queue) NextTrack() *Track {
-	q.mutex.Lock()
-	defer q.mutex.Unlock()
-
 	if len(q.Tracks) == 0 {
 		return nil
 	}
@@ -97,8 +78,9 @@ func (q *Queue) NextTrack() *Track {
 }
 
 func (q *Queue) Spin() {
-	q.mutex.Lock()
-	defer q.mutex.Unlock()
+	if len(q.Tracks) < 2 {
+		return
+	}
 
 	q.Tracks = append(q.Tracks[1:], q.Tracks[0])
 }
