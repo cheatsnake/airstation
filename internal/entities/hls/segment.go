@@ -9,22 +9,24 @@ import (
 type Segment struct {
 	Duration float64
 	Path     string
+	IsFirst  bool
 }
 
-func NewSegment(duration float64, path string) *Segment {
+func NewSegment(duration float64, path string, isFirst bool) *Segment {
 	return &Segment{
 		Duration: duration,
 		Path:     path,
+		IsFirst:  isFirst,
 	}
 }
 
-func GenerateSegments(trackDuration, segmentDuration float64, trackID, outDir string) []*Segment {
+func GenerateSegments(trackDuration float64, segmentDuration int, trackID, outDir string) []*Segment {
 	if trackDuration <= 0 || segmentDuration <= 0 {
 		return nil
 	}
 
 	// Calculate total possible number of segments (rounded up)
-	totalSegments := int(math.Round(trackDuration / segmentDuration))
+	totalSegments := int(math.Round(trackDuration / float64(segmentDuration)))
 	segments := make([]*Segment, 0, totalSegments)
 
 	remaining := trackDuration
@@ -36,8 +38,9 @@ func GenerateSegments(trackDuration, segmentDuration float64, trackID, outDir st
 		segPath := filepath.Join(outDir, segName)
 
 		// Use the smaller of the remaining or full segment duration
-		duration := math.Min(remaining, segmentDuration)
-		segments = append(segments, NewSegment(duration, segPath))
+		duration := math.Min(remaining, float64(segmentDuration))
+		isFirst := index == 0
+		segments = append(segments, NewSegment(duration, segPath, isFirst))
 
 		remaining -= duration
 		index++

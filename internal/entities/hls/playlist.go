@@ -7,12 +7,12 @@ import (
 
 type Playlist struct {
 	liveSegmentsAmount   int
-	maxSegmentDuration   float64
+	maxSegmentDuration   int
 	currentTrackSegments []*Segment
 	nextTrackSegments    []*Segment
 }
 
-func NewPlaylist(cur, next []*Segment, maxDuration float64, liveAmount int) *Playlist {
+func NewPlaylist(cur, next []*Segment, maxDuration int, liveAmount int) *Playlist {
 	return &Playlist{
 		liveSegmentsAmount:   liveAmount,
 		maxSegmentDuration:   maxDuration,
@@ -21,13 +21,13 @@ func NewPlaylist(cur, next []*Segment, maxDuration float64, liveAmount int) *Pla
 	}
 }
 
-func (p *Playlist) Generate(elapsedTime float64) string {
-	playlist := hlsHeader(p.maxSegmentDuration)
-	firstSegmentIndex := int(math.Floor(elapsedTime / p.maxSegmentDuration))
+func (p *Playlist) Generate(elapsedTime float64, mediaSeq, disconSeq int64) string {
+	playlist := hlsHeader(p.maxSegmentDuration, mediaSeq, disconSeq)
+	firstSegmentIndex := int(math.Floor(elapsedTime / float64(p.maxSegmentDuration)))
 	liveSegments := p.collectLiveSegments(firstSegmentIndex)
 
 	for _, seg := range liveSegments {
-		playlist += hlsSegment(seg.Duration, seg.Path)
+		playlist += hlsSegment(seg.Duration, seg.Path, seg.IsFirst)
 	}
 
 	return playlist
@@ -64,15 +64,24 @@ func (p *Playlist) collectLiveSegments(startIndex int) []*Segment {
 }
 
 // hlsHeader generates the header string for an HLS playlist with the specified target duration.
-func hlsHeader(dur float64) string {
+func hlsHeader(dur int, mediaSeq, disconSeq int64) string {
 	return "#EXTM3U\n" +
 		"#EXT-X-VERSION:3\n" +
-		"#EXT-X-TARGETDURATION:" + strconv.FormatFloat(dur, 'f', -1, 64) + "\n" +
-		"#EXT-X-MEDIA-SEQUENCE:0\n"
+		"#EXT-X-TARGETDURATION:" + strconv.Itoa(dur) + "\n" +
+		"#EXT-X-MEDIA-SEQUENCE:" + strconv.FormatInt(mediaSeq, 10) + "\n" +
+		"#EXT-X-DISCONTINUITY-SEQUENCE:" + strconv.FormatInt(disconSeq, 10) + "\n"
 }
 
 // hlsSegment generates an HLS segment entry with the specified duration and path.
-func hlsSegment(dur float64, path string) string {
-	duration := strconv.FormatFloat(dur, 'f', -1, 64)
-	return "#EXTINF:" + duration + ",\n" + path + "\n"
+func hlsSegment(dur float64, path string, isDiscon bool) string {
+	disconTag := ""
+
+	if isDiscon {
+		disconTag = "#EXT-X-DISCONTINUITY\n"
+	}
+
+	duration := strconv.FormatFloat(dur, 'f', 2, 64)
+	return disconTag +
+		"#EXTINF:" + duration + ",\n" +
+		path + "\n"
 }
