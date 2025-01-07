@@ -5,7 +5,7 @@ import (
 	"slices"
 	"sync"
 
-	"github.com/cheatsnake/airstation/internal/entities/track"
+	"github.com/cheatsnake/airstation/internal/track"
 )
 
 type TrackStore struct {

@@ -6,9 +6,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/cheatsnake/airstation/internal/entities/hls"
-	"github.com/cheatsnake/airstation/internal/entities/track"
 	"github.com/cheatsnake/airstation/internal/ffmpeg"
+	"github.com/cheatsnake/airstation/internal/hls"
+	"github.com/cheatsnake/airstation/internal/track"
 )
 
 type State struct {
