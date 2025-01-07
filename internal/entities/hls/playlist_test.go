@@ -2,7 +2,6 @@ package hls
 
 import (
 	"reflect"
-	"strconv"
 	"strings"
 	"testing"
 )
@@ -10,12 +9,12 @@ import (
 func TestNewPlaylist(t *testing.T) {
 	current := []*Segment{{Duration: 10.5, Path: "segment1.ts"}}
 	next := []*Segment{{Duration: 9.0, Path: "segment2.ts"}}
-	maxDuration := 10.0
+	maxDuration := 10
 	liveAmount := 2
 	playlist := NewPlaylist(current, next, maxDuration, liveAmount)
 
 	if playlist.maxSegmentDuration != maxDuration {
-		t.Errorf("Expected maxSegmentDuration to be %f, got %f", maxDuration, playlist.maxSegmentDuration)
+		t.Errorf("Expected maxSegmentDuration to be %d, got %d", maxDuration, playlist.maxSegmentDuration)
 	}
 
 	if playlist.liveSegmentsAmount != liveAmount {
@@ -126,7 +125,7 @@ func TestGenerate(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			playlist := NewPlaylist(c.current, c.next, 10, c.liveAmount)
-			result := playlist.Generate(c.elapsedTime)
+			result := playlist.Generate(c.elapsedTime, 0, 0)
 
 			for _, path := range c.expectedPaths {
 				if !strings.Contains(result, path) {
@@ -155,7 +154,7 @@ func TestNext(t *testing.T) {
 	next := []*Segment{
 		{Duration: 10.0, Path: "segment3.ts"},
 	}
-	maxDuration := 10.0
+	maxDuration := 10
 	liveAmount := 2
 
 	playlist := NewPlaylist(current, next, maxDuration, liveAmount)
@@ -174,7 +173,7 @@ func TestNext(t *testing.T) {
 func TestAddSegments(t *testing.T) {
 	current := []*Segment{{Duration: 10.0, Path: "segment1.ts"}}
 	next := []*Segment{{Duration: 10.0, Path: "segment2.ts"}}
-	maxDuration := 10.0
+	maxDuration := 10
 	liveAmount := 2
 	playlist := NewPlaylist(current, next, maxDuration, liveAmount)
 
@@ -329,31 +328,114 @@ func TestCollectLiveSegments(t *testing.T) {
 	})
 }
 
-func TestHLSHeader(t *testing.T) {
-	cases := []float64{1, 5.0, 10, 20.5}
+func TestHlsHeader(t *testing.T) {
+	cases := []struct {
+		name      string
+		dur       int
+		mediaSeq  int64
+		disconSeq int64
+		expected  string
+	}{
+		{
+			name:      "Basic case",
+			dur:       10,
+			mediaSeq:  1,
+			disconSeq: 0,
+			expected: "#EXTM3U\n" +
+				"#EXT-X-VERSION:3\n" +
+				"#EXT-X-TARGETDURATION:10\n" +
+				"#EXT-X-MEDIA-SEQUENCE:1\n" +
+				"#EXT-X-DISCONTINUITY-SEQUENCE:0\n",
+		},
+		{
+			name:      "Non-zero discontinuity sequence",
+			dur:       15,
+			mediaSeq:  5,
+			disconSeq: 2,
+			expected: "#EXTM3U\n" +
+				"#EXT-X-VERSION:3\n" +
+				"#EXT-X-TARGETDURATION:15\n" +
+				"#EXT-X-MEDIA-SEQUENCE:5\n" +
+				"#EXT-X-DISCONTINUITY-SEQUENCE:2\n",
+		},
+		{
+			name:      "Zero values",
+			dur:       0,
+			mediaSeq:  0,
+			disconSeq: 0,
+			expected: "#EXTM3U\n" +
+				"#EXT-X-VERSION:3\n" +
+				"#EXT-X-TARGETDURATION:0\n" +
+				"#EXT-X-MEDIA-SEQUENCE:0\n" +
+				"#EXT-X-DISCONTINUITY-SEQUENCE:0\n",
+		},
+		{
+			name:      "Large values",
+			dur:       999,
+			mediaSeq:  123456789,
+			disconSeq: 987654321,
+			expected: "#EXTM3U\n" +
+				"#EXT-X-VERSION:3\n" +
+				"#EXT-X-TARGETDURATION:999\n" +
+				"#EXT-X-MEDIA-SEQUENCE:123456789\n" +
+				"#EXT-X-DISCONTINUITY-SEQUENCE:987654321\n",
+		},
+	}
 
 	for _, c := range cases {
-		header := hlsHeader(c)
-		if !strings.Contains(header, "#EXT-X-TARGETDURATION:"+strconv.FormatFloat(c, 'f', -1, 64)) {
-			t.Errorf("HLS header missing expected target duration: %s", header)
-		}
+		t.Run(c.name, func(t *testing.T) {
+			result := hlsHeader(c.dur, c.mediaSeq, c.disconSeq)
+			if result != c.expected {
+				t.Errorf("hlsHeader(%d, %d, %d) = %q; want %q", c.dur, c.mediaSeq, c.disconSeq, result, c.expected)
+			}
+		})
 	}
 }
 
-func TestHLSSegment(t *testing.T) {
-	cases := []*Segment{
-		{Duration: 1, Path: "seg1.ts"},
-		{Duration: 5, Path: "path/to/seg2.ts"},
-		{Duration: 7.5, Path: "seg3.ts"},
-		{Duration: 12.25, Path: "seg4.ts"},
-		{Duration: 15, Path: "seg5.ts"},
+func TestHlsSegment(t *testing.T) {
+	cases := []struct {
+		name     string
+		dur      float64
+		path     string
+		isDiscon bool
+		expected string
+	}{
+		{
+			name:     "Basic segment without discontinuity",
+			dur:      5.5,
+			path:     "segment0.ts",
+			isDiscon: false,
+			expected: "#EXTINF:5.50,\nsegment0.ts\n",
+		},
+		{
+			name:     "Segment with discontinuity",
+			dur:      8.333,
+			path:     "segment1.ts",
+			isDiscon: true,
+			expected: "#EXT-X-DISCONTINUITY\n#EXTINF:8.33,\nsegment1.ts\n",
+		},
+		{
+			name:     "Zero duration segment without discontinuity",
+			dur:      0,
+			path:     "segment2.ts",
+			isDiscon: false,
+			expected: "#EXTINF:0.00,\nsegment2.ts\n",
+		},
+		{
+			name:     "Large duration segment with discontinuity",
+			dur:      1234.56789,
+			path:     "segment3.ts",
+			isDiscon: true,
+			expected: "#EXT-X-DISCONTINUITY\n#EXTINF:1234.57,\nsegment3.ts\n",
+		},
 	}
 
 	for _, c := range cases {
-		segment := hlsSegment(c.Duration, c.Path)
-		if !strings.Contains(segment, c.Path) ||
-			!strings.Contains(segment, "#EXTINF:"+strconv.FormatFloat(c.Duration, 'f', -1, 64)) {
-			t.Errorf("HLS segment does not match expected format: %s", segment)
-		}
+		t.Run(c.name, func(t *testing.T) {
+			result := hlsSegment(c.dur, c.path, c.isDiscon)
+			if result != c.expected {
+				t.Errorf("hlsSegment(%f, %q, %v) = %q; want %q", c.dur, c.path, c.isDiscon, result, c.expected)
+			}
+		})
 	}
 }
