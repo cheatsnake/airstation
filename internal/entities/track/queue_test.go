@@ -5,7 +5,6 @@ import (
 )
 
 func TestQueue(t *testing.T) {
-	// Test NewQueue
 	t.Run("NewQueue initializes queue with tracks", func(t *testing.T) {
 		tracks := []Track{
 			{ID: "1", Name: "Track 1"},
@@ -19,7 +18,6 @@ func TestQueue(t *testing.T) {
 		}
 	})
 
-	// Test Add
 	t.Run("Add appends new tracks to the queue", func(t *testing.T) {
 		q := NewQueue([]Track{})
 
@@ -33,7 +31,6 @@ func TestQueue(t *testing.T) {
 		}
 	})
 
-	// Test Remove
 	t.Run("Remove deletes tracks by IDs", func(t *testing.T) {
 		q := NewQueue([]Track{
 			{ID: "1", Name: "Track 1"},
@@ -52,7 +49,6 @@ func TestQueue(t *testing.T) {
 		}
 	})
 
-	// Test Reorder
 	t.Run("Reorder rearranges tracks by IDs", func(t *testing.T) {
 		q := NewQueue([]Track{
 			{ID: "1", Name: "Track 1"},
@@ -74,7 +70,6 @@ func TestQueue(t *testing.T) {
 		}
 	})
 
-	// Test Reorder with invalid track ID
 	t.Run("Reorder returns error if a track ID does not exist", func(t *testing.T) {
 		q := NewQueue([]Track{
 			{ID: "1", Name: "Track 1"},
@@ -87,7 +82,6 @@ func TestQueue(t *testing.T) {
 		}
 	})
 
-	// Test FindTrack
 	t.Run("FindTrack returns the correct track by ID", func(t *testing.T) {
 		q := NewQueue([]Track{
 			{ID: "1", Name: "Track 1"},
@@ -101,7 +95,6 @@ func TestQueue(t *testing.T) {
 		}
 	})
 
-	// Test CurrentTrack
 	t.Run("CurrentTrack returns the first track in the queue", func(t *testing.T) {
 		q := NewQueue([]Track{
 			{ID: "1", Name: "Track 1"},
@@ -115,7 +108,6 @@ func TestQueue(t *testing.T) {
 		}
 	})
 
-	// Test NextTrack
 	t.Run("NextTrack returns the second track in the queue", func(t *testing.T) {
 		q := NewQueue([]Track{
 			{ID: "1", Name: "Track 1"},
@@ -141,7 +133,6 @@ func TestQueue(t *testing.T) {
 		}
 	})
 
-	// Test Spin
 	t.Run("Spin moves the first track to the end of the queue", func(t *testing.T) {
 		q := NewQueue([]Track{
 			{ID: "1", Name: "Track 1"},
@@ -157,6 +148,32 @@ func TestQueue(t *testing.T) {
 			if track.ID != expectedOrder[i] {
 				t.Errorf("unexpected order after spin, got: %+v", q.Tracks)
 			}
+		}
+	})
+
+	t.Run("Spin do nothing if only one track exists", func(t *testing.T) {
+		q := NewQueue([]Track{
+			{ID: "1", Name: "Track 1"},
+		})
+
+		q.Spin()
+
+		expectedOrder := []string{"1"}
+
+		for i, track := range q.Tracks {
+			if track.ID != expectedOrder[i] {
+				t.Errorf("unexpected order after spin, got: %+v", q.Tracks)
+			}
+		}
+	})
+
+	t.Run("Spin do nothing if queue is empty", func(t *testing.T) {
+		q := NewQueue([]Track{})
+
+		q.Spin()
+
+		if len(q.Tracks) != 0 {
+			t.Errorf("unexpected queue length, expected 0, got: %d", len(q.Tracks))
 		}
 	})
 }
