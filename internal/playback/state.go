@@ -17,16 +17,12 @@ type State struct {
 	NextTrack            *track.Track
 	IsPlaying            bool
 	TrackQueue           *track.Queue
-	Playlist             *hls.Playlist
 
-	TotalRefreshes     int64
-	MediaSequence      int64
-	DisconSequence     int64
-	maxSegmentDuration int // Seconds
-	maxSegmentsAmount  int
-	temporaryDir       string
-	refreshRate        float64 // Seconds
-	mutex              sync.Mutex
+	playlist       *hls.Playlist
+	totalRefreshes int64
+	temporaryDir   string
+	refreshRate    float64 // Seconds
+	mutex          sync.Mutex
 }
 
 func NewState(tq track.Queue, tmpDir string) *State {
@@ -37,13 +33,9 @@ func NewState(tq track.Queue, tmpDir string) *State {
 		IsPlaying:            false,
 		TrackQueue:           &tq,
 
-		TotalRefreshes:     0,
-		MediaSequence:      0,
-		DisconSequence:     0,
-		maxSegmentDuration: 5.0,
-		maxSegmentsAmount:  3,
-		temporaryDir:       tmpDir,
-		refreshRate:        1,
+		totalRefreshes: 0,
+		temporaryDir:   tmpDir,
+		refreshRate:    1,
 	}
 }
 
@@ -55,20 +47,19 @@ func (s *State) Run() {
 
 		if s.IsPlaying {
 			s.mutex.Lock()
-			s.CurrentTrackPlayback += s.refreshRate
-			s.TotalRefreshes++
 
-			if math.Mod(float64(s.TotalRefreshes), float64(s.maxSegmentDuration)) == 0 {
-				s.MediaSequence++
+			s.CurrentTrackPlayback += s.refreshRate
+			s.totalRefreshes++
+
+			// every time a new segment is played
+			if math.Mod(float64(s.totalRefreshes), float64(s.playlist.MaxSegmentDuration)) == 0 {
+				s.playlist.UpdateMediaSequence()
 			}
 
+			s.playlist.UpdateDisconSequence(s.CurrentTrackPlayback)
+
 			if s.CurrentTrackPlayback >= s.CurrentTrack.Duration {
-				s.CurrentTrackPlayback = 0
-				s.DisconSequence++
-				s.TrackQueue.Spin()
-				s.CurrentTrack = s.TrackQueue.CurrentTrack()
-				s.NextTrack = s.TrackQueue.NextTrack()
-				s.Playlist.Next(s.nextTrackSegments())
+				s.loadNextTrack()
 			}
 
 			s.mutex.Unlock()
@@ -81,7 +72,7 @@ func (s *State) TogglePlaying() error {
 		return errors.New("no tracks for playing")
 	}
 
-	if s.Playlist == nil {
+	if s.playlist == nil {
 		s.initHLSPlaylist()
 	}
 
@@ -92,13 +83,18 @@ func (s *State) TogglePlaying() error {
 	return nil
 }
 
+func (s *State) GenerateHLSPlaylist() string {
+	pl := s.playlist.Generate(s.CurrentTrackPlayback)
+	return pl
+}
+
 func (s *State) initHLSPlaylist() {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
 	cur := s.currentTrackSegments()
 	next := s.nextTrackSegments()
-	s.Playlist = hls.NewPlaylist(cur, next, s.maxSegmentDuration, s.maxSegmentsAmount)
+	s.playlist = hls.NewPlaylist(cur, next, 5, 3)
 }
 
 func (s *State) currentTrackSegments() []*hls.Segment {
@@ -106,12 +102,19 @@ func (s *State) currentTrackSegments() []*hls.Segment {
 		return nil
 	}
 
-	err := ffmpeg.GenerateHLSPlaylist(s.CurrentTrack.Path, s.temporaryDir, s.CurrentTrack.ID, s.maxSegmentDuration)
+	err := ffmpeg.GenerateHLSPlaylist(s.CurrentTrack.Path, s.temporaryDir, s.CurrentTrack.ID, 5)
 	if err != nil {
 		panic(err)
 	}
 
-	currentTrackSegments := hls.GenerateSegments(s.CurrentTrack.Duration, s.maxSegmentDuration, s.CurrentTrack.ID, s.temporaryDir)
+	currentTrackSegments := hls.GenerateSegments(
+		s.CurrentTrack.Duration,
+		// s.playlist.MaxSegmentDuration,
+		5,
+		s.CurrentTrack.ID,
+		s.temporaryDir,
+	)
+
 	return currentTrackSegments
 }
 
@@ -120,11 +123,26 @@ func (s *State) nextTrackSegments() []*hls.Segment {
 		return nil
 	}
 
-	err := ffmpeg.GenerateHLSPlaylist(s.NextTrack.Path, s.temporaryDir, s.NextTrack.ID, s.maxSegmentDuration)
+	err := ffmpeg.GenerateHLSPlaylist(s.NextTrack.Path, s.temporaryDir, s.NextTrack.ID, 5)
 	if err != nil {
 		panic(err)
 	}
 
-	nextTrackSegments := hls.GenerateSegments(s.NextTrack.Duration, s.maxSegmentDuration, s.NextTrack.ID, s.temporaryDir)
+	nextTrackSegments := hls.GenerateSegments(
+		s.NextTrack.Duration,
+		// s.playlist.MaxSegmentDuration,
+		5,
+		s.NextTrack.ID,
+		s.temporaryDir,
+	)
+
 	return nextTrackSegments
+}
+
+func (s *State) loadNextTrack() {
+	s.CurrentTrackPlayback = 0
+	s.TrackQueue.Spin()
+	s.CurrentTrack = s.TrackQueue.CurrentTrack()
+	s.NextTrack = s.TrackQueue.NextTrack()
+	s.playlist.Next(s.nextTrackSegments())
 }
