@@ -13,12 +13,12 @@ func TestNewPlaylist(t *testing.T) {
 	liveAmount := 2
 	playlist := NewPlaylist(current, next, maxDuration, liveAmount)
 
-	if playlist.maxSegmentDuration != maxDuration {
-		t.Errorf("Expected maxSegmentDuration to be %d, got %d", maxDuration, playlist.maxSegmentDuration)
+	if playlist.MaxSegmentDuration != maxDuration {
+		t.Errorf("Expected maxSegmentDuration to be %d, got %d", maxDuration, playlist.MaxSegmentDuration)
 	}
 
-	if playlist.liveSegmentsAmount != liveAmount {
-		t.Errorf("Expected liveSegmentsAmount to be %d, got %d", liveAmount, playlist.liveSegmentsAmount)
+	if playlist.LiveSegmentsAmount != liveAmount {
+		t.Errorf("Expected liveSegmentsAmount to be %d, got %d", liveAmount, playlist.LiveSegmentsAmount)
 	}
 
 	if len(playlist.currentTrackSegments) != len(current) {
@@ -125,7 +125,7 @@ func TestGenerate(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			playlist := NewPlaylist(c.current, c.next, 10, c.liveAmount)
-			result := playlist.Generate(c.elapsedTime, 0, 0)
+			result := playlist.Generate(c.elapsedTime)
 
 			for _, path := range c.expectedPaths {
 				if !strings.Contains(result, path) {

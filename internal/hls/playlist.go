@@ -3,27 +3,40 @@ package hls
 import (
 	"math"
 	"strconv"
+	"time"
 )
 
 type Playlist struct {
-	liveSegmentsAmount   int
-	maxSegmentDuration   int
+	LiveSegmentsAmount int
+	MaxSegmentDuration int
+
+	mediaSequence    int64
+	disconSequence   int64
+	lastDisconUpdate time.Time
+
 	currentTrackSegments []*Segment
 	nextTrackSegments    []*Segment
 }
 
 func NewPlaylist(cur, next []*Segment, maxDuration int, liveAmount int) *Playlist {
 	return &Playlist{
-		liveSegmentsAmount:   liveAmount,
-		maxSegmentDuration:   maxDuration,
+		LiveSegmentsAmount: liveAmount,
+		MaxSegmentDuration: maxDuration,
+
+		mediaSequence:    0,
+		disconSequence:   0,
+		lastDisconUpdate: time.Now(),
+
 		currentTrackSegments: cur,
 		nextTrackSegments:    next,
 	}
 }
 
-func (p *Playlist) Generate(elapsedTime float64, mediaSeq, disconSeq int64) string {
-	playlist := hlsHeader(p.maxSegmentDuration, mediaSeq, disconSeq)
-	firstSegmentIndex := int(math.Floor(elapsedTime / float64(p.maxSegmentDuration)))
+func (p *Playlist) Generate(elapsedTime float64) string {
+	p.UpdateDisconSequence(elapsedTime)
+
+	playlist := hlsHeader(p.MaxSegmentDuration, p.mediaSequence, p.disconSequence)
+	firstSegmentIndex := p.calcCurrentSegmentIndex(elapsedTime)
 	liveSegments := p.collectLiveSegments(firstSegmentIndex)
 
 	for _, seg := range liveSegments {
@@ -42,12 +55,36 @@ func (p *Playlist) AddSegments(segments []*Segment) {
 	p.nextTrackSegments = append(p.nextTrackSegments, segments...)
 }
 
+func (p *Playlist) UpdateMediaSequence() {
+	p.mediaSequence++
+}
+
+func (p *Playlist) UpdateDisconSequence(elapsedTime float64) {
+	elapsedFromLastUpdate := time.Until(p.lastDisconUpdate).Seconds()
+	if math.Abs(elapsedFromLastUpdate) < float64(p.MaxSegmentDuration) {
+		return
+	}
+
+	index := p.calcCurrentSegmentIndex(elapsedTime)
+
+	// if the current track segment is the second and it is not the very first track,
+	// there was a discontinuty, so we increment the discontinuty counter
+	if index == 1 && p.mediaSequence > 1 {
+		p.disconSequence++
+		p.lastDisconUpdate = time.Now()
+	}
+}
+
+func (p *Playlist) calcCurrentSegmentIndex(elapsedTime float64) int {
+	return int(math.Floor(elapsedTime / float64(p.MaxSegmentDuration)))
+}
+
 // collectLiveSegments gathers enough segments from current and next tracks to meet liveSegmentsAmount
 func (p *Playlist) collectLiveSegments(startIndex int) []*Segment {
-	liveSegments := make([]*Segment, 0, p.liveSegmentsAmount)
+	liveSegments := make([]*Segment, 0, p.LiveSegmentsAmount)
 
 	if startIndex < len(p.currentTrackSegments) {
-		endIndex := startIndex + p.liveSegmentsAmount
+		endIndex := startIndex + p.LiveSegmentsAmount
 		if endIndex >= len(p.currentTrackSegments) {
 			endIndex = len(p.currentTrackSegments)
 		}
@@ -55,8 +92,8 @@ func (p *Playlist) collectLiveSegments(startIndex int) []*Segment {
 		liveSegments = append(liveSegments, p.currentTrackSegments[startIndex:endIndex]...)
 	}
 
-	if len(liveSegments) < p.liveSegmentsAmount {
-		required := p.liveSegmentsAmount - len(liveSegments)
+	if len(liveSegments) < p.LiveSegmentsAmount {
+		required := p.LiveSegmentsAmount - len(liveSegments)
 		liveSegments = append(liveSegments, p.nextTrackSegments[:min(len(p.nextTrackSegments), required)]...)
 	}
 
