@@ -18,10 +18,10 @@ type Playlist struct {
 	nextTrackSegments    []*Segment
 }
 
-func NewPlaylist(cur, next []*Segment, maxDuration int, liveAmount int) *Playlist {
+func NewPlaylist(cur, next []*Segment) *Playlist {
 	return &Playlist{
-		LiveSegmentsAmount: liveAmount,
-		MaxSegmentDuration: maxDuration,
+		LiveSegmentsAmount: DefaultLiveSegmentsAmount,
+		MaxSegmentDuration: DefaultMaxSegmentDuration,
 
 		mediaSequence:    0,
 		disconSequence:   0,
