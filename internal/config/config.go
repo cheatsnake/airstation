@@ -1,17 +1,30 @@
 package config
 
+import (
+	"path/filepath"
+	"sync"
+)
+
 type Config struct {
-	TracksDir          string
-	TmpDir             string
-	HLSSegmentDuration int
-	PossibleBitrates   []int
+	TracksDir string
+	TmpDir    string
+	WebDir    string
+	HTTPPort  string
 }
 
-func New() *Config {
-	return &Config{
-		TracksDir:          defaultTracksDir,
-		TmpDir:             defaultTmpDir,
-		HLSSegmentDuration: defaultHLSSegmentDuration,
-		PossibleBitrates:   []int{320},
-	}
+var (
+	configInstance *Config
+	once           sync.Once
+)
+
+func GetConfig() *Config {
+	once.Do(func() {
+		configInstance = &Config{
+			TracksDir: filepath.Join("static", "tracks"),
+			TmpDir:    filepath.Join("static", "tmp"),
+			WebDir:    filepath.Join("web"),
+			HTTPPort:  "8080",
+		}
+	})
+	return configInstance
 }
