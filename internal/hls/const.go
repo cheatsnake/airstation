@@ -1,6 +1,6 @@
 package hls
 
-const segmentExtension = ".ts"
+const SegmentExtension = ".ts"
 
 const (
 	DefaultMaxSegmentDuration = 5

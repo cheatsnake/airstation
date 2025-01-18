@@ -34,7 +34,7 @@ func GenerateSegments(trackDuration float64, segmentDuration int, trackID, outDi
 
 	// Generate segments until the entire track is covered
 	for remaining > 0 {
-		segName := trackID + strconv.Itoa(index) + segmentExtension
+		segName := trackID + strconv.Itoa(index) + SegmentExtension
 		segPath := filepath.Join(outDir, segName)
 
 		// Use the smaller of the remaining or full segment duration
