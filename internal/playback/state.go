@@ -94,7 +94,7 @@ func (s *State) initHLSPlaylist() {
 
 	cur := s.currentTrackSegments()
 	next := s.nextTrackSegments()
-	s.playlist = hls.NewPlaylist(cur, next, 5, 3)
+	s.playlist = hls.NewPlaylist(cur, next)
 }
 
 func (s *State) currentTrackSegments() []*hls.Segment {
@@ -102,15 +102,14 @@ func (s *State) currentTrackSegments() []*hls.Segment {
 		return nil
 	}
 
-	err := ffmpeg.GenerateHLSPlaylist(s.CurrentTrack.Path, s.temporaryDir, s.CurrentTrack.ID, 5)
+	err := ffmpeg.GenerateHLSPlaylist(s.CurrentTrack.Path, s.temporaryDir, s.CurrentTrack.ID, hls.DefaultMaxSegmentDuration)
 	if err != nil {
 		panic(err)
 	}
 
 	currentTrackSegments := hls.GenerateSegments(
 		s.CurrentTrack.Duration,
-		// s.playlist.MaxSegmentDuration,
-		5,
+		hls.DefaultMaxSegmentDuration,
 		s.CurrentTrack.ID,
 		s.temporaryDir,
 	)
@@ -123,15 +122,14 @@ func (s *State) nextTrackSegments() []*hls.Segment {
 		return nil
 	}
 
-	err := ffmpeg.GenerateHLSPlaylist(s.NextTrack.Path, s.temporaryDir, s.NextTrack.ID, 5)
+	err := ffmpeg.GenerateHLSPlaylist(s.NextTrack.Path, s.temporaryDir, s.NextTrack.ID, hls.DefaultMaxSegmentDuration)
 	if err != nil {
 		panic(err)
 	}
 
 	nextTrackSegments := hls.GenerateSegments(
 		s.NextTrack.Duration,
-		// s.playlist.MaxSegmentDuration,
-		5,
+		hls.DefaultMaxSegmentDuration,
 		s.NextTrack.ID,
 		s.temporaryDir,
 	)
