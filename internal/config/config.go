@@ -1,8 +1,8 @@
 package config
 
 import (
+	"os"
 	"path/filepath"
-	"sync"
 )
 
 type Config struct {
@@ -12,19 +12,18 @@ type Config struct {
 	HTTPPort  string
 }
 
-var (
-	configInstance *Config
-	once           sync.Once
-)
+func Load() *Config {
+	return &Config{
+		TracksDir: getEnv("AIRSTATION_TRACKS_DIR", filepath.Join("static", "tracks")),
+		TmpDir:    getEnv("AIRSTATION_TMP_DIR", filepath.Join("static", "tmp")),
+		WebDir:    getEnv("AIRSTATION_WEB_DIR", filepath.Join("web")),
+		HTTPPort:  getEnv("AIRSTATION_HTTP_PORT", "8080"),
+	}
+}
 
-func GetConfig() *Config {
-	once.Do(func() {
-		configInstance = &Config{
-			TracksDir: filepath.Join("static", "tracks"),
-			TmpDir:    filepath.Join("static", "tmp"),
-			WebDir:    filepath.Join("web"),
-			HTTPPort:  "8080",
-		}
-	})
-	return configInstance
+func getEnv(key, defaultValue string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return defaultValue
 }
