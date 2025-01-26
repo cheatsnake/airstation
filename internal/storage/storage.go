@@ -2,6 +2,10 @@ package storage
 
 import "github.com/cheatsnake/airstation/internal/track"
 
+type Storage interface {
+	TrackStore
+}
+
 type TrackStore interface {
 	AddTrack(name, path string, duration float64, bitrate int) (*track.Track, error)
 
