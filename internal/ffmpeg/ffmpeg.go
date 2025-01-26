@@ -8,7 +8,7 @@ import (
 	"strconv"
 )
 
-func GenerateHLSPlaylist(trackPath, outDir, segName string, segDur int) error {
+func MakeHLSPlaylist(trackPath, outDir, segName string, segDur int) error {
 	hlsTime := strconv.Itoa(segDur)
 	hlsSegName := fmt.Sprintf("%s/%s", outDir, segName) + "%d.ts"
 	hlsPlName := fmt.Sprintf("%s/%s", outDir, segName) + ".m3u8"
