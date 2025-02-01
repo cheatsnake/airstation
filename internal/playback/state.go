@@ -12,35 +12,41 @@ import (
 )
 
 type State struct {
-	CurrentTrack         *track.Track
-	CurrentTrackPlayback float64 // Seconds
-	NextTrack            *track.Track
-	IsPlaying            bool
-	TrackQueue           *track.Queue
+	CurrentTrack        *track.Track // The currently playing track
+	CurrentTrackElapsed float64      // Seconds elapsed since the track started playing
+	NextTrack           *track.Track // The next track in the queue
+	IsPlaying           bool         // Whether the track is currently playing
+	TrackQueue          *track.Queue // The queue of upcoming tracks
 
-	playlist       *hls.Playlist
-	totalRefreshes int64
-	temporaryDir   string
-	refreshRate    float64 // Seconds
-	mutex          sync.Mutex
+	playlist    *hls.Playlist // HLS playlist for streaming
+	playlistDir string        // Directory for temporary playlist data
+
+	refreshCount    int64   // Total number of state refreshes
+	refreshInterval float64 // Interval in seconds between state refreshes
+
+	ffmpegCLI *ffmpeg.CLI
+
+	mutex sync.Mutex
 }
 
-func NewState(tq track.Queue, tmpDir string) *State {
+func NewState(tq track.Queue, tmpDir string, ffmpegCLI *ffmpeg.CLI) *State {
 	return &State{
-		CurrentTrack:         tq.CurrentTrack(),
-		CurrentTrackPlayback: 0,
-		NextTrack:            tq.NextTrack(),
-		IsPlaying:            false,
-		TrackQueue:           &tq,
+		CurrentTrack:        tq.CurrentTrack(),
+		CurrentTrackElapsed: 0,
+		NextTrack:           tq.NextTrack(),
+		IsPlaying:           false,
+		TrackQueue:          &tq,
 
-		totalRefreshes: 0,
-		temporaryDir:   tmpDir,
-		refreshRate:    1,
+		refreshCount:    0,
+		playlistDir:     tmpDir,
+		refreshInterval: 1,
+
+		ffmpegCLI: ffmpegCLI,
 	}
 }
 
 func (s *State) Run() {
-	ticker := time.NewTicker(time.Duration(s.refreshRate) * time.Second)
+	ticker := time.NewTicker(time.Duration(s.refreshInterval) * time.Second)
 	defer ticker.Stop()
 
 	for range ticker.C {
@@ -48,17 +54,17 @@ func (s *State) Run() {
 		if s.IsPlaying {
 			s.mutex.Lock()
 
-			s.CurrentTrackPlayback += s.refreshRate
-			s.totalRefreshes++
+			s.CurrentTrackElapsed += s.refreshInterval
+			s.refreshCount++
 
 			// every time a new segment is played
-			if math.Mod(float64(s.totalRefreshes), float64(s.playlist.MaxSegmentDuration)) == 0 {
+			if math.Mod(float64(s.refreshCount), float64(s.playlist.MaxSegmentDuration)) == 0 {
 				s.playlist.UpdateMediaSequence()
 			}
 
-			s.playlist.UpdateDisconSequence(s.CurrentTrackPlayback)
+			s.playlist.UpdateDisconSequence(s.CurrentTrackElapsed)
 
-			if s.CurrentTrackPlayback >= s.CurrentTrack.Duration {
+			if s.CurrentTrackElapsed >= s.CurrentTrack.Duration {
 				s.loadNextTrack()
 			}
 
@@ -84,7 +90,7 @@ func (s *State) TogglePlaying() error {
 }
 
 func (s *State) GenerateHLSPlaylist() string {
-	pl := s.playlist.Generate(s.CurrentTrackPlayback)
+	pl := s.playlist.Generate(s.CurrentTrackElapsed)
 	return pl
 }
 
@@ -92,55 +98,37 @@ func (s *State) initHLSPlaylist() {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
-	cur := s.currentTrackSegments()
-	next := s.nextTrackSegments()
-	s.playlist = hls.NewPlaylist(cur, next)
-}
-
-func (s *State) currentTrackSegments() []*hls.Segment {
-	if s.CurrentTrack == nil {
-		return nil
-	}
-
-	err := ffmpeg.GenerateHLSPlaylist(s.CurrentTrack.Path, s.temporaryDir, s.CurrentTrack.ID, hls.DefaultMaxSegmentDuration)
-	if err != nil {
-		panic(err)
-	}
-
-	currentTrackSegments := hls.GenerateSegments(
-		s.CurrentTrack.Duration,
-		hls.DefaultMaxSegmentDuration,
-		s.CurrentTrack.ID,
-		s.temporaryDir,
-	)
-
-	return currentTrackSegments
-}
-
-func (s *State) nextTrackSegments() []*hls.Segment {
-	if s.NextTrack == nil {
-		return nil
-	}
-
-	err := ffmpeg.GenerateHLSPlaylist(s.NextTrack.Path, s.temporaryDir, s.NextTrack.ID, hls.DefaultMaxSegmentDuration)
-	if err != nil {
-		panic(err)
-	}
-
-	nextTrackSegments := hls.GenerateSegments(
-		s.NextTrack.Duration,
-		hls.DefaultMaxSegmentDuration,
-		s.NextTrack.ID,
-		s.temporaryDir,
-	)
-
-	return nextTrackSegments
+	current := s.makeHLSSegments(s.CurrentTrack, s.playlistDir)
+	next := s.makeHLSSegments(s.NextTrack, s.playlistDir)
+	s.playlist = hls.NewPlaylist(current, next)
 }
 
 func (s *State) loadNextTrack() {
-	s.CurrentTrackPlayback = 0
+	s.CurrentTrackElapsed = 0
 	s.TrackQueue.Spin()
 	s.CurrentTrack = s.TrackQueue.CurrentTrack()
 	s.NextTrack = s.TrackQueue.NextTrack()
-	s.playlist.Next(s.nextTrackSegments())
+
+	nextTrackSegments := s.makeHLSSegments(s.NextTrack, s.playlistDir)
+	s.playlist.Next(nextTrackSegments)
+}
+
+func (s *State) makeHLSSegments(track *track.Track, dir string) []*hls.Segment {
+	if track == nil {
+		return nil
+	}
+
+	err := s.ffmpegCLI.MakeHLSPlaylist(track.Path, dir, track.ID, hls.DefaultMaxSegmentDuration)
+	if err != nil {
+		panic(err)
+	}
+
+	segments := hls.GenerateSegments(
+		track.Duration,
+		hls.DefaultMaxSegmentDuration,
+		track.ID,
+		dir,
+	)
+
+	return segments
 }
