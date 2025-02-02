@@ -19,11 +19,11 @@ func NewTrackStore() *TrackStore {
 	}
 }
 
-func (ts *TrackStore) AddTrack(name, path string, duration float64, bitrate int) (*track.Track, error) {
+func (ts *TrackStore) AddTrack(name, path string, duration float64, bitRate int) (*track.Track, error) {
 	ts.mutex.Lock()
 	defer ts.mutex.Unlock()
 
-	t := track.New(name, path, duration, bitrate)
+	t := track.New(name, path, duration, bitRate)
 	ts.tracks = append(ts.tracks, *t)
 
 	return t, nil
@@ -69,8 +69,8 @@ func (ts *TrackStore) EditTrack(track track.Track) (*track.Track, error) {
 		t.Duration = track.Duration
 	}
 
-	if track.Bitrate != 0 {
-		t.Bitrate = track.Bitrate
+	if track.BitRate != 0 {
+		t.BitRate = track.BitRate
 	}
 
 	return t, nil

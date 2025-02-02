@@ -7,7 +7,7 @@ type Storage interface {
 }
 
 type TrackStore interface {
-	AddTrack(name, path string, duration float64, bitrate int) (*track.Track, error)
+	AddTrack(name, path string, duration float64, bitRate int) (*track.Track, error)
 
 	RemoveTracks(IDs []string) error
 
