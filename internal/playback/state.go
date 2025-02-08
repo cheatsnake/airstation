@@ -2,6 +2,7 @@ package playback
 
 import (
 	"errors"
+	"log/slog"
 	"math"
 	"sync"
 	"time"
@@ -26,10 +27,11 @@ type State struct {
 
 	ffmpegCLI *ffmpeg.CLI
 
+	log   *slog.Logger
 	mutex sync.Mutex
 }
 
-func NewState(tq track.Queue, tmpDir string, ffmpegCLI *ffmpeg.CLI) *State {
+func NewState(tq track.Queue, tmpDir string, ffmpegCLI *ffmpeg.CLI, log *slog.Logger) *State {
 	return &State{
 		CurrentTrack:        tq.CurrentTrack(),
 		CurrentTrackElapsed: 0,
@@ -42,6 +44,7 @@ func NewState(tq track.Queue, tmpDir string, ffmpegCLI *ffmpeg.CLI) *State {
 		refreshInterval: 1,
 
 		ffmpegCLI: ffmpegCLI,
+		log:       log,
 	}
 }
 
@@ -65,7 +68,10 @@ func (s *State) Run() {
 			s.playlist.UpdateDisconSequence(s.CurrentTrackElapsed)
 
 			if s.CurrentTrackElapsed >= s.CurrentTrack.Duration {
-				s.loadNextTrack()
+				err := s.loadNextTrack()
+				if err != nil {
+					s.log.Error(err.Error())
+				}
 			}
 
 			s.mutex.Unlock()
@@ -79,7 +85,10 @@ func (s *State) TogglePlaying() error {
 	}
 
 	if s.playlist == nil {
-		s.initHLSPlaylist()
+		err := s.initHLSPlaylist()
+		if err != nil {
+			return err
+		}
 	}
 
 	s.mutex.Lock()
@@ -94,33 +103,48 @@ func (s *State) GenerateHLSPlaylist() string {
 	return pl
 }
 
-func (s *State) initHLSPlaylist() {
+func (s *State) initHLSPlaylist() error {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
-	current := s.makeHLSSegments(s.CurrentTrack, s.playlistDir)
-	next := s.makeHLSSegments(s.NextTrack, s.playlistDir)
+	current, err := s.makeHLSSegments(s.CurrentTrack, s.playlistDir)
+	if err != nil {
+		return err
+	}
+
+	next, err := s.makeHLSSegments(s.NextTrack, s.playlistDir)
+	if err != nil {
+		return err
+	}
+
 	s.playlist = hls.NewPlaylist(current, next)
+
+	return nil
 }
 
-func (s *State) loadNextTrack() {
+func (s *State) loadNextTrack() error {
 	s.CurrentTrackElapsed = 0
 	s.TrackQueue.Spin()
 	s.CurrentTrack = s.TrackQueue.CurrentTrack()
 	s.NextTrack = s.TrackQueue.NextTrack()
 
-	nextTrackSegments := s.makeHLSSegments(s.NextTrack, s.playlistDir)
+	nextTrackSegments, err := s.makeHLSSegments(s.NextTrack, s.playlistDir)
+	if err != nil {
+		return err
+	}
+
 	s.playlist.Next(nextTrackSegments)
+	return nil
 }
 
-func (s *State) makeHLSSegments(track *track.Track, dir string) []*hls.Segment {
+func (s *State) makeHLSSegments(track *track.Track, dir string) ([]*hls.Segment, error) {
 	if track == nil {
-		return nil
+		return []*hls.Segment{}, nil
 	}
 
 	err := s.ffmpegCLI.MakeHLSPlaylist(track.Path, dir, track.ID, hls.DefaultMaxSegmentDuration)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	segments := hls.GenerateSegments(
@@ -130,5 +154,5 @@ func (s *State) makeHLSSegments(track *track.Track, dir string) []*hls.Segment {
 		dir,
 	)
 
-	return segments
+	return segments, nil
 }
