@@ -55,7 +55,8 @@ func NewPlaylist(cur, next []*Segment) *Playlist {
 func (p *Playlist) Generate(elapsedTime float64) string {
 	p.UpdateDisconSequence(elapsedTime)
 
-	playlist := hlsHeader(p.MaxSegmentDuration, p.mediaSequence, p.disconSequence)
+	offset := math.Mod(elapsedTime, float64(p.MaxSegmentDuration))
+	playlist := hlsHeader(p.MaxSegmentDuration, p.mediaSequence, p.disconSequence, offset)
 	firstSegmentIndex := p.calcCurrentSegmentIndex(elapsedTime)
 	liveSegments := p.collectLiveSegments(firstSegmentIndex)
 
@@ -135,12 +136,13 @@ func (p *Playlist) collectLiveSegments(startIndex int) []*Segment {
 }
 
 // hlsHeader generates the header string for an HLS playlist with the specified target duration.
-func hlsHeader(dur int, mediaSeq, disconSeq int64) string {
+func hlsHeader(dur int, mediaSeq, disconSeq int64, offset float64) string {
 	return "#EXTM3U\n" +
-		"#EXT-X-VERSION:3\n" +
+		"#EXT-X-VERSION:6\n" +
 		"#EXT-X-TARGETDURATION:" + strconv.Itoa(dur) + "\n" +
 		"#EXT-X-MEDIA-SEQUENCE:" + strconv.FormatInt(mediaSeq, 10) + "\n" +
-		"#EXT-X-DISCONTINUITY-SEQUENCE:" + strconv.FormatInt(disconSeq, 10) + "\n"
+		"#EXT-X-DISCONTINUITY-SEQUENCE:" + strconv.FormatInt(disconSeq, 10) + "\n" +
+		"#EXT-X-START:TIME-OFFSET=" + strconv.FormatFloat(offset, 'f', 2, 64) + "\n"
 }
 
 // hlsSegment generates an HLS segment entry with the specified duration and path.

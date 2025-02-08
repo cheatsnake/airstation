@@ -322,6 +322,7 @@ func TestHlsHeader(t *testing.T) {
 		dur       int
 		mediaSeq  int64
 		disconSeq int64
+		offset    float64
 		expected  string
 	}{
 		{
@@ -329,52 +330,60 @@ func TestHlsHeader(t *testing.T) {
 			dur:       10,
 			mediaSeq:  1,
 			disconSeq: 0,
+			offset:    0.0,
 			expected: "#EXTM3U\n" +
-				"#EXT-X-VERSION:3\n" +
+				"#EXT-X-VERSION:6\n" +
 				"#EXT-X-TARGETDURATION:10\n" +
 				"#EXT-X-MEDIA-SEQUENCE:1\n" +
-				"#EXT-X-DISCONTINUITY-SEQUENCE:0\n",
+				"#EXT-X-DISCONTINUITY-SEQUENCE:0\n" +
+				"#EXT-X-START:TIME-OFFSET=0.00\n",
 		},
 		{
 			name:      "Non-zero discontinuity sequence",
 			dur:       15,
 			mediaSeq:  5,
 			disconSeq: 2,
+			offset:    5.5,
 			expected: "#EXTM3U\n" +
-				"#EXT-X-VERSION:3\n" +
+				"#EXT-X-VERSION:6\n" +
 				"#EXT-X-TARGETDURATION:15\n" +
 				"#EXT-X-MEDIA-SEQUENCE:5\n" +
-				"#EXT-X-DISCONTINUITY-SEQUENCE:2\n",
+				"#EXT-X-DISCONTINUITY-SEQUENCE:2\n" +
+				"#EXT-X-START:TIME-OFFSET=5.50\n",
 		},
 		{
 			name:      "Zero values",
 			dur:       0,
 			mediaSeq:  0,
 			disconSeq: 0,
+			offset:    0.0,
 			expected: "#EXTM3U\n" +
-				"#EXT-X-VERSION:3\n" +
+				"#EXT-X-VERSION:6\n" +
 				"#EXT-X-TARGETDURATION:0\n" +
 				"#EXT-X-MEDIA-SEQUENCE:0\n" +
-				"#EXT-X-DISCONTINUITY-SEQUENCE:0\n",
+				"#EXT-X-DISCONTINUITY-SEQUENCE:0\n" +
+				"#EXT-X-START:TIME-OFFSET=0.00\n",
 		},
 		{
 			name:      "Large values",
 			dur:       999,
 			mediaSeq:  123456789,
 			disconSeq: 987654321,
+			offset:    123.45,
 			expected: "#EXTM3U\n" +
-				"#EXT-X-VERSION:3\n" +
+				"#EXT-X-VERSION:6\n" +
 				"#EXT-X-TARGETDURATION:999\n" +
 				"#EXT-X-MEDIA-SEQUENCE:123456789\n" +
-				"#EXT-X-DISCONTINUITY-SEQUENCE:987654321\n",
+				"#EXT-X-DISCONTINUITY-SEQUENCE:987654321\n" +
+				"#EXT-X-START:TIME-OFFSET=123.45\n",
 		},
 	}
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			result := hlsHeader(c.dur, c.mediaSeq, c.disconSeq)
+			result := hlsHeader(c.dur, c.mediaSeq, c.disconSeq, c.offset)
 			if result != c.expected {
-				t.Errorf("hlsHeader(%d, %d, %d) = %q; want %q", c.dur, c.mediaSeq, c.disconSeq, result, c.expected)
+				t.Errorf("hlsHeader(%d, %d, %d, %.2f) = %q; want %q", c.dur, c.mediaSeq, c.disconSeq, c.offset, result, c.expected)
 			}
 		})
 	}
