@@ -1,3 +1,4 @@
+// Package hls provides functionality for handling HTTP Live Streaming (HLS) playlists and segments.
 package hls
 
 import (
@@ -6,18 +7,28 @@ import (
 	"time"
 )
 
+// Playlist represents an HLS playlist structure.
 type Playlist struct {
-	LiveSegmentsAmount int
-	MaxSegmentDuration int
+	LiveSegmentsAmount int // The number of live segments in the playlist.
+	MaxSegmentDuration int // The maximum duration (in seconds) of a segment in the playlist.
 
-	mediaSequence    int64
-	disconSequence   int64
-	lastDisconUpdate time.Time
-
+	mediaSequence        int64
+	disconSequence       int64
+	lastDisconUpdate     time.Time
 	currentTrackSegments []*Segment
 	nextTrackSegments    []*Segment
 }
 
+// NewPlaylist creates and returns a new Playlist instance with the provided current and next track segments.
+// It initializes the playlist with default values for live segments amount, max segment duration, media sequence,
+// discontinuity sequence, and last discontinuity update time.
+//
+// Parameters:
+//   - cur: The list of segments for the current track.
+//   - next: The list of segments for the next track.
+//
+// Returns:
+//   - A pointer to the newly created Playlist instance.
 func NewPlaylist(cur, next []*Segment) *Playlist {
 	return &Playlist{
 		LiveSegmentsAmount: DefaultLiveSegmentsAmount,
@@ -32,6 +43,15 @@ func NewPlaylist(cur, next []*Segment) *Playlist {
 	}
 }
 
+// Generate constructs and returns the HLS playlist as a string based on the elapsed time.
+// It updates the discontinuity sequence, calculates the starting segment index, collects live segments,
+// and formats them into the HLS playlist format.
+//
+// Parameters:
+//   - elapsedTime: The elapsed time in seconds used to determine the current segment index.
+//
+// Returns:
+//   - A string representing the generated HLS playlist.
 func (p *Playlist) Generate(elapsedTime float64) string {
 	p.UpdateDisconSequence(elapsedTime)
 
@@ -46,19 +66,33 @@ func (p *Playlist) Generate(elapsedTime float64) string {
 	return playlist
 }
 
+// Next updates the playlist by moving the next track segments to the current track segments
+// and assigning the provided segments as the new next track segments.
+//
+// Parameters:
+//   - next: The new list of segments to be set as the next track segments.
 func (p *Playlist) Next(next []*Segment) {
 	p.currentTrackSegments = p.nextTrackSegments
 	p.nextTrackSegments = next
 }
 
+// AddSegments appends the provided segments to the next track segments list.
+//
+// Parameters:
+//   - segments: The list of segments to append to the next track segments.
 func (p *Playlist) AddSegments(segments []*Segment) {
 	p.nextTrackSegments = append(p.nextTrackSegments, segments...)
 }
 
+// UpdateMediaSequence increments the media sequence number by 1.
 func (p *Playlist) UpdateMediaSequence() {
 	p.mediaSequence++
 }
 
+// UpdateDisconSequence updates the discontinuity sequence if a discontinuity is detected.
+//
+// Parameters:
+//   - elapsedTime: The elapsed time in seconds used to calculate the current segment index.
 func (p *Playlist) UpdateDisconSequence(elapsedTime float64) {
 	elapsedFromLastUpdate := time.Until(p.lastDisconUpdate).Seconds()
 	if math.Abs(elapsedFromLastUpdate) < float64(p.MaxSegmentDuration) {
