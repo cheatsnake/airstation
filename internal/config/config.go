@@ -1,8 +1,11 @@
 package config
 
 import (
+	"log"
 	"os"
 	"path/filepath"
+
+	"github.com/joho/godotenv"
 )
 
 const minSecretKeyLength = 10
@@ -16,6 +19,11 @@ type Config struct {
 }
 
 func Load() *Config {
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Parsing .env file failed: " + err.Error())
+	}
+
 	return &Config{
 		TracksDir: getEnv("AIRSTATION_TRACKS_DIR", filepath.Join("static", "tracks")),
 		TmpDir:    getEnv("AIRSTATION_TMP_DIR", filepath.Join("static", "tmp")),
@@ -36,13 +44,11 @@ func getSecretKey(key string) string {
 	secretKey := os.Getenv(key)
 
 	if secretKey == "" {
-		println(key + " environment variable is not set")
-		os.Exit(1)
+		log.Fatal(key + " environment variable is not set")
 	}
 
 	if len(secretKey) < minSecretKeyLength {
-		println(key + " is too short")
-		os.Exit(1)
+		log.Fatal(key + " is too short")
 	}
 
 	return secretKey
