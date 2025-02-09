@@ -58,6 +58,26 @@ func (s *Service) AddTrack(name, path string) (*track.Track, error) {
 	return newTrack, nil
 }
 
+func (s *Service) AddToQueue(tracks []*track.Track) error {
+	err := s.store.AddToQueue(tracks)
+	return err
+}
+
+func (s *Service) SpinQueue() error {
+	err := s.store.SpinQueue()
+	return err
+}
+
+func (s *Service) CurrentAndNextTrack() (*track.Track, *track.Track, error) {
+	current, next, err := s.store.CurrentAndNextTrack()
+	return current, next, err
+}
+
+func (s *Service) MakeHLSPlaylist(trackPath string, outDir string, segName string, segDuration int) error {
+	err := s.ffmpegCLI.MakeHLSPlaylist(trackPath, outDir, segName, segDuration)
+	return err
+}
+
 // modifyTrackDuration changes the original track duration (slightly) to avoid small HLS segments.
 func (s *Service) modifyTrackDuration(path string, metadata ffmpeg.AudioMetadata) (float64, error) {
 	roundDur := roundDuration(metadata.Duration, hls.DefaultMaxSegmentDuration)
