@@ -76,27 +76,54 @@ func (s *State) Run() {
 	}
 }
 
-func (s *State) TogglePlaying() error {
-	current, next, err := s.trackService.CurrentAndNextTrack()
+func (s *State) Play() error {
+	err := s.Load()
 	if err != nil {
 		return err
-	}
-	s.CurrentTrack = current
-
-	if s.CurrentTrack == nil {
-		return errors.New("no tracks for playing")
-	}
-
-	if s.playlist == nil {
-		err := s.initHLSPlaylist(current, next)
-		if err != nil {
-			return err
-		}
 	}
 
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
-	s.IsPlaying = !s.IsPlaying
+	s.IsPlaying = true
+
+	return nil
+}
+
+func (s *State) Pause() {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	s.IsPlaying = false
+	s.CurrentTrack = nil
+}
+
+func (s *State) Load() error {
+	current, next, err := s.trackService.CurrentAndNextTrack()
+	if err != nil {
+		return err
+	}
+
+	if current == nil {
+		return errors.New("no tracks for playing")
+	}
+
+	if s.playlist == nil {
+		err = s.initHLSPlaylist(current, next)
+		if err != nil {
+			return err
+		}
+	} else {
+		nextSeg, err := s.makeHLSSegments(next, s.playlistDir)
+		if err != nil {
+			return err
+		}
+		s.mutex.Lock()
+		s.playlist.ChangeNext(nextSeg)
+		s.mutex.Unlock()
+	}
+
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	s.CurrentTrack = current
 
 	return nil
 }
@@ -107,9 +134,6 @@ func (s *State) GenerateHLSPlaylist() string {
 }
 
 func (s *State) initHLSPlaylist(current, next *track.Track) error {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-
 	currentSeg, err := s.makeHLSSegments(current, s.playlistDir)
 	if err != nil {
 		return err
@@ -120,6 +144,8 @@ func (s *State) initHLSPlaylist(current, next *track.Track) error {
 		return err
 	}
 
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
 	s.playlist = hls.NewPlaylist(currentSeg, nextSeg)
 
 	return nil
