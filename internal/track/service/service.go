@@ -2,11 +2,13 @@
 package trackservice
 
 import (
+	"log/slog"
 	"math"
 
 	"github.com/cheatsnake/airstation/internal/ffmpeg"
 	"github.com/cheatsnake/airstation/internal/hls"
 	"github.com/cheatsnake/airstation/internal/storage"
+	"github.com/cheatsnake/airstation/internal/tools/fs"
 	"github.com/cheatsnake/airstation/internal/track"
 )
 
@@ -14,6 +16,7 @@ import (
 type Service struct {
 	store     storage.TrackStore // An instance of TrackStore for managing audio file storage.
 	ffmpegCLI *ffmpeg.CLI        // A pointer to the FFmpeg CLI wrapper for executing media processing commands.
+	log       *slog.Logger
 }
 
 // New creates and returns a new instance of Service.
@@ -24,10 +27,11 @@ type Service struct {
 //
 // Returns:
 //   - A pointer to an initialized Service instance.
-func New(store storage.TrackStore, ffmpegCLI *ffmpeg.CLI) *Service {
+func New(store storage.TrackStore, ffmpegCLI *ffmpeg.CLI, log *slog.Logger) *Service {
 	return &Service{
 		store:     store,
 		ffmpegCLI: ffmpegCLI,
+		log:       log,
 	}
 }
 
@@ -58,8 +62,58 @@ func (s *Service) AddTrack(name, path string) (*track.Track, error) {
 	return newTrack, nil
 }
 
+func (s *Service) Tracks(page, limit int) (*TracksPage, error) {
+	tracks, total, err := s.store.Tracks(page, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	return &TracksPage{
+		Tracks: tracks,
+		Page:   page,
+		Limit:  limit,
+		Total:  total,
+	}, nil
+}
+
+func (s *Service) DeleteTracks(trackIDs []string) error {
+	tracks, err := s.store.FindTracks(trackIDs)
+	if err != nil {
+		return err
+	}
+
+	err = s.store.DeleteTracks(trackIDs)
+	if err != nil {
+		return err
+	}
+
+	for _, t := range tracks {
+		err := fs.DeleteFile(t.Path)
+		if err != nil {
+			s.log.Warn("Failed to delete track from disk: " + err.Error())
+		}
+	}
+
+	return err
+}
+
+func (s *Service) FindTracks(trackIDs []string) ([]*track.Track, error) {
+	tracks, err := s.store.FindTracks(trackIDs)
+	return tracks, err
+}
+
+func (s *Service) Queue() ([]*track.Track, error) {
+	q, err := s.store.Queue()
+	return q, err
+}
+
 func (s *Service) AddToQueue(tracks []*track.Track) error {
 	err := s.store.AddToQueue(tracks)
+	return err
+}
+
+func (s *Service) RemoveFromQueue(trackIDs []string) error {
+	err := s.store.RemoveFromQueue(trackIDs)
 	return err
 }
 
