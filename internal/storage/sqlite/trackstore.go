@@ -44,7 +44,7 @@ func Open(dbPath string, log *slog.Logger) (*TrackStore, error) {
 	queueTable := `
 		CREATE TABLE IF NOT EXISTS queue (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			track_id TEXT NOT NULL,
+			track_id TEXT NOT NULL UNIQUE,
 			FOREIGN KEY (track_id) REFERENCES tracks (id)
 		);`
 	_, err = db.Exec(queueTable)
@@ -55,7 +55,7 @@ func Open(dbPath string, log *slog.Logger) (*TrackStore, error) {
 	return &TrackStore{db: db}, nil
 }
 
-func (ts *TrackStore) GetTracks(page, limit int) ([]*track.Track, int, error) {
+func (ts *TrackStore) Tracks(page, limit int) ([]*track.Track, int, error) {
 	ts.mutex.Lock()
 	defer ts.mutex.Unlock()
 
@@ -116,7 +116,7 @@ func (ts *TrackStore) AddTrack(name, path string, duration float64, bitRate int)
 	return track, nil
 }
 
-func (ts *TrackStore) RemoveTracks(IDs []string) error {
+func (ts *TrackStore) DeleteTracks(IDs []string) error {
 	ts.mutex.Lock()
 	defer ts.mutex.Unlock()
 
@@ -203,7 +203,7 @@ func (ts *TrackStore) FindTracks(IDs []string) ([]*track.Track, error) {
 	return tracks, nil
 }
 
-func (ts *TrackStore) GetQueue() ([]*track.Track, error) {
+func (ts *TrackStore) Queue() ([]*track.Track, error) {
 	ts.mutex.Lock()
 	defer ts.mutex.Unlock()
 
@@ -239,7 +239,12 @@ func (ts *TrackStore) AddToQueue(tracks []*track.Track) error {
 	ts.mutex.Lock()
 	defer ts.mutex.Unlock()
 
-	query := `INSERT INTO queue (track_id) VALUES (?)`
+	query := `
+			INSERT INTO queue (track_id)
+			VALUES (?)
+			ON CONFLICT (track_id) DO NOTHING
+		`
+
 	for _, track := range tracks {
 		_, err := ts.db.Exec(query, track.ID)
 		if err != nil {
@@ -250,7 +255,7 @@ func (ts *TrackStore) AddToQueue(tracks []*track.Track) error {
 	return nil
 }
 
-func (ts *TrackStore) DeleteFromQueue(trackIDs []string) error {
+func (ts *TrackStore) RemoveFromQueue(trackIDs []string) error {
 	ts.mutex.Lock()
 	defer ts.mutex.Unlock()
 
