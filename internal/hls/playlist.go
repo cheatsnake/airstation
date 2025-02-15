@@ -77,6 +77,14 @@ func (p *Playlist) Next(next []*Segment) {
 	p.nextTrackSegments = next
 }
 
+// ChangeNext replays segments for the next track.
+//
+// Parameters:
+//   - next: The new list of segments to be set as the next track segments.
+func (p *Playlist) ChangeNext(next []*Segment) {
+	p.nextTrackSegments = next
+}
+
 // AddSegments appends the provided segments to the next track segments list.
 //
 // Parameters:
