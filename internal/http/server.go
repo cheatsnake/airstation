@@ -1,30 +1,67 @@
 package http
 
 import (
-	"log"
+	"log/slog"
 	"mime"
 	"net/http"
 
 	"github.com/cheatsnake/airstation/internal/config"
 	"github.com/cheatsnake/airstation/internal/hls"
 	"github.com/cheatsnake/airstation/internal/playback"
+	trackservice "github.com/cheatsnake/airstation/internal/track/service"
+	"github.com/rs/cors"
 )
 
-func StartServer(state *playback.State) {
-	conf := config.GetConfig()
-	addMP2TMimeType()
-
-	http.HandleFunc("/stream", handleHLSPlaylist(state))
-	http.Handle("/static/tmp/", handleStaticDir("/static/tmp", conf.TmpDir))
-	http.Handle("/", handleStaticDir("", conf.WebDir))
-
-	log.Println("Server starts on http://localhost:" + conf.HTTPPort)
-	log.Fatal(http.ListenAndServe(":"+conf.HTTPPort, nil))
+type Server struct {
+	state        *playback.State
+	trackService *trackservice.Service
+	config       *config.Config
+	logger       *slog.Logger
+	mux          *http.ServeMux
 }
 
-func addMP2TMimeType() {
+func NewServer(state *playback.State, trackService *trackservice.Service, conf *config.Config, logger *slog.Logger) *Server {
+	return &Server{
+		state:        state,
+		trackService: trackService,
+		config:       conf,
+		logger:       logger,
+		mux:          http.NewServeMux(),
+	}
+}
+
+func (s *Server) Run() {
+	s.registerMP2TMimeType()
+
+	// Public handlers
+	s.mux.HandleFunc("GET /stream", s.handleHLSPlaylist)
+
+	// Admin handlers
+	s.mux.Handle("GET /v1/api/playback", s.adminAuth(http.HandlerFunc(s.handlePlaybackState)))
+	s.mux.Handle("POST /v1/api/track", s.adminAuth(http.HandlerFunc(s.handleTrackUpload)))
+	s.mux.Handle("GET /v1/api/tracks", s.adminAuth(http.HandlerFunc(s.handleTracks)))
+	s.mux.Handle("DELETE /v1/api/tracks", s.adminAuth(http.HandlerFunc(s.handleDeleteTracks)))
+
+	s.mux.Handle("GET /v1/api/queue", s.adminAuth(http.HandlerFunc(s.handleQueue)))
+	s.mux.Handle("POST /v1/api/queue", s.adminAuth(http.HandlerFunc(s.handleAddToQueue)))
+	s.mux.Handle("DELETE /v1/api/queue", s.adminAuth(http.HandlerFunc(s.handleRemoveFromQueue)))
+
+	// Static
+	s.mux.Handle("GET /static/tmp/", s.handleStaticDir("/static/tmp", s.config.TmpDir))
+	s.mux.Handle("GET /", s.handleStaticDir("", s.config.WebDir))
+
+	server := cors.Default().Handler(s.mux) // CORS middleware
+
+	s.logger.Info("Server starts on http://localhost:" + s.config.HTTPPort)
+	err := http.ListenAndServe(":"+s.config.HTTPPort, server)
+	if err != nil {
+		s.logger.Error("Listend and serve failed", slog.String("info", err.Error()))
+	}
+}
+
+func (s *Server) registerMP2TMimeType() {
 	err := mime.AddExtensionType(hls.SegmentExtension, "video/mp2t")
 	if err != nil {
-		log.Fatalf("Failed to add MIME type: %s", err)
+		s.logger.Error("MP2T mime type registration failed", slog.String("info", err.Error()))
 	}
 }
