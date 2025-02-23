@@ -62,8 +62,8 @@ func (s *Service) AddTrack(name, path string) (*track.Track, error) {
 	return newTrack, nil
 }
 
-func (s *Service) Tracks(page, limit int) (*TracksPage, error) {
-	tracks, total, err := s.store.Tracks(page, limit)
+func (s *Service) Tracks(page, limit int, search string) (*TracksPage, error) {
+	tracks, total, err := s.store.Tracks(page, limit, search)
 	if err != nil {
 		return nil, err
 	}
@@ -76,13 +76,13 @@ func (s *Service) Tracks(page, limit int) (*TracksPage, error) {
 	}, nil
 }
 
-func (s *Service) DeleteTracks(trackIDs []string) error {
-	tracks, err := s.store.FindTracks(trackIDs)
+func (s *Service) DeleteTracks(ids *TrackIDs) error {
+	tracks, err := s.store.TracksByIDs(ids.IDs)
 	if err != nil {
 		return err
 	}
 
-	err = s.store.DeleteTracks(trackIDs)
+	err = s.store.DeleteTracks(ids.IDs)
 	if err != nil {
 		return err
 	}
@@ -97,8 +97,8 @@ func (s *Service) DeleteTracks(trackIDs []string) error {
 	return err
 }
 
-func (s *Service) FindTracks(trackIDs []string) ([]*track.Track, error) {
-	tracks, err := s.store.FindTracks(trackIDs)
+func (s *Service) FindTracks(ids *TrackIDs) ([]*track.Track, error) {
+	tracks, err := s.store.TracksByIDs(ids.IDs)
 	return tracks, err
 }
 
@@ -112,8 +112,13 @@ func (s *Service) AddToQueue(tracks []*track.Track) error {
 	return err
 }
 
-func (s *Service) RemoveFromQueue(trackIDs []string) error {
-	err := s.store.RemoveFromQueue(trackIDs)
+func (s *Service) ReorderQueue(ids *TrackIDs) error {
+	err := s.store.ReorderQueue(ids.IDs)
+	return err
+}
+
+func (s *Service) RemoveFromQueue(ids *TrackIDs) error {
+	err := s.store.RemoveFromQueue(ids.IDs)
 	return err
 }
 

@@ -8,3 +8,7 @@ type TracksPage struct {
 	Limit  int            `json:"limit"`
 	Total  int            `json:"total"`
 }
+
+type TrackIDs struct {
+	IDs []string `json:"ids"`
+}
