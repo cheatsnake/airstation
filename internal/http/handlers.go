@@ -7,7 +7,8 @@ import (
 	"os"
 	"path"
 	"slices"
-	"strings"
+
+	trackservice "github.com/cheatsnake/airstation/internal/track/service"
 )
 
 const chunkLimit = 64 * 1024 * 1024 // 64 MB
@@ -23,8 +24,9 @@ func (s *Server) handleTracks(w http.ResponseWriter, r *http.Request) {
 	queries := r.URL.Query()
 	page := parseIntQuery(queries, "page", 1)
 	limit := parseIntQuery(queries, "limit", 20)
+	search := queries.Get("search")
 
-	result, err := s.trackService.Tracks(page, limit)
+	result, err := s.trackService.Tracks(page, limit, search)
 	if err != nil {
 		jsonBadRequest(w, "Tracks retrieving failed: "+err.Error())
 		return
@@ -71,9 +73,13 @@ func (s *Server) handleTrackUpload(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleDeleteTracks(w http.ResponseWriter, r *http.Request) {
-	idsQuery := r.URL.Query().Get("ids")
-	ids := strings.Split(idsQuery, ",")
-	err := s.trackService.DeleteTracks(ids)
+	ids, err := parseJSONBody[trackservice.TrackIDs](r)
+	if err != nil {
+		jsonBadRequest(w, "Parsing request body failed: "+err.Error())
+		return
+	}
+
+	err = s.trackService.DeleteTracks(ids)
 	if err != nil {
 		s.logger.Debug(err.Error())
 		jsonBadRequest(w, "Deleting tracks failed")
@@ -95,8 +101,12 @@ func (s *Server) handleQueue(w http.ResponseWriter, _ *http.Request) {
 }
 
 func (s *Server) handleAddToQueue(w http.ResponseWriter, r *http.Request) {
-	idsQuery := r.URL.Query().Get("ids")
-	ids := strings.Split(idsQuery, ",")
+	ids, err := parseJSONBody[trackservice.TrackIDs](r)
+	if err != nil {
+		jsonBadRequest(w, "Parsing request body failed: "+err.Error())
+		return
+	}
+
 	tracks, err := s.trackService.FindTracks(ids)
 	if err != nil {
 		jsonBadRequest(w, "Adding tracks to queue failed: "+err.Error())
@@ -117,18 +127,42 @@ func (s *Server) handleAddToQueue(w http.ResponseWriter, r *http.Request) {
 	jsonOK(w, "Tracks added")
 }
 
+func (s *Server) handleReorderQueue(w http.ResponseWriter, r *http.Request) {
+	ids, err := parseJSONBody[trackservice.TrackIDs](r)
+	if err != nil {
+		jsonBadRequest(w, "Parsing request body failed: "+err.Error())
+		return
+	}
+
+	err = s.trackService.ReorderQueue(ids)
+	if err != nil {
+		jsonBadRequest(w, "Queue reordering failed: "+err.Error())
+		return
+	}
+
+	err = s.state.Load()
+	if err != nil {
+		s.logger.Debug(err.Error())
+	}
+
+	jsonOK(w, "Queue reordered")
+}
+
 func (s *Server) handleRemoveFromQueue(w http.ResponseWriter, r *http.Request) {
-	idsQuery := r.URL.Query().Get("ids")
-	ids := strings.Split(idsQuery, ",")
+	ids, err := parseJSONBody[trackservice.TrackIDs](r)
+	if err != nil {
+		jsonBadRequest(w, "Parsing request body failed: "+err.Error())
+		return
+	}
 
 	current := s.state.CurrentTrack
-	hasCurrent := slices.Contains(ids, current.ID)
+	hasCurrent := slices.Contains(ids.IDs, current.ID)
 	if hasCurrent {
 		jsonBadRequest(w, "Can't delete a track that is being played")
 		return
 	}
 
-	err := s.trackService.RemoveFromQueue(ids)
+	err = s.trackService.RemoveFromQueue(ids)
 	if err != nil {
 		jsonBadRequest(w, "Removing from queue failed: "+err.Error())
 		return

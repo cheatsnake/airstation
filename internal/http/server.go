@@ -44,10 +44,12 @@ func (s *Server) Run() {
 
 	s.mux.Handle("GET /v1/api/queue", s.adminAuth(http.HandlerFunc(s.handleQueue)))
 	s.mux.Handle("POST /v1/api/queue", s.adminAuth(http.HandlerFunc(s.handleAddToQueue)))
+	s.mux.Handle("PUT /v1/api/queue", s.adminAuth(http.HandlerFunc(s.handleReorderQueue)))
 	s.mux.Handle("DELETE /v1/api/queue", s.adminAuth(http.HandlerFunc(s.handleRemoveFromQueue)))
 
 	// Static
 	s.mux.Handle("GET /static/tmp/", s.handleStaticDir("/static/tmp", s.config.TmpDir))
+	s.mux.Handle("GET /static/tracks/", s.adminAuth(s.handleStaticDir("/static/tracks", s.config.TracksDir)))
 	s.mux.Handle("GET /", s.handleStaticDir("", s.config.WebDir))
 
 	server := cors.Default().Handler(s.mux) // CORS middleware
