@@ -28,7 +28,7 @@ func Load() *Config {
 		TracksDir: getEnv("AIRSTATION_TRACKS_DIR", filepath.Join("static", "tracks")),
 		TmpDir:    getEnv("AIRSTATION_TMP_DIR", filepath.Join("static", "tmp")),
 		WebDir:    getEnv("AIRSTATION_WEB_DIR", filepath.Join("web")),
-		HTTPPort:  getEnv("AIRSTATION_HTTP_PORT", "8080"),
+		HTTPPort:  getEnv("AIRSTATION_HTTP_PORT", "7331"),
 		SecretKey: getSecretKey("AIRSTATION_SECRET_KEY"),
 	}
 }

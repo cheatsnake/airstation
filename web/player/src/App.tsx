@@ -2,7 +2,7 @@ import HLS from "hls.js";
 import "./app.css";
 import { createSignal } from "solid-js";
 
-const STREAM_SOURCE = "http://localhost:8080/stream";
+const STREAM_SOURCE = "http://localhost:7331/stream";
 
 const App = () => {
   let videoRef: HTMLVideoElement | undefined;
