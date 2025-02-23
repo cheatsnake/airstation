@@ -7,9 +7,9 @@ type Storage interface {
 }
 
 type TrackStore interface {
-	Tracks(page, limit int) ([]*track.Track, int, error)
-	FindTrack(ID string) (*track.Track, error)
-	FindTracks(IDs []string) ([]*track.Track, error)
+	Tracks(page, limit int, search string) ([]*track.Track, int, error)
+	TrackByID(ID string) (*track.Track, error)
+	TracksByIDs(IDs []string) ([]*track.Track, error)
 	AddTrack(name, path string, duration float64, bitRate int) (*track.Track, error)
 	DeleteTracks(IDs []string) error
 	EditTrack(track *track.Track) (*track.Track, error)

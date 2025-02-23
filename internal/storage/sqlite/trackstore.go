@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"strings"
 	"sync"
 
 	sqltool "github.com/cheatsnake/airstation/internal/tools/sql"
@@ -31,7 +32,7 @@ func Open(dbPath string, log *slog.Logger) (*TrackStore, error) {
 	tracksTable := `
 	CREATE TABLE IF NOT EXISTS tracks (
 		id TEXT PRIMARY KEY,
-		name TEXT NOT NULL,
+		name TEXT NOT NULL UNIQUE,
 		path TEXT NOT NULL,
 		duration REAL NOT NULL,
 		bitRate INTEGER NOT NULL
@@ -39,6 +40,12 @@ func Open(dbPath string, log *slog.Logger) (*TrackStore, error) {
 	_, err = db.Exec(tracksTable)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create tracks table: %w", err)
+	}
+
+	indexQuery := `CREATE INDEX IF NOT EXISTS idx_tracks_name ON tracks (name COLLATE NOCASE);`
+	_, err = db.Exec(indexQuery)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create index on tracks.name: %w", err)
 	}
 
 	queueTable := `
@@ -55,23 +62,43 @@ func Open(dbPath string, log *slog.Logger) (*TrackStore, error) {
 	return &TrackStore{db: db}, nil
 }
 
-func (ts *TrackStore) Tracks(page, limit int) ([]*track.Track, int, error) {
+func (ts *TrackStore) Tracks(page, limit int, search string) ([]*track.Track, int, error) {
 	ts.mutex.Lock()
 	defer ts.mutex.Unlock()
 
+	countQuery := "SELECT COUNT(*) FROM tracks"
+	if search != "" {
+		countQuery += " WHERE LOWER(name) LIKE LOWER(?)"
+	}
+
 	var total int
-	err := ts.db.QueryRow("SELECT COUNT(*) FROM tracks").Scan(&total)
+	var err error
+	if search != "" {
+		err = ts.db.QueryRow(countQuery, "%"+search+"%").Scan(&total)
+	} else {
+		err = ts.db.QueryRow(countQuery).Scan(&total)
+	}
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to get total track count: %w", err)
 	}
 
-	offset := (page - 1) * limit
 	query := `
 		SELECT id, name, path, duration, bitRate
-		FROM tracks
+		FROM tracks`
+	if search != "" {
+		query += " WHERE name LIKE ?"
+	}
+	query += `
 		ORDER BY id ASC
 		LIMIT ? OFFSET ?`
-	rows, err := ts.db.Query(query, limit, offset)
+
+	var rows *sql.Rows
+	offset := (page - 1) * limit
+	if search != "" {
+		rows, err = ts.db.Query(query, "%"+strings.ToLower(search)+"%", limit, offset)
+	} else {
+		rows, err = ts.db.Query(query, limit, offset)
+	}
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to query tracks: %w", err)
 	}
@@ -150,7 +177,7 @@ func (ts *TrackStore) EditTrack(track *track.Track) (*track.Track, error) {
 	return track, nil
 }
 
-func (ts *TrackStore) FindTrack(ID string) (*track.Track, error) {
+func (ts *TrackStore) TrackByID(ID string) (*track.Track, error) {
 	ts.mutex.Lock()
 	defer ts.mutex.Unlock()
 
@@ -169,7 +196,7 @@ func (ts *TrackStore) FindTrack(ID string) (*track.Track, error) {
 	return &track, nil
 }
 
-func (ts *TrackStore) FindTracks(IDs []string) ([]*track.Track, error) {
+func (ts *TrackStore) TracksByIDs(IDs []string) ([]*track.Track, error) {
 	ts.mutex.Lock()
 	defer ts.mutex.Unlock()
 
