@@ -1,28 +1,28 @@
 export interface Track {
-  id: string;
-  name: string;
-  path: string;
-  duration: number;
-  bitRate: number;
+    id: string;
+    name: string;
+    path: string;
+    duration: number;
+    bitRate: number;
 }
 
 export interface TracksPage {
-  tracks: Track[];
-  page: number;
-  limit: number;
-  total: number;
+    tracks: Track[];
+    page: number;
+    limit: number;
+    total: number;
 }
 
 export interface PlaybackState {
-  currentTrack: Track;
-  currentTrackElapsed: number;
-  IsPlaying: boolean;
+    currentTrack: Track;
+    currentTrackElapsed: number;
+    IsPlaying: boolean;
 }
 
 export interface ResponseErr {
-  message: string;
+    message: string;
 }
 
 export interface ResponseOK {
-  message: string;
+    message: string;
 }

@@ -2,14 +2,14 @@ import { create } from "zustand";
 import { PlaybackState } from "../api/types";
 
 interface PlaybackStore {
-  playback: PlaybackState | null;
-  setPlayback: (pb: PlaybackState) => void;
+    playback: PlaybackState | null;
+    setPlayback: (pb: PlaybackState) => void;
 }
 
 export const usePlaybackStore = create<PlaybackStore>()((set) => ({
-  playback: null,
+    playback: null,
 
-  setPlayback(pb) {
-    set({ playback: pb });
-  },
+    setPlayback(pb) {
+        set({ playback: pb });
+    },
 }));

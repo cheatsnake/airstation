@@ -1,0 +1,51 @@
+import { Flex, Paper, Space, Text } from "@mantine/core";
+import { FC, useEffect } from "react";
+import { airstationAPI } from "../api";
+import { usePlaybackStore } from "../store/playback";
+import { useTrackQueueStore } from "../store/track-queue";
+import { EmptyLabel } from "../components/EmptyLabel";
+
+export const TrackQueue: FC<{}> = () => {
+    const playback = usePlaybackStore((s) => s.playback);
+    const queue = useTrackQueueStore((s) => s.queue);
+    const setQueue = useTrackQueueStore((s) => s.setQueue);
+
+    const loadQueue = async () => {
+        try {
+            const q = await airstationAPI.getQueue();
+            setQueue(q);
+        } catch (error) {
+            console.log(error);
+        }
+    };
+
+    useEffect(() => {
+        loadQueue();
+    }, []);
+
+    return (
+        <Paper withBorder p="sm" pos="relative">
+            <Flex justify="space-between" align="center">
+                <Text fw={700} size="lg">
+                    Live queue
+                </Text>
+                <Text c="dimmed">{`${queue.length - 1} ${queue.length > 2 ? "tracks" : "track"}`}</Text>
+            </Flex>
+            <Space h={12} />
+
+            <Flex direction="column" gap="sm" mih={100}>
+                {queue.length > 1 ? (
+                    queue
+                        .filter((t) => playback?.currentTrack.id != t.id)
+                        .map((track) => (
+                            <Paper p="xs" withBorder key={track.id}>
+                                {track.name}
+                            </Paper>
+                        ))
+                ) : (
+                    <EmptyLabel label={"Queue is empty"} />
+                )}
+            </Flex>
+        </Paper>
+    );
+};
