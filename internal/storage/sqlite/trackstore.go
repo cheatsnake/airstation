@@ -73,13 +73,15 @@ func (ts *TrackStore) Tracks(page, limit int, search string) ([]*track.Track, in
 
 	var total int
 	var err error
+	tracks := make([]*track.Track, 0, limit)
+
 	if search != "" {
 		err = ts.db.QueryRow(countQuery, "%"+search+"%").Scan(&total)
 	} else {
 		err = ts.db.QueryRow(countQuery).Scan(&total)
 	}
 	if err != nil {
-		return nil, 0, fmt.Errorf("failed to get total track count: %w", err)
+		return tracks, 0, fmt.Errorf("failed to get total track count: %w", err)
 	}
 
 	query := `
@@ -100,22 +102,21 @@ func (ts *TrackStore) Tracks(page, limit int, search string) ([]*track.Track, in
 		rows, err = ts.db.Query(query, limit, offset)
 	}
 	if err != nil {
-		return nil, 0, fmt.Errorf("failed to query tracks: %w", err)
+		return tracks, 0, fmt.Errorf("failed to query tracks: %w", err)
 	}
 	defer rows.Close()
 
-	var tracks []*track.Track
 	for rows.Next() {
 		var track track.Track
 		err := rows.Scan(&track.ID, &track.Name, &track.Path, &track.Duration, &track.BitRate)
 		if err != nil {
-			return nil, 0, fmt.Errorf("failed to scan track: %w", err)
+			return tracks, 0, fmt.Errorf("failed to scan track: %w", err)
 		}
 		tracks = append(tracks, &track)
 	}
 
 	if err = rows.Err(); err != nil {
-		return nil, 0, fmt.Errorf("error iterating over rows: %w", err)
+		return tracks, 0, fmt.Errorf("error iterating over rows: %w", err)
 	}
 
 	return tracks, total, nil
