@@ -39,6 +39,7 @@ func (s *Server) Run() {
 	// Admin handlers
 	s.mux.Handle("GET /v1/api/playback", s.adminAuth(http.HandlerFunc(s.handlePlaybackState)))
 	s.mux.Handle("POST /v1/api/track", s.adminAuth(http.HandlerFunc(s.handleTrackUpload)))
+	s.mux.Handle("POST /v1/api/tracks", s.adminAuth(http.HandlerFunc(s.handleTracksUpload)))
 	s.mux.Handle("GET /v1/api/tracks", s.adminAuth(http.HandlerFunc(s.handleTracks)))
 	s.mux.Handle("DELETE /v1/api/tracks", s.adminAuth(http.HandlerFunc(s.handleDeleteTracks)))
 

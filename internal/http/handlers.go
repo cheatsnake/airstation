@@ -8,6 +8,7 @@ import (
 	"path"
 	"slices"
 
+	"github.com/cheatsnake/airstation/internal/track"
 	trackservice "github.com/cheatsnake/airstation/internal/track/service"
 )
 
@@ -70,6 +71,60 @@ func (s *Server) handleTrackUpload(w http.ResponseWriter, r *http.Request) {
 	}
 
 	jsonResponse(w, track)
+}
+
+func (s *Server) handleTracksUpload(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseMultipartForm(chunkLimit)
+	if err != nil {
+		s.logger.Debug(err.Error())
+		jsonBadRequest(w, "Failed to parse multipart form: "+err.Error())
+		return
+	}
+
+	files := r.MultipartForm.File["tracks"]
+	if len(files) == 0 {
+		jsonBadRequest(w, "No files uploaded")
+		return
+	}
+
+	var uploadedTracks []*track.Track
+
+	for _, fileHeader := range files {
+		file, err := fileHeader.Open()
+		if err != nil {
+			s.logger.Debug(err.Error())
+			jsonBadRequest(w, "Failed to open file: "+err.Error())
+			return
+		}
+		defer file.Close()
+
+		trackPath := path.Join(s.config.TracksDir, fileHeader.Filename)
+		dst, err := os.Create(trackPath)
+		if err != nil {
+			s.logger.Debug(err.Error())
+			jsonInternalError(w, "Failed to create file on disk: "+err.Error())
+			return
+		}
+		defer dst.Close()
+
+		_, err = io.Copy(dst, file)
+		if err != nil {
+			s.logger.Debug(err.Error())
+			jsonInternalError(w, "Failed to save file: "+err.Error())
+			return
+		}
+
+		track, err := s.trackService.AddTrack(fileHeader.Filename, trackPath)
+		if err != nil {
+			s.logger.Debug(err.Error())
+			jsonBadRequest(w, "Failed to save track to database: "+err.Error())
+			return
+		}
+
+		uploadedTracks = append(uploadedTracks, track)
+	}
+
+	jsonResponse(w, uploadedTracks)
 }
 
 func (s *Server) handleDeleteTracks(w http.ResponseWriter, r *http.Request) {
