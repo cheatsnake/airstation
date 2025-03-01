@@ -1,7 +1,7 @@
 import { PlaybackState, ResponseErr, ResponseOK, Track, TracksPage } from "./types";
 import { jsonRequestParams, queryParams } from "./utils";
 
-const API_HOST = "";
+export const API_HOST = "";
 const API_PREFIX = "/v1/api";
 const AUTH_TOKEN = "test111111";
 

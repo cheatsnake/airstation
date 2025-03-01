@@ -33,10 +33,10 @@ export const Playback: FC<{}> = () => {
         <Paper p="sm">
             <Flex gap="sm">
                 <ActionIcon variant="subtle" color="white" size="xl" aria-label="Settings">
-                    {playback?.IsPlaying ? (
-                        <IconPlayerPlayFilled style={{ width: "70%", height: "70%" }} fill="white" stroke={1.5} />
-                    ) : (
+                    {playback?.isPlaying ? (
                         <IconPlayerStopFilled style={{ width: "70%", height: "70%" }} fill="white" stroke={1.5} />
+                    ) : (
+                        <IconPlayerPlayFilled style={{ width: "70%", height: "70%" }} fill="white" stroke={1.5} />
                     )}
                 </ActionIcon>
                 <Box w="100%">

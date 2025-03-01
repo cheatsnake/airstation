@@ -1,4 +1,4 @@
-import { Flex, Paper, Space, Text } from "@mantine/core";
+import { Box, Flex, Paper, Space, Text } from "@mantine/core";
 import { FC, useEffect } from "react";
 import { airstationAPI } from "../api";
 import { usePlaybackStore } from "../store/playback";
@@ -26,9 +26,12 @@ export const TrackQueue: FC<{}> = () => {
     return (
         <Paper withBorder p="sm" pos="relative">
             <Flex justify="space-between" align="center">
-                <Text fw={700} size="lg">
-                    Live queue
-                </Text>
+                <Flex align="center" gap="xs">
+                    <Box w={10} h={10} bg={playback?.isPlaying ? "red" : "gray"} style={{ borderRadius: "50%" }} />
+                    <Text fw={700} size="lg">
+                        Live queue
+                    </Text>
+                </Flex>
                 <Text c="dimmed">{`${queue.length - 1} ${queue.length > 2 ? "tracks" : "track"}`}</Text>
             </Flex>
             <Space h={12} />

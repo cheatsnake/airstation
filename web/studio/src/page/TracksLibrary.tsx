@@ -5,9 +5,11 @@ import { useTrackQueueStore } from "../store/track-queue";
 import { useTracksStore } from "../store/tracks";
 import { EmptyLabel } from "../components/EmptyLabel";
 import { useDebouncedValue, useDisclosure } from "@mantine/hooks";
+import { AudioPlayer } from "../components/AudioPlayer";
 
 export const TrackLibrary: FC<{}> = () => {
     const [search, setSearch] = useState("");
+    const [playingTrackID, setPlayingTrackID] = useState("");
     const [debouncedSearch] = useDebouncedValue(search, 500);
     const [loader, handLoader] = useDisclosure(false);
 
@@ -25,6 +27,13 @@ export const TrackLibrary: FC<{}> = () => {
         } finally {
             handLoader.close();
         }
+    };
+
+    const toggleTrackPlaying = (id: string) => {
+        // If the same track is clicked again, pause it
+        // If a different track is clicked, pause the current one and play the new one
+        const newVelue = playingTrackID === id ? "" : id;
+        setPlayingTrackID(newVelue);
     };
 
     const isTrackInQueue = (trackID: string) => {
@@ -52,7 +61,11 @@ export const TrackLibrary: FC<{}> = () => {
                 {tracks.length ? (
                     tracks.map((track) => (
                         <Paper p="xs" withBorder key={track.id} c={isTrackInQueue(track.id) ? "dimmed" : undefined}>
-                            {track.name}
+                            <AudioPlayer
+                                track={track}
+                                isPlaying={playingTrackID === track.id}
+                                togglePlaying={() => toggleTrackPlaying(track.id)}
+                            />
                         </Paper>
                     ))
                 ) : (

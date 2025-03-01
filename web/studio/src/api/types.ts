@@ -16,7 +16,7 @@ export interface TracksPage {
 export interface PlaybackState {
     currentTrack: Track;
     currentTrackElapsed: number;
-    IsPlaying: boolean;
+    isPlaying: boolean;
 }
 
 export interface ResponseErr {
