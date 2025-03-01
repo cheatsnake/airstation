@@ -7,9 +7,12 @@ import (
 	"os"
 	"path"
 	"slices"
+	"strings"
+	"time"
 
 	"github.com/cheatsnake/airstation/internal/track"
 	trackservice "github.com/cheatsnake/airstation/internal/track/service"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 const chunkLimit = 64 * 1024 * 1024 // 64 MB
@@ -19,6 +22,50 @@ func (s *Server) handleHLSPlaylist(w http.ResponseWriter, r *http.Request) {
 
 	playlist := s.state.GenerateHLSPlaylist()
 	fmt.Fprint(w, playlist)
+}
+
+func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
+	body, err := parseJSONBody[struct {
+		Secret string `json:"secret"`
+	}](r)
+	if err != nil {
+		jsonBadRequest(w, "Parsing request body failed.")
+		return
+	}
+
+	if body.Secret != s.config.SecretKey {
+		jsonForbidden(w, "Wrong secret, access denied.")
+		return
+	}
+
+	expirationTime := time.Now().Add(7 * 24 * time.Hour)
+	claims := jwt.MapClaims{
+		"iss": "airstation",
+		"exp": expirationTime.Unix(),
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenString, err := token.SignedString(s.config.JWTSign)
+	if err != nil {
+		jsonInternalError(w, "Failed to generate token.")
+		return
+	}
+
+	secureCookie := true
+	if strings.HasPrefix(r.Host, "localhost:") {
+		secureCookie = false // Allow insecure cookies for local development
+	}
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     "jwt",
+		Value:    tokenString,
+		Expires:  expirationTime,
+		HttpOnly: true,
+		Secure:   secureCookie,
+		SameSite: http.SameSiteStrictMode,
+	})
+
+	jsonOK(w, "Login succeed.")
 }
 
 func (s *Server) handleTracks(w http.ResponseWriter, r *http.Request) {

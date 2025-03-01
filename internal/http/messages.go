@@ -36,6 +36,10 @@ func jsonUnauthorized(w http.ResponseWriter, body string) {
 	jsonMessage(w, http.StatusUnauthorized, body)
 }
 
+func jsonForbidden(w http.ResponseWriter, body string) {
+	jsonMessage(w, http.StatusForbidden, body)
+}
+
 func jsonInternalError(w http.ResponseWriter, body string) {
 	jsonMessage(w, http.StatusInternalServerError, body)
 }

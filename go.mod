@@ -7,6 +7,7 @@ require github.com/oklog/ulid/v2 v2.1.0
 require github.com/rs/cors v1.11.1
 
 require (
+	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/joho/godotenv v1.5.1
 	modernc.org/sqlite v1.34.5
 )

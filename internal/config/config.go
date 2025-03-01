@@ -8,13 +8,14 @@ import (
 	"github.com/joho/godotenv"
 )
 
-const minSecretKeyLength = 10
+const minSecretLength = 10
 
 type Config struct {
 	TracksDir string
 	TmpDir    string
 	WebDir    string
 	HTTPPort  string
+	JWTSign   string
 	SecretKey string
 }
 
@@ -29,7 +30,8 @@ func Load() *Config {
 		TmpDir:    getEnv("AIRSTATION_TMP_DIR", filepath.Join("static", "tmp")),
 		WebDir:    getEnv("AIRSTATION_WEB_DIR", filepath.Join("web")),
 		HTTPPort:  getEnv("AIRSTATION_HTTP_PORT", "7331"),
-		SecretKey: getSecretKey("AIRSTATION_SECRET_KEY"),
+		JWTSign:   getSecret("AIRSTATION_JWT_SIGN"),
+		SecretKey: getSecret("AIRSTATION_SECRET_KEY"),
 	}
 }
 
@@ -40,14 +42,14 @@ func getEnv(key, defaultValue string) string {
 	return defaultValue
 }
 
-func getSecretKey(key string) string {
+func getSecret(key string) string {
 	secretKey := os.Getenv(key)
 
 	if secretKey == "" {
 		log.Fatal(key + " environment variable is not set")
 	}
 
-	if len(secretKey) < minSecretKeyLength {
+	if len(secretKey) < minSecretLength {
 		log.Fatal(key + " is too short")
 	}
 

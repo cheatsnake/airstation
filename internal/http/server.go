@@ -35,22 +35,23 @@ func (s *Server) Run() {
 
 	// Public handlers
 	s.mux.HandleFunc("GET /stream", s.handleHLSPlaylist)
+	s.mux.HandleFunc("POST /v1/api/login", s.handleLogin)
 
 	// Admin handlers
-	s.mux.Handle("GET /v1/api/playback", s.adminAuth(http.HandlerFunc(s.handlePlaybackState)))
-	s.mux.Handle("POST /v1/api/track", s.adminAuth(http.HandlerFunc(s.handleTrackUpload)))
-	s.mux.Handle("POST /v1/api/tracks", s.adminAuth(http.HandlerFunc(s.handleTracksUpload)))
-	s.mux.Handle("GET /v1/api/tracks", s.adminAuth(http.HandlerFunc(s.handleTracks)))
-	s.mux.Handle("DELETE /v1/api/tracks", s.adminAuth(http.HandlerFunc(s.handleDeleteTracks)))
+	s.mux.Handle("GET /v1/api/playback", s.jwtAuth(http.HandlerFunc(s.handlePlaybackState)))
+	s.mux.Handle("POST /v1/api/track", s.jwtAuth(http.HandlerFunc(s.handleTrackUpload)))
+	s.mux.Handle("POST /v1/api/tracks", s.jwtAuth(http.HandlerFunc(s.handleTracksUpload)))
+	s.mux.Handle("GET /v1/api/tracks", s.jwtAuth(http.HandlerFunc(s.handleTracks)))
+	s.mux.Handle("DELETE /v1/api/tracks", s.jwtAuth(http.HandlerFunc(s.handleDeleteTracks)))
 
-	s.mux.Handle("GET /v1/api/queue", s.adminAuth(http.HandlerFunc(s.handleQueue)))
-	s.mux.Handle("POST /v1/api/queue", s.adminAuth(http.HandlerFunc(s.handleAddToQueue)))
-	s.mux.Handle("PUT /v1/api/queue", s.adminAuth(http.HandlerFunc(s.handleReorderQueue)))
-	s.mux.Handle("DELETE /v1/api/queue", s.adminAuth(http.HandlerFunc(s.handleRemoveFromQueue)))
+	s.mux.Handle("GET /v1/api/queue", s.jwtAuth(http.HandlerFunc(s.handleQueue)))
+	s.mux.Handle("POST /v1/api/queue", s.jwtAuth(http.HandlerFunc(s.handleAddToQueue)))
+	s.mux.Handle("PUT /v1/api/queue", s.jwtAuth(http.HandlerFunc(s.handleReorderQueue)))
+	s.mux.Handle("DELETE /v1/api/queue", s.jwtAuth(http.HandlerFunc(s.handleRemoveFromQueue)))
 
 	// Static
 	s.mux.Handle("GET /static/tmp/", s.handleStaticDir("/static/tmp", s.config.TmpDir))
-	s.mux.Handle("GET /static/tracks/", s.adminAuth(s.handleStaticDir("/static/tracks", s.config.TracksDir)))
+	s.mux.Handle("GET /static/tracks/", s.jwtAuth(s.handleStaticDir("/static/tracks", s.config.TracksDir)))
 	s.mux.Handle("GET /", s.handleStaticDir("", s.config.WebDir))
 
 	server := cors.Default().Handler(s.mux) // CORS middleware
