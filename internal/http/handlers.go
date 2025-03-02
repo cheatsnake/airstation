@@ -1,6 +1,7 @@
 package http
 
 import (
+	"crypto/subtle"
 	"fmt"
 	"io"
 	"net/http"
@@ -33,7 +34,8 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if body.Secret != s.config.SecretKey {
+	isValidSecret := subtle.ConstantTimeCompare([]byte(body.Secret), []byte(s.config.SecretKey)) == 1
+	if !isValidSecret {
 		jsonForbidden(w, "Wrong secret, access denied.")
 		return
 	}
