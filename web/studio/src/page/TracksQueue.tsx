@@ -4,6 +4,7 @@ import { airstationAPI } from "../api";
 import { usePlaybackStore } from "../store/playback";
 import { useTrackQueueStore } from "../store/track-queue";
 import { EmptyLabel } from "../components/EmptyLabel";
+import { errNotify } from "../notifications";
 
 export const TrackQueue: FC<{}> = () => {
     const playback = usePlaybackStore((s) => s.playback);
@@ -15,7 +16,7 @@ export const TrackQueue: FC<{}> = () => {
             const q = await airstationAPI.getQueue();
             setQueue(q);
         } catch (error) {
-            console.log(error);
+            errNotify(error);
         }
     };
 

@@ -1,4 +1,4 @@
-import { Flex, LoadingOverlay, Paper, Space, Text, TextInput } from "@mantine/core";
+import { Flex, LoadingOverlay, Paper, ScrollArea, Space, Text, TextInput } from "@mantine/core";
 import { FC, useEffect, useState } from "react";
 import { airstationAPI } from "../api";
 import { useTrackQueueStore } from "../store/track-queue";
@@ -6,6 +6,7 @@ import { useTracksStore } from "../store/tracks";
 import { EmptyLabel } from "../components/EmptyLabel";
 import { useDebouncedValue, useDisclosure } from "@mantine/hooks";
 import { AudioPlayer } from "../components/AudioPlayer";
+import { errNotify } from "../notifications";
 
 export const TrackLibrary: FC<{}> = () => {
     const [search, setSearch] = useState("");
@@ -23,7 +24,7 @@ export const TrackLibrary: FC<{}> = () => {
             const result = await airstationAPI.getTracks(page, limit, search);
             setTracks(result.tracks);
         } catch (error) {
-            console.log(error);
+            errNotify(error);
         } finally {
             handLoader.close();
         }
@@ -57,21 +58,23 @@ export const TrackLibrary: FC<{}> = () => {
             <Space h={12} />
             <TextInput placeholder="Search" value={search} onChange={(event) => setSearch(event.currentTarget.value)} />
             <Space h={16} />
-            <Flex direction="column" gap="sm" mih={100} justify="center">
-                {tracks.length ? (
-                    tracks.map((track) => (
-                        <Paper p="xs" withBorder key={track.id} c={isTrackInQueue(track.id) ? "dimmed" : undefined}>
-                            <AudioPlayer
-                                track={track}
-                                isPlaying={playingTrackID === track.id}
-                                togglePlaying={() => toggleTrackPlaying(track.id)}
-                            />
-                        </Paper>
-                    ))
-                ) : (
-                    <EmptyLabel label={"No tracks found"} />
-                )}
-            </Flex>
+            <ScrollArea scrollbars="y" h={500} offsetScrollbars>
+                <Flex direction="column" gap="sm" mih={100} justify="center">
+                    {tracks.length ? (
+                        tracks.map((track) => (
+                            <Paper p="xs" withBorder key={track.id} c={isTrackInQueue(track.id) ? "dimmed" : undefined}>
+                                <AudioPlayer
+                                    track={track}
+                                    isPlaying={playingTrackID === track.id}
+                                    togglePlaying={() => toggleTrackPlaying(track.id)}
+                                />
+                            </Paper>
+                        ))
+                    ) : (
+                        <EmptyLabel label={"No tracks found"} />
+                    )}
+                </Flex>
+            </ScrollArea>
         </Paper>
     );
 };

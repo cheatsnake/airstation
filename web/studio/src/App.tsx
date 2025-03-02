@@ -1,5 +1,7 @@
 import { createTheme, MantineProvider } from "@mantine/core";
 import { Page } from "./page";
+import { Notifications } from "@mantine/notifications";
+import { AuthGuard } from "./page/AuthGuard";
 
 const theme = createTheme({
     fontFamily: '"Exo 2", serif',
@@ -23,7 +25,10 @@ const theme = createTheme({
 const App = () => {
     return (
         <MantineProvider defaultColorScheme="dark" theme={theme}>
-            <Page />
+            <Notifications position="bottom-right" autoClose={7000} />
+            <AuthGuard>
+                <Page />
+            </AuthGuard>
         </MantineProvider>
     );
 };

@@ -5,6 +5,7 @@ import { usePlaybackStore } from "../store/playback";
 import { IconPlayerPlayFilled } from "../icons/IconPlayerPlayFilled";
 import { IconPlayerStopFilled } from "../icons/IconPlayerStopFilled";
 import { formatTime } from "../utils/time";
+import { errNotify } from "../notifications";
 
 export const Playback: FC<{}> = () => {
     const playback = usePlaybackStore((s) => s.playback);
@@ -17,7 +18,7 @@ export const Playback: FC<{}> = () => {
             setPlayback(pb);
             setProgress((pb.currentTrackElapsed / pb.currentTrack.duration) * 100);
         } catch (error) {
-            console.log(error);
+            errNotify(error);
         }
     };
 
