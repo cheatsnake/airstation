@@ -1,9 +1,7 @@
-import { ActionIcon, Box, Flex, Paper, Progress, Space, Text } from "@mantine/core";
+import { Box, Flex, Paper, Progress, Space, Text } from "@mantine/core";
 import { FC, useEffect, useState } from "react";
 import { airstationAPI } from "../api";
 import { usePlaybackStore } from "../store/playback";
-import { IconPlayerPlayFilled } from "../icons/IconPlayerPlayFilled";
-import { IconPlayerStopFilled } from "../icons/IconPlayerStopFilled";
 import { formatTime } from "../utils/time";
 import { errNotify } from "../notifications";
 
@@ -33,13 +31,6 @@ export const Playback: FC<{}> = () => {
     return (
         <Paper p="sm">
             <Flex gap="sm">
-                <ActionIcon variant="subtle" color="white" size="xl" aria-label="Settings">
-                    {playback?.isPlaying ? (
-                        <IconPlayerStopFilled style={{ width: "70%", height: "70%" }} fill="white" stroke={1.5} />
-                    ) : (
-                        <IconPlayerPlayFilled style={{ width: "70%", height: "70%" }} fill="white" stroke={1.5} />
-                    )}
-                </ActionIcon>
                 <Box w="100%">
                     <Text>{playback?.currentTrack.name}</Text>
                     <Space h={10} />

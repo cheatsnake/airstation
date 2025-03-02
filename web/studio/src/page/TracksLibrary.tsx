@@ -1,4 +1,4 @@
-import { Flex, LoadingOverlay, Paper, ScrollArea, Space, Text, TextInput } from "@mantine/core";
+import { Box, Flex, LoadingOverlay, Paper, Space, Text, TextInput, useMantineColorScheme } from "@mantine/core";
 import { FC, useEffect, useState } from "react";
 import { airstationAPI } from "../api";
 import { useTrackQueueStore } from "../store/track-queue";
@@ -13,6 +13,7 @@ export const TrackLibrary: FC<{}> = () => {
     const [playingTrackID, setPlayingTrackID] = useState("");
     const [debouncedSearch] = useDebouncedValue(search, 500);
     const [loader, handLoader] = useDisclosure(false);
+    const { colorScheme } = useMantineColorScheme();
 
     const tracks = useTracksStore((s) => s.tracks);
     const queue = useTrackQueueStore((s) => s.queue);
@@ -46,7 +47,7 @@ export const TrackLibrary: FC<{}> = () => {
     }, [debouncedSearch]);
 
     return (
-        <Paper withBorder p="xs" pos="relative">
+        <Paper withBorder p="xs" pos="relative" bg={colorScheme === "dark" ? "dark" : "#f7f7f7"}>
             <LoadingOverlay visible={loader} zIndex={1000} />
 
             <Flex justify="space-between" align="center">
@@ -58,11 +59,11 @@ export const TrackLibrary: FC<{}> = () => {
             <Space h={12} />
             <TextInput placeholder="Search" value={search} onChange={(event) => setSearch(event.currentTarget.value)} />
             <Space h={16} />
-            <ScrollArea scrollbars="y" h={500} offsetScrollbars>
-                <Flex direction="column" gap="sm" mih={100} justify="center">
+            <Box h={600} style={{ overflow: "auto", overflowX: "hidden" }}>
+                <Flex direction="column" gap="sm" justify="center">
                     {tracks.length ? (
                         tracks.map((track) => (
-                            <Paper p="xs" withBorder key={track.id} c={isTrackInQueue(track.id) ? "dimmed" : undefined}>
+                            <Paper p="xs" key={track.id} c={isTrackInQueue(track.id) ? "dimmed" : undefined}>
                                 <AudioPlayer
                                     track={track}
                                     isPlaying={playingTrackID === track.id}
@@ -74,7 +75,7 @@ export const TrackLibrary: FC<{}> = () => {
                         <EmptyLabel label={"No tracks found"} />
                     )}
                 </Flex>
-            </ScrollArea>
+            </Box>
         </Paper>
     );
 };

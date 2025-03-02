@@ -1,4 +1,4 @@
-import { ActionIcon, Box, Flex, Group, Paper, Progress, Text, Tooltip } from "@mantine/core";
+import { ActionIcon, Box, Flex, Group, Paper, Progress, Text, Tooltip, useMantineColorScheme } from "@mantine/core";
 import React, { useEffect, useRef } from "react";
 import { IconPlayerPlayFilled } from "../icons/IconPlayerPlayFilled";
 import { IconPlayerStopFilled } from "../icons/IconPlayerStopFilled";
@@ -17,6 +17,9 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({ track, isPlaying, togg
     const audioRef = useRef<HTMLAudioElement>(null);
     const [progress, setProgress] = useThrottledState(0, 500);
     const [cursorPos, setCursorPos] = useThrottledState(0, 300);
+    const { colorScheme } = useMantineColorScheme();
+
+    const btnColor = colorScheme === "dark" ? "gray" : "black";
 
     const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
         if (audioRef.current) {
@@ -57,8 +60,9 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({ track, isPlaying, togg
     }, [isPlaying]);
 
     return (
-        <Paper>
+        <Paper bg="rgba(0, 0, 0, 0)">
             <audio
+                crossOrigin="use-credentials"
                 ref={audioRef}
                 src={`${API_HOST}/${track.path}`}
                 preload="none"
@@ -70,14 +74,14 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({ track, isPlaying, togg
             <Flex gap="sm" align="center">
                 <ActionIcon onClick={togglePlaying} variant="subtle" color="white" size="sm" aria-label="Settings">
                     {isPlaying ? (
-                        <IconPlayerStopFilled fill="white" stroke={1.5} />
+                        <IconPlayerStopFilled fill={btnColor} stroke={1.5} />
                     ) : (
-                        <IconPlayerPlayFilled fill="white" stroke={1.5} />
+                        <IconPlayerPlayFilled fill={btnColor} stroke={1.5} />
                     )}
                 </ActionIcon>
 
                 <Box w="100%" mt="xs" style={{ cursor: "pointer" }}>
-                    <Tooltip.Floating label={formatTime(track.duration * cursorPos)}>
+                    <Tooltip.Floating label={formatTime(track.duration * cursorPos)} disabled={!isPlaying}>
                         <Progress
                             onMouseMove={(e) => {
                                 const rect = e.currentTarget.getBoundingClientRect();

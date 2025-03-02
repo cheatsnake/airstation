@@ -1,4 +1,4 @@
-import { Box, Flex, Paper, Space, Text } from "@mantine/core";
+import { Box, Flex, Paper, Space, Text, useMantineColorScheme } from "@mantine/core";
 import { FC, useEffect } from "react";
 import { airstationAPI } from "../api";
 import { usePlaybackStore } from "../store/playback";
@@ -10,6 +10,7 @@ export const TrackQueue: FC<{}> = () => {
     const playback = usePlaybackStore((s) => s.playback);
     const queue = useTrackQueueStore((s) => s.queue);
     const setQueue = useTrackQueueStore((s) => s.setQueue);
+    const { colorScheme } = useMantineColorScheme();
 
     const loadQueue = async () => {
         try {
@@ -25,7 +26,7 @@ export const TrackQueue: FC<{}> = () => {
     }, []);
 
     return (
-        <Paper withBorder p="sm" pos="relative">
+        <Paper withBorder p="sm" pos="relative" bg={colorScheme === "dark" ? "dark" : "#f7f7f7"}>
             <Flex justify="space-between" align="center">
                 <Flex align="center" gap="xs">
                     <Box w={10} h={10} bg={playback?.isPlaying ? "red" : "gray"} style={{ borderRadius: "50%" }} />
