@@ -63,6 +63,7 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 		Name:     "jwt",
 		Value:    tokenString,
 		Expires:  expirationTime,
+		Path:     "/",
 		HttpOnly: true,
 		Secure:   secureCookie,
 		SameSite: http.SameSiteStrictMode,
