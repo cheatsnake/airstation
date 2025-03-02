@@ -11,7 +11,7 @@ func (s *Server) jwtAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		cookie, err := r.Cookie("jwt")
 		if err != nil {
-			jsonUnauthorized(w, "Not unauthorized.")
+			jsonUnauthorized(w, "Unauthorized, access denied.")
 			return
 		}
 

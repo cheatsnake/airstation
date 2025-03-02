@@ -47,8 +47,9 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenString, err := token.SignedString(s.config.JWTSign)
+	tokenString, err := token.SignedString([]byte(s.config.JWTSign))
 	if err != nil {
+		s.logger.Debug("Failed to generate token: " + err.Error())
 		jsonInternalError(w, "Failed to generate token.")
 		return
 	}
