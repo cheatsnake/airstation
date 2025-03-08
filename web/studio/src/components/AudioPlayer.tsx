@@ -16,7 +16,7 @@ interface AudioPlayerProps {
 export const AudioPlayer: React.FC<AudioPlayerProps> = ({ track, isPlaying, togglePlaying }) => {
     const audioRef = useRef<HTMLAudioElement>(null);
     const [progress, setProgress] = useThrottledState(0, 500);
-    const [cursorPos, setCursorPos] = useThrottledState(0, 300);
+    const [cursorPos, setCursorPos] = useThrottledState(0, 100);
     const { colorScheme } = useMantineColorScheme();
 
     const btnColor = colorScheme === "dark" ? "gray" : "black";
@@ -70,7 +70,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({ track, isPlaying, togg
                 onEnded={handleAudioEnd}
             />
 
-            <Text>{track.name}</Text>
+            <Text style={{ whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}>{track.name}</Text>
             <Flex gap="sm" align="center">
                 <ActionIcon onClick={togglePlaying} variant="subtle" color="white" size="sm" aria-label="Settings">
                     {isPlaying ? (

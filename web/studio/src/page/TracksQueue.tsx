@@ -26,7 +26,7 @@ export const TrackQueue: FC<{}> = () => {
     }, []);
 
     return (
-        <Paper withBorder p="sm" pos="relative" bg={colorScheme === "dark" ? "dark" : "#f7f7f7"}>
+        <Paper p="sm" pos="relative" bg={colorScheme === "dark" ? "dark" : "#f7f7f7"}>
             <Flex justify="space-between" align="center">
                 <Flex align="center" gap="xs">
                     <Box w={10} h={10} bg={playback?.isPlaying ? "red" : "gray"} style={{ borderRadius: "50%" }} />
@@ -36,6 +36,7 @@ export const TrackQueue: FC<{}> = () => {
                 </Flex>
                 <Text c="dimmed">{`${queue.length - 1} ${queue.length > 2 ? "tracks" : "track"}`}</Text>
             </Flex>
+
             <Space h={12} />
 
             <Flex direction="column" gap="sm" mih={100}>

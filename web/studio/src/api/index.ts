@@ -30,12 +30,12 @@ class AirstationAPI {
         return await this.makeRequest<TracksPage>(url);
     }
 
-    async uploadTracks(files: FileList) {
+    async uploadTracks(files: File[]) {
         const url = `${this.url()}/tracks`;
         const formData = new FormData();
 
         for (let i = 0; i < files.length; i++) {
-            formData.append("files", files[i]);
+            formData.append("tracks", files[i]);
         }
 
         return await this.makeRequest<Track[]>(url, {
