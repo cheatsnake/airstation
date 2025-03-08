@@ -201,6 +201,8 @@ func (ts *TrackStore) TracksByIDs(IDs []string) ([]*track.Track, error) {
 	ts.mutex.Lock()
 	defer ts.mutex.Unlock()
 
+	tracks := make([]*track.Track, 0, len(IDs))
+
 	whereClause := sqltool.BuildInClause("id", len(IDs))
 	query := fmt.Sprintf("SELECT id, name, path, duration, bitRate FROM tracks WHERE %s", whereClause)
 	args := make([]interface{}, len(IDs))
@@ -210,22 +212,21 @@ func (ts *TrackStore) TracksByIDs(IDs []string) ([]*track.Track, error) {
 
 	rows, err := ts.db.Query(query, args...)
 	if err != nil {
-		return nil, fmt.Errorf("failed to query tracks: %w", err)
+		return tracks, fmt.Errorf("failed to query tracks: %w", err)
 	}
 	defer rows.Close()
 
-	var tracks []*track.Track
 	for rows.Next() {
 		var track track.Track
 		err := rows.Scan(&track.ID, &track.Name, &track.Path, &track.Duration, &track.BitRate)
 		if err != nil {
-			return nil, fmt.Errorf("failed to scan track: %w", err)
+			return tracks, fmt.Errorf("failed to scan track: %w", err)
 		}
 		tracks = append(tracks, &track)
 	}
 
 	if err = rows.Err(); err != nil {
-		return nil, fmt.Errorf("error iterating over rows: %w", err)
+		return tracks, fmt.Errorf("error iterating over rows: %w", err)
 	}
 
 	return tracks, nil
@@ -235,6 +236,8 @@ func (ts *TrackStore) Queue() ([]*track.Track, error) {
 	ts.mutex.Lock()
 	defer ts.mutex.Unlock()
 
+	tracks := make([]*track.Track, 0, 10)
+
 	query := `
 		SELECT t.id, t.name, t.path, t.duration, t.bitRate
 		FROM tracks t
@@ -242,22 +245,21 @@ func (ts *TrackStore) Queue() ([]*track.Track, error) {
 		ORDER BY q.id ASC`
 	rows, err := ts.db.Query(query)
 	if err != nil {
-		return nil, fmt.Errorf("failed to query tracks in queue: %w", err)
+		return tracks, fmt.Errorf("failed to query tracks in queue: %w", err)
 	}
 	defer rows.Close()
 
-	var tracks []*track.Track
 	for rows.Next() {
 		var track track.Track
 		err := rows.Scan(&track.ID, &track.Name, &track.Path, &track.Duration, &track.BitRate)
 		if err != nil {
-			return nil, fmt.Errorf("failed to scan track: %w", err)
+			return tracks, fmt.Errorf("failed to scan track: %w", err)
 		}
 		tracks = append(tracks, &track)
 	}
 
 	if err = rows.Err(); err != nil {
-		return nil, fmt.Errorf("error iterating over rows: %w", err)
+		return tracks, fmt.Errorf("error iterating over rows: %w", err)
 	}
 
 	return tracks, nil
