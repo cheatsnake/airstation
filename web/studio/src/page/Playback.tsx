@@ -14,6 +14,8 @@ export const Playback: FC<{}> = () => {
         try {
             const pb = await airstationAPI.getPlayback();
             setPlayback(pb);
+
+            if (!pb.currentTrack) return
             setProgress((pb.currentTrackElapsed / pb.currentTrack.duration) * 100);
         } catch (error) {
             errNotify(error);
@@ -31,16 +33,18 @@ export const Playback: FC<{}> = () => {
     return (
         <Paper p="sm">
             <Flex gap="sm">
-                <Box w="100%">
-                    <Text>{playback?.currentTrack.name}</Text>
-                    <Space h={10} />
-                    <Progress color="air" radius="xl" value={progress} />
-                    <Text ta="end" mt={3} c="dimmed">
-                        {formatTime(playback?.currentTrackElapsed || 0)}/
-                        {formatTime(playback?.currentTrack.duration || 0)}
-                    </Text>
-                </Box>
+                {playback?.currentTrack ? (
+                    <Box w="100%">
+                        <Text>{playback?.currentTrack.name}</Text>
+                        <Space h={10} />
+                        <Progress color="air" radius="xl" value={progress} />
+                        <Text ta="end" mt={3} c="dimmed">
+                            {formatTime(playback?.currentTrackElapsed || 0)}/
+                            {formatTime(playback?.currentTrack.duration || 0)}
+                        </Text>
+                    </Box>
+                ) : null}
             </Flex>
         </Paper>
-    );
+    )
 };

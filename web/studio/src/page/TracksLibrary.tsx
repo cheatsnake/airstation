@@ -23,6 +23,7 @@ import { errNotify, warnNotify } from "../notifications";
 export const TrackLibrary: FC<{}> = () => {
     const [search, setSearch] = useState("");
     const [playingTrackID, setPlayingTrackID] = useState("");
+    const [selectedTrackIDs, setSelectedTrackIDs] = useState<Set<string>>(new Set());
     const [debouncedSearch] = useDebouncedValue(search, 500);
     const [loader, handLoader] = useDisclosure(false);
     const { colorScheme } = useMantineColorScheme();
@@ -68,10 +69,22 @@ export const TrackLibrary: FC<{}> = () => {
                 </Text>
                 <Text c="dimmed">{`${tracks.length} ${tracks.length > 1 ? "tracks" : "track"}`}</Text>
             </Flex>
+
             <Space h={12} />
-            <TextInput placeholder="Search" value={search} onChange={(event) => setSearch(event.currentTarget.value)} />
+
+            <Flex gap="xs">
+                <TextInput
+                    style={{ flexGrow: 1 }}
+                    placeholder="Search"
+                    value={search}
+                    onChange={(event) => setSearch(event.currentTarget.value)}
+                />
+                <TrackUploader />
+            </Flex>
+
             <Space h={16} />
-            <Box h={600} style={{ overflow: "auto", overflowX: "hidden" }}>
+
+            <Box mah={600} style={{ overflow: "auto", overflowX: "hidden" }}>
                 <Flex direction="column" gap="sm" justify="center">
                     {tracks.length ? (
                         tracks.map((track) => (
@@ -79,6 +92,9 @@ export const TrackLibrary: FC<{}> = () => {
                                 <AudioPlayer
                                     track={track}
                                     isPlaying={playingTrackID === track.id}
+                                    isTrackInQueue={isTrackInQueue(track.id)}
+                                    selected={selectedTrackIDs}
+                                    setSelected={setSelectedTrackIDs}
                                     togglePlaying={() => toggleTrackPlaying(track.id)}
                                 />
                             </Paper>
@@ -89,7 +105,18 @@ export const TrackLibrary: FC<{}> = () => {
                 </Flex>
             </Box>
             <Space h={12} />
-            <TrackUploader />
+
+            <Group justify="space-between">
+                <Text c="dimmed">{`Selected: ${selectedTrackIDs.size}`}</Text>
+                <Flex align="center" gap="xs">
+                    <Button disabled={!selectedTrackIDs.size} variant="light" color="red">
+                        Delete
+                    </Button>
+                    <Button disabled={!selectedTrackIDs.size} variant="light">
+                        Add to queue
+                    </Button>
+                </Flex>
+            </Group>
         </Paper>
     );
 };
@@ -117,16 +144,24 @@ const TrackUploader = () => {
 
     return (
         <>
-            <Group justify="flex-end">
-                <LoadingOverlay visible={loader} loaderProps={{ type: "dots", size: "lg" }} />
-                <FileButton multiple onChange={handleUpload} accept="audio/*">
-                    {(props) => (
-                        <Button {...props} variant="light">
-                            Add
-                        </Button>
-                    )}
-                </FileButton>
-            </Group>
+            <LoadingOverlay visible={loader} loaderProps={{ type: "dots", size: "lg" }} />
+            <FileButton multiple onChange={handleUpload} accept="audio/*">
+                {(props) => (
+                    <Button {...props} variant="light" color="green">
+                        Add
+                    </Button>
+                )}
+            </FileButton>
+        </>
+    );
+};
+
+const QueueAdder = () => {
+    const [loader, handLoader] = useDisclosure(false);
+
+    return (
+        <>
+            <LoadingOverlay visible={loader} loaderProps={{ type: "dots", size: "lg" }} />
         </>
     );
 };

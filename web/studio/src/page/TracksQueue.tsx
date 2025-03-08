@@ -34,7 +34,7 @@ export const TrackQueue: FC<{}> = () => {
                         Live queue
                     </Text>
                 </Flex>
-                <Text c="dimmed">{`${queue.length - 1} ${queue.length > 2 ? "tracks" : "track"}`}</Text>
+                <Text c="dimmed">{`${ queue.length > 0 ? queue.length - 1 : 0} ${queue.length > 2 ? "tracks" : "track"}`}</Text>
             </Flex>
 
             <Space h={12} />
@@ -42,7 +42,7 @@ export const TrackQueue: FC<{}> = () => {
             <Flex direction="column" gap="sm" mih={100}>
                 {queue.length > 1 ? (
                     queue
-                        .filter((t) => playback?.currentTrack.id != t.id)
+                        .filter((t) => playback?.currentTrack?.id != t.id)
                         .map((track) => (
                             <Paper p="xs" withBorder key={track.id}>
                                 {track.name}

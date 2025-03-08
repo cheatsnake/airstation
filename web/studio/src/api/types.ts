@@ -14,7 +14,7 @@ export interface TracksPage {
 }
 
 export interface PlaybackState {
-    currentTrack: Track;
+    currentTrack: Track | null;
     currentTrackElapsed: number;
     isPlaying: boolean;
 }

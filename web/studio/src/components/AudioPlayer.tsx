@@ -1,7 +1,7 @@
-import { ActionIcon, Box, Flex, Group, Paper, Progress, Text, Tooltip, useMantineColorScheme } from "@mantine/core";
+import { ActionIcon, Box, Checkbox, Flex, Group, Progress, Text, Tooltip, useMantineColorScheme } from "@mantine/core";
 import React, { useEffect, useRef } from "react";
-import { IconPlayerPlayFilled } from "../icons/IconPlayerPlayFilled";
-import { IconPlayerStopFilled } from "../icons/IconPlayerStopFilled";
+import { IconPlayerPlayFilled } from "../icons";
+import { IconPlayerStopFilled } from "../icons";
 import { Track } from "../api/types";
 import { API_HOST } from "../api";
 import { formatTime } from "../utils/time";
@@ -10,10 +10,20 @@ import { useThrottledState } from "@mantine/hooks";
 interface AudioPlayerProps {
     track: Track;
     isPlaying: boolean;
+    isTrackInQueue: boolean;
+    selected: Set<string>;
+    setSelected: React.Dispatch<React.SetStateAction<Set<string>>>;
     togglePlaying: () => void;
 }
 
-export const AudioPlayer: React.FC<AudioPlayerProps> = ({ track, isPlaying, togglePlaying }) => {
+export const AudioPlayer: React.FC<AudioPlayerProps> = ({
+    track,
+    isPlaying,
+    isTrackInQueue,
+    selected,
+    setSelected,
+    togglePlaying,
+}) => {
     const audioRef = useRef<HTMLAudioElement>(null);
     const [progress, setProgress] = useThrottledState(0, 500);
     const [cursorPos, setCursorPos] = useThrottledState(0, 100);
@@ -60,7 +70,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({ track, isPlaying, togg
     }, [isPlaying]);
 
     return (
-        <Paper bg="rgba(0, 0, 0, 0)">
+        <>
             <audio
                 crossOrigin="use-credentials"
                 ref={audioRef}
@@ -98,7 +108,25 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({ track, isPlaying, togg
                         </Text>
                     </Group>
                 </Box>
+
+                <Flex>
+                    <Checkbox
+                        disabled={isTrackInQueue}
+                        checked={selected.has(track.id)} 
+                        onChange={() => {
+                            setSelected((prevSelected) => {
+                                const newSelected = new Set(prevSelected);
+                                if (newSelected.has(track.id)) {
+                                    newSelected.delete(track.id);
+                                } else {
+                                    newSelected.add(track.id);
+                                }
+                                return newSelected;
+                            });
+                        }}
+                    />
+                </Flex>
             </Flex>
-        </Paper>
+        </>
     );
 };
