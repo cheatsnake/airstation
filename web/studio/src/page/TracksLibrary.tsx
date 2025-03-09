@@ -1,6 +1,7 @@
 import {
     Box,
     Button,
+    Checkbox,
     FileButton,
     Flex,
     Group,
@@ -18,7 +19,9 @@ import { useTracksStore } from "../store/tracks";
 import { EmptyLabel } from "../components/EmptyLabel";
 import { useDebouncedValue, useDisclosure } from "@mantine/hooks";
 import { AudioPlayer } from "../components/AudioPlayer";
-import { errNotify, warnNotify } from "../notifications";
+import { errNotify, okNotify, warnNotify } from "../notifications";
+import { DisclosureHandler } from "../types";
+import { Track } from "../api/types";
 
 export const TrackLibrary: FC<{}> = () => {
     const [search, setSearch] = useState("");
@@ -30,13 +33,12 @@ export const TrackLibrary: FC<{}> = () => {
 
     const tracks = useTracksStore((s) => s.tracks);
     const queue = useTrackQueueStore((s) => s.queue);
-    const setTracks = useTracksStore((s) => s.setTracks);
+    const fetchTracks = useTracksStore((s) => s.fetchTracks);
 
     const loadTracks = async (page = 1, limit = 100) => {
         try {
             handLoader.open();
-            const result = await airstationAPI.getTracks(page, limit, search);
-            setTracks(result.tracks);
+            await fetchTracks(page, limit, search);
         } catch (error) {
             errNotify(error);
         } finally {
@@ -60,7 +62,7 @@ export const TrackLibrary: FC<{}> = () => {
     }, [debouncedSearch]);
 
     return (
-        <Paper p="xs" pos="relative" bg={colorScheme === "dark" ? "dark" : "#f7f7f7"}>
+        <Paper p="xs" radius="md" pos="relative" bg={colorScheme === "dark" ? "dark" : "#f7f7f7"}>
             <LoadingOverlay visible={loader} zIndex={1000} />
 
             <Flex justify="space-between" align="center">
@@ -79,7 +81,7 @@ export const TrackLibrary: FC<{}> = () => {
                     value={search}
                     onChange={(event) => setSearch(event.currentTarget.value)}
                 />
-                <TrackUploader />
+                <TrackUploader handLoader={handLoader} />
             </Flex>
 
             <Space h={16} />
@@ -107,22 +109,20 @@ export const TrackLibrary: FC<{}> = () => {
             <Space h={12} />
 
             <Group justify="space-between">
-                <Text c="dimmed">{`Selected: ${selectedTrackIDs.size}`}</Text>
-                <Flex align="center" gap="xs">
-                    <Button disabled={!selectedTrackIDs.size} variant="light" color="red">
-                        Delete
-                    </Button>
-                    <Button disabled={!selectedTrackIDs.size} variant="light">
-                        Add to queue
-                    </Button>
-                </Flex>
+                {selectedTrackIDs.size ? <Text c="dimmed">{`Selected: ${selectedTrackIDs.size}`}</Text> : <div />}
+                <TrackActions
+                    handLoader={handLoader}
+                    selected={selectedTrackIDs}
+                    setSelected={setSelectedTrackIDs}
+                    availableTracks={tracks.filter((t) => !isTrackInQueue(t.id))}
+                    disabled={!selectedTrackIDs.size}
+                />
             </Group>
         </Paper>
     );
 };
 
-const TrackUploader = () => {
-    const [loader, handLoader] = useDisclosure(false);
+const TrackUploader: FC<{ handLoader: DisclosureHandler }> = (props) => {
     const addTracks = useTracksStore((s) => s.addTracks);
 
     const handleUpload = async (files: File[]) => {
@@ -131,20 +131,19 @@ const TrackUploader = () => {
             return;
         }
 
-        handLoader.open();
+        props.handLoader.open();
         try {
             const tracks = await airstationAPI.uploadTracks(files);
             addTracks(tracks);
         } catch (error) {
             errNotify(error);
         } finally {
-            handLoader.close();
+            props.handLoader.close();
         }
     };
 
     return (
         <>
-            <LoadingOverlay visible={loader} loaderProps={{ type: "dots", size: "lg" }} />
             <FileButton multiple onChange={handleUpload} accept="audio/*">
                 {(props) => (
                     <Button {...props} variant="light" color="green">
@@ -156,12 +155,58 @@ const TrackUploader = () => {
     );
 };
 
-const QueueAdder = () => {
-    const [loader, handLoader] = useDisclosure(false);
+const TrackActions: FC<{
+    handLoader: DisclosureHandler;
+    selected: Set<string>;
+    setSelected: React.Dispatch<React.SetStateAction<Set<string>>>;
+    availableTracks: Track[];
+    disabled?: boolean;
+}> = (props) => {
+    const fetchQueue = useTrackQueueStore((s) => s.fetchQueue);
+    const toggleSelection = () => {
+        if (props.selected.size) {
+            props.setSelected(new Set());
+            return;
+        }
+
+        props.setSelected(new Set(props.availableTracks.map((t) => t.id)));
+    };
+
+    const handleDelete = async () => {
+        try {
+            props.handLoader.open();
+            const { message } = await airstationAPI.deleteTracks([...props.selected]);
+            okNotify(message);
+        } catch (error) {
+            errNotify(error);
+        } finally {
+            props.handLoader.close();
+        }
+    };
+
+    const handleQueue = async () => {
+        try {
+            props.handLoader.open();
+            const { message } = await airstationAPI.addToQueue([...props.selected]);
+            await fetchQueue();
+            props.setSelected(new Set());
+            okNotify(message);
+        } catch (error) {
+            errNotify(error);
+        } finally {
+            props.handLoader.close();
+        }
+    };
 
     return (
-        <>
-            <LoadingOverlay visible={loader} loaderProps={{ type: "dots", size: "lg" }} />
-        </>
+        <Flex align="center" gap="xs">
+            <Button disabled={props.disabled} onClick={handleDelete} variant="light" color="red">
+                Delete
+            </Button>
+            <Button disabled={props.disabled} onClick={handleQueue} variant="light">
+                Queue
+            </Button>
+            <Checkbox size="md" color="dimmed" readOnly checked={props.selected.size > 0} onClick={toggleSelection} />
+        </Flex>
     );
 };

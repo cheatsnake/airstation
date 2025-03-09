@@ -55,17 +55,17 @@ class AirstationAPI {
     }
 
     async addToQueue(trackIDs: string[]) {
-        const url = `${this.url}/queue`;
+        const url = `${this.url()}/queue`;
         return await this.makeRequest<ResponseOK>(url, jsonRequestParams("POST", { ids: trackIDs }));
     }
 
     async updateQueue(trackIDs: string[]) {
-        const url = `${this.url}/queue`;
+        const url = `${this.url()}/queue`;
         return await this.makeRequest<ResponseOK>(url, jsonRequestParams("PUT", { ids: trackIDs }));
     }
 
     async removeFromQueue(trackIDs: string[]) {
-        const url = `${this.url}/queue`;
+        const url = `${this.url()}/queue`;
         return await this.makeRequest<ResponseOK>(url, jsonRequestParams("DELETE", { ids: trackIDs }));
     }
 

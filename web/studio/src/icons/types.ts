@@ -1,8 +1,3 @@
-export interface IconProps {
-  width?: number | string;
-  height?: number | string;
-  stroke?: number | string;
-  fill?: string;
-  style?: React.CSSProperties;
-  className?: string;
+export interface IconProps extends React.ComponentPropsWithoutRef<"svg"> {
+    size?: number | string;
 }
