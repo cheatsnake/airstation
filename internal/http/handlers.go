@@ -25,6 +25,32 @@ func (s *Server) handleHLSPlaylist(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, playlist)
 }
 
+func (s *Server) handleEvents(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+
+	eventChan := make(chan serverSideEvent)
+	s.connections.Store(eventChan, true)
+
+	closeNotify := r.Context().Done()
+	go func() {
+		<-closeNotify
+		s.connections.Delete(eventChan)
+		close(eventChan)
+	}()
+
+	for {
+		event, isOpen := <-eventChan
+		if !isOpen {
+			break
+		}
+
+		fmt.Fprint(w, event.Stringify())
+		w.(http.Flusher).Flush()
+	}
+}
+
 func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 	body, err := parseJSONBody[struct {
 		Secret string `json:"secret"`
@@ -288,4 +314,13 @@ func (s *Server) handlePlaybackState(w http.ResponseWriter, _ *http.Request) {
 
 func (s *Server) handleStaticDir(prefix string, path string) http.Handler {
 	return http.StripPrefix(prefix, http.FileServer(http.Dir(path)))
+}
+
+func (s *Server) handleStaticDirNoCache(prefix string, path string) http.Handler {
+	fileServer := http.StripPrefix(prefix, http.FileServer(http.Dir(path)))
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "no-cache")
+		fileServer.ServeHTTP(w, r)
+	})
 }
