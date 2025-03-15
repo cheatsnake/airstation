@@ -5,7 +5,7 @@ import { airstationAPI } from "../api";
 interface TrackQueueStore {
     queue: Track[];
     fetchQueue: () => Promise<void>;
-    setQueue: (tracks: Track[]) => void;
+    updateQueue: (tracks: Track[]) => Promise<void>;
 }
 
 export const useTrackQueueStore = create<TrackQueueStore>()((set) => ({
@@ -15,7 +15,9 @@ export const useTrackQueueStore = create<TrackQueueStore>()((set) => ({
         const q = await airstationAPI.getQueue();
         set({ queue: q });
     },
-    setQueue(q) {
-        set({ queue: q });
+
+    async updateQueue(tracks) {
+        await airstationAPI.updateQueue(tracks.map(({ id }) => id));
+        set({ queue: tracks });
     },
 }));
