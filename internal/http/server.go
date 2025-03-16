@@ -4,9 +4,11 @@ import (
 	"log/slog"
 	"mime"
 	"net/http"
-	"sync"
+	"strconv"
+	"time"
 
 	"github.com/cheatsnake/airstation/internal/config"
+	"github.com/cheatsnake/airstation/internal/events"
 	"github.com/cheatsnake/airstation/internal/hls"
 	"github.com/cheatsnake/airstation/internal/playback"
 	trackservice "github.com/cheatsnake/airstation/internal/track/service"
@@ -14,21 +16,22 @@ import (
 )
 
 type Server struct {
-	state        *playback.State
-	connections  sync.Map
-	trackService *trackservice.Service
-	config       *config.Config
-	logger       *slog.Logger
-	mux          *http.ServeMux
+	state         *playback.State
+	eventsEmitter *events.Emitter
+	trackService  *trackservice.Service
+	config        *config.Config
+	logger        *slog.Logger
+	mux           *http.ServeMux
 }
 
 func NewServer(state *playback.State, trackService *trackservice.Service, conf *config.Config, logger *slog.Logger) *Server {
 	return &Server{
-		state:        state,
-		trackService: trackService,
-		config:       conf,
-		logger:       logger,
-		mux:          http.NewServeMux(),
+		state:         state,
+		eventsEmitter: events.NewEmitter(),
+		trackService:  trackService,
+		config:        conf,
+		logger:        logger,
+		mux:           http.NewServeMux(),
 	}
 }
 
@@ -37,31 +40,32 @@ func (s *Server) Run() {
 
 	// Public handlers
 	s.mux.HandleFunc("GET /stream", s.handleHLSPlaylist)
-	s.mux.HandleFunc("GET /events", s.handleEvents)
-	s.mux.HandleFunc("POST /v1/api/login", s.handleLogin)
+	s.mux.HandleFunc("GET /api/v1/events", s.handleEvents)
+	s.mux.HandleFunc("POST /api/v1/login", s.handleLogin)
 	s.mux.Handle("GET /static/tmp/", s.handleStaticDirNoCache("/static/tmp", s.config.TmpDir))
-	s.mux.Handle("GET /", s.handleStaticDir("", s.config.WebDir))
 
 	// Protected handlers
-	s.mux.Handle("GET /v1/api/playback", s.jwtAuth(http.HandlerFunc(s.handlePlaybackState)))
-	s.mux.Handle("POST /v1/api/track", s.jwtAuth(http.HandlerFunc(s.handleTrackUpload)))
-	s.mux.Handle("POST /v1/api/tracks", s.jwtAuth(http.HandlerFunc(s.handleTracksUpload)))
-	s.mux.Handle("GET /v1/api/tracks", s.jwtAuth(http.HandlerFunc(s.handleTracks)))
-	s.mux.Handle("DELETE /v1/api/tracks", s.jwtAuth(http.HandlerFunc(s.handleDeleteTracks)))
-	s.mux.Handle("GET /v1/api/queue", s.jwtAuth(http.HandlerFunc(s.handleQueue)))
-	s.mux.Handle("POST /v1/api/queue", s.jwtAuth(http.HandlerFunc(s.handleAddToQueue)))
-	s.mux.Handle("PUT /v1/api/queue", s.jwtAuth(http.HandlerFunc(s.handleReorderQueue)))
-	s.mux.Handle("DELETE /v1/api/queue", s.jwtAuth(http.HandlerFunc(s.handleRemoveFromQueue)))
+	s.mux.Handle("GET /api/v1/playback", s.jwtAuth(http.HandlerFunc(s.handlePlaybackState)))
+	s.mux.Handle("POST /api/v1/track", s.jwtAuth(http.HandlerFunc(s.handleTrackUpload)))
+	s.mux.Handle("POST /api/v1/tracks", s.jwtAuth(http.HandlerFunc(s.handleTracksUpload)))
+	s.mux.Handle("GET /api/v1/tracks", s.jwtAuth(http.HandlerFunc(s.handleTracks)))
+	s.mux.Handle("DELETE /api/v1/tracks", s.jwtAuth(http.HandlerFunc(s.handleDeleteTracks)))
+	s.mux.Handle("GET /api/v1/queue", s.jwtAuth(http.HandlerFunc(s.handleQueue)))
+	s.mux.Handle("POST /api/v1/queue", s.jwtAuth(http.HandlerFunc(s.handleAddToQueue)))
+	s.mux.Handle("PUT /api/v1/queue", s.jwtAuth(http.HandlerFunc(s.handleReorderQueue)))
+	s.mux.Handle("DELETE /api/v1/queue", s.jwtAuth(http.HandlerFunc(s.handleRemoveFromQueue)))
 	s.mux.Handle("GET /static/tracks/", s.jwtAuth(s.handleStaticDir("/static/tracks", s.config.TracksDir)))
 
-	server := cors.Default().Handler(s.mux) // CORS middleware
+	s.mux.Handle("GET /", s.handleStaticDir("", s.config.WebDir))
 
-	s.runIntervalEvents() // Run periodic server side events
+	s.listenEvents()
+
+	server := cors.Default().Handler(s.mux) // CORS middleware
 
 	s.logger.Info("Server starts on http://localhost:" + s.config.HTTPPort)
 	err := http.ListenAndServe(":"+s.config.HTTPPort, server)
 	if err != nil {
-		s.logger.Error("Listend and serve failed", slog.String("info", err.Error()))
+		s.logger.Error("Listen and serve failed", slog.String("info", err.Error()))
 	}
 }
 
@@ -70,4 +74,31 @@ func (s *Server) registerMP2TMimeType() {
 	if err != nil {
 		s.logger.Error("MP2T mime type registration failed", slog.String("info", err.Error()))
 	}
+}
+
+func (s *Server) listenEvents() {
+	countConnectionTicker := time.Tick(5 * time.Second)
+
+	// TODO: add context for gracefull shutdown
+
+	go func() {
+		for range countConnectionTicker {
+			count := s.eventsEmitter.CountSubscribers()
+			s.eventsEmitter.RegisterEvent(eventCountListeners, strconv.Itoa(count))
+		}
+	}()
+
+	go func() {
+		for {
+			select {
+			case trackName := <-s.state.NewTrackNotify:
+				s.eventsEmitter.RegisterEvent(eventNewTrack, trackName)
+			case <-s.state.PlayNotify:
+				s.eventsEmitter.RegisterEvent(eventPlay, "")
+			case <-s.state.PauseNotify:
+				s.eventsEmitter.RegisterEvent(eventPause, "")
+
+			}
+		}
+	}()
 }

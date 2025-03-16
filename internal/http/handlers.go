@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cheatsnake/airstation/internal/events"
 	"github.com/cheatsnake/airstation/internal/track"
 	trackservice "github.com/cheatsnake/airstation/internal/track/service"
 	"github.com/golang-jwt/jwt/v5"
@@ -30,13 +31,13 @@ func (s *Server) handleEvents(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
 
-	eventChan := make(chan serverSideEvent)
-	s.connections.Store(eventChan, true)
+	eventChan := make(chan *events.Event)
+	s.eventsEmitter.Subscribe(eventChan)
 
 	closeNotify := r.Context().Done()
 	go func() {
 		<-closeNotify
-		s.connections.Delete(eventChan)
+		s.eventsEmitter.Unsubscribe(eventChan)
 		close(eventChan)
 	}()
 
@@ -317,10 +318,10 @@ func (s *Server) handleStaticDir(prefix string, path string) http.Handler {
 }
 
 func (s *Server) handleStaticDirNoCache(prefix string, path string) http.Handler {
-	fileServer := http.StripPrefix(prefix, http.FileServer(http.Dir(path)))
+	fileHandler := http.StripPrefix(prefix, http.FileServer(http.Dir(path)))
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Cache-Control", "no-cache")
-		fileServer.ServeHTTP(w, r)
+		fileHandler.ServeHTTP(w, r)
 	})
 }
