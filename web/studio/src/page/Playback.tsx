@@ -1,33 +1,39 @@
 import { Box, Flex, Paper, Progress, Space, Text } from "@mantine/core";
-import { FC, useEffect, useState } from "react";
-import { airstationAPI } from "../api";
+import { FC, useEffect, useRef } from "react";
+import { API_HOST, API_PREFIX } from "../api";
 import { usePlaybackStore } from "../store/playback";
 import { formatTime } from "../utils/time";
-import { errNotify } from "../notifications";
+import { useTrackQueueStore } from "../store/track-queue";
+
+const EVENTS = {
+    newTrack: "new_track",
+};
+
+const EVENT_SOURCE_URL = API_HOST + API_PREFIX + "/events";
 
 export const Playback: FC<{}> = () => {
+    const intervalID = useRef(0);
     const playback = usePlaybackStore((s) => s.playback);
-    const setPlayback = usePlaybackStore((s) => s.setPlayback);
-    const [progress, setProgress] = useState(0);
-
-    const loadPlayback = async () => {
-        try {
-            const pb = await airstationAPI.getPlayback();
-            setPlayback(pb);
-
-            if (!pb.currentTrack) return;
-            setProgress((pb.currentTrackElapsed / pb.currentTrack.duration) * 100);
-        } catch (error) {
-            errNotify(error);
-        }
-    };
+    const fetchPlayback = usePlaybackStore((s) => s.fetchPlayback);
+    const incElapsedTime = usePlaybackStore((s) => s.incElapsedTime);
+    const rotateQueue = useTrackQueueStore((s) => s.rotateQueue);
 
     useEffect(() => {
-        const id = setInterval(async () => {
-            await loadPlayback();
-        }, 1000);
+        const events = new EventSource(EVENT_SOURCE_URL);
 
-        return () => clearInterval(id);
+        (async () => {
+            await fetchPlayback();
+            intervalID.current = setInterval(() => {
+                incElapsedTime(1);
+            }, 1000);
+        })();
+
+        events.addEventListener(EVENTS.newTrack, async () => {
+            rotateQueue();
+            await fetchPlayback();
+        });
+
+        return () => clearInterval(intervalID.current);
     }, []);
 
     return (
@@ -36,7 +42,11 @@ export const Playback: FC<{}> = () => {
                 <Box w="100%">
                     <Text>{playback?.currentTrack?.name || "Unknown"}</Text>
                     <Space h={10} />
-                    <Progress color="air" radius="xl" value={progress} />
+                    <Progress
+                        color="air"
+                        radius="xl"
+                        value={(playback.currentTrackElapsed / (playback?.currentTrack?.duration || 1)) * 100}
+                    />
                     <Text ta="end" mt={3} c="dimmed">
                         {formatTime(playback?.currentTrackElapsed || 0)}/
                         {formatTime(playback?.currentTrack?.duration || 0)}

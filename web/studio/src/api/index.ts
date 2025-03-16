@@ -2,7 +2,7 @@ import { PlaybackState, ResponseErr, ResponseOK, Track, TracksPage } from "./typ
 import { jsonRequestParams, queryParams } from "./utils";
 
 export const API_HOST = "";
-const API_PREFIX = "/v1/api";
+export const API_PREFIX = "/api/v1";
 
 class AirstationAPI {
     private host: string;

@@ -32,13 +32,8 @@ export const TrackQueue: FC<{}> = () => {
 
     const loadQueue = async () => {
         handLoader.open();
-        try {
-            await fetchQueue();
-        } catch (error) {
-            errNotify(error);
-        } finally {
-            handLoader.close();
-        }
+        await fetchQueue();
+        handLoader.close();
     };
 
     const handleRemove = async (trackID: string) => {

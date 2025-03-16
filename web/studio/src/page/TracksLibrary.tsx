@@ -36,14 +36,9 @@ export const TrackLibrary: FC<{}> = () => {
     const fetchTracks = useTracksStore((s) => s.fetchTracks);
 
     const loadTracks = async (page = 1, limit = 100) => {
-        try {
-            handLoader.open();
-            await fetchTracks(page, limit, search);
-        } catch (error) {
-            errNotify(error);
-        } finally {
-            handLoader.close();
-        }
+        handLoader.open();
+        await fetchTracks(page, limit, search);
+        handLoader.close();
     };
 
     const toggleTrackPlaying = (id: string) => {
