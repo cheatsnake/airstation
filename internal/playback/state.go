@@ -17,6 +17,10 @@ type State struct {
 	CurrentTrackElapsed float64      `json:"currentTrackElapsed"` // Seconds elapsed since the track started playing
 	IsPlaying           bool         `json:"isPlaying"`           // Whether the track is currently playing
 
+	NewTrackNotify chan string `json:"-"`
+	PlayNotify     chan bool   `json:"-"`
+	PauseNotify    chan bool   `json:"-"`
+
 	playlist    *hls.Playlist // HLS playlist for streaming
 	playlistDir string        // Directory for temporary playlist data
 
@@ -34,7 +38,12 @@ func NewState(ts *trackservice.Service, tmpDir string, log *slog.Logger) *State 
 		CurrentTrack:        nil,
 		CurrentTrackElapsed: 0,
 		IsPlaying:           false,
-		trackService:        ts,
+
+		NewTrackNotify: make(chan string),
+		PlayNotify:     make(chan bool),
+		PauseNotify:    make(chan bool),
+
+		trackService: ts,
 
 		refreshCount:    0,
 		playlistDir:     tmpDir,
@@ -92,6 +101,7 @@ func (s *State) Play() error {
 func (s *State) Pause() {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
+
 	s.IsPlaying = false
 	s.CurrentTrack = nil
 }
@@ -169,6 +179,7 @@ func (s *State) loadNextTrack() error {
 		return err
 	}
 
+	s.NewTrackNotify <- current.Name
 	s.playlist.Next(nextTrackSegments)
 	return nil
 }
