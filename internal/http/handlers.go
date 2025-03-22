@@ -313,11 +313,26 @@ func (s *Server) handlePlaybackState(w http.ResponseWriter, _ *http.Request) {
 	jsonResponse(w, s.state)
 }
 
+func (s *Server) handlePausePlayback(w http.ResponseWriter, _ *http.Request) {
+	s.state.Pause()
+	jsonResponse(w, s.state)
+}
+
+func (s *Server) handlePlayPlayback(w http.ResponseWriter, _ *http.Request) {
+	err := s.state.Play()
+	if err != nil {
+		jsonBadRequest(w, "Playback failed to start: "+err.Error())
+		return
+	}
+
+	jsonResponse(w, s.state)
+}
+
 func (s *Server) handleStaticDir(prefix string, path string) http.Handler {
 	return http.StripPrefix(prefix, http.FileServer(http.Dir(path)))
 }
 
-func (s *Server) handleStaticDirNoCache(prefix string, path string) http.Handler {
+func (s *Server) handleStaticDirWithoutCache(prefix string, path string) http.Handler {
 	fileHandler := http.StripPrefix(prefix, http.FileServer(http.Dir(path)))
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

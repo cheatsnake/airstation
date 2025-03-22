@@ -42,7 +42,7 @@ func (s *Server) Run() {
 	s.mux.HandleFunc("GET /stream", s.handleHLSPlaylist)
 	s.mux.HandleFunc("GET /api/v1/events", s.handleEvents)
 	s.mux.HandleFunc("POST /api/v1/login", s.handleLogin)
-	s.mux.Handle("GET /static/tmp/", s.handleStaticDirNoCache("/static/tmp", s.config.TmpDir))
+	s.mux.Handle("GET /static/tmp/", s.handleStaticDirWithoutCache("/static/tmp", s.config.TmpDir))
 
 	// Protected handlers
 	s.mux.Handle("GET /api/v1/playback", s.jwtAuth(http.HandlerFunc(s.handlePlaybackState)))
@@ -54,6 +54,8 @@ func (s *Server) Run() {
 	s.mux.Handle("POST /api/v1/queue", s.jwtAuth(http.HandlerFunc(s.handleAddToQueue)))
 	s.mux.Handle("PUT /api/v1/queue", s.jwtAuth(http.HandlerFunc(s.handleReorderQueue)))
 	s.mux.Handle("DELETE /api/v1/queue", s.jwtAuth(http.HandlerFunc(s.handleRemoveFromQueue)))
+	s.mux.Handle("POST /api/v1/playback/pause", s.jwtAuth(http.HandlerFunc(s.handlePausePlayback)))
+	s.mux.Handle("POST /api/v1/playback/play", s.jwtAuth(http.HandlerFunc(s.handlePlayPlayback)))
 	s.mux.Handle("GET /static/tracks/", s.jwtAuth(s.handleStaticDir("/static/tracks", s.config.TracksDir)))
 
 	s.mux.Handle("GET /", s.handleStaticDir("", s.config.WebDir))
