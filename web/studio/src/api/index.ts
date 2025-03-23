@@ -25,6 +25,16 @@ class AirstationAPI {
         return await this.makeRequest<PlaybackState>(url);
     }
 
+    async pausePlayback() {
+        const url = `${this.url()}/playback/pause`;
+        return await this.makeRequest<PlaybackState>(url, jsonRequestParams("POST", {}));
+    }
+
+    async playPlayback() {
+        const url = `${this.url()}/playback/play`;
+        return await this.makeRequest<PlaybackState>(url, jsonRequestParams("POST", {}));
+    }
+
     async getTracks(page: number, limit: number, search: string) {
         const url = `${this.url()}/tracks?${queryParams({ page, limit, search })}`;
         return await this.makeRequest<TracksPage>(url);
@@ -70,8 +80,6 @@ class AirstationAPI {
     }
 
     private async makeRequest<T>(url: string, params: RequestInit = {}): Promise<T> {
-        params.headers = { ...params.headers };
-
         const resp = await fetch(url, params);
         if (!resp.ok) {
             const body: ResponseErr = await resp.json();

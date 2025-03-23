@@ -83,11 +83,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
             <Text style={{ whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}>{track.name}</Text>
             <Flex gap="sm" align="center">
                 <ActionIcon onClick={togglePlaying} variant="subtle" color="white" size="sm" aria-label="Settings">
-                    {isPlaying ? (
-                        <IconPlayerStopFilled fill={btnColor} stroke={1.5} />
-                    ) : (
-                        <IconPlayerPlayFilled fill={btnColor} stroke={1.5} />
-                    )}
+                    {isPlaying ? <IconPlayerStopFilled fill={btnColor} /> : <IconPlayerPlayFilled fill={btnColor} />}
                 </ActionIcon>
 
                 <Box w="100%" mt="xs" style={{ cursor: "pointer" }}>
@@ -112,7 +108,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
                 <Flex>
                     <Checkbox
                         disabled={isTrackInQueue}
-                        checked={selected.has(track.id)} 
+                        checked={selected.has(track.id)}
                         onChange={() => {
                             setSelected((prevSelected) => {
                                 const newSelected = new Set(prevSelected);

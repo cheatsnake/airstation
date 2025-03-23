@@ -1,46 +1,85 @@
-import { Box, Flex, Paper, Progress, Space, Text } from "@mantine/core";
-import { FC, useEffect, useRef } from "react";
-import { API_HOST, API_PREFIX } from "../api";
+import { ActionIcon, Box, Flex, Paper, Progress, Space, Text } from "@mantine/core";
+import { FC, useEffect, useRef, useState } from "react";
+import { airstationAPI } from "../api";
 import { usePlaybackStore } from "../store/playback";
 import { formatTime } from "../utils/time";
 import { useTrackQueueStore } from "../store/track-queue";
-
-const EVENTS = {
-    newTrack: "new_track",
-};
-
-const EVENT_SOURCE_URL = API_HOST + API_PREFIX + "/events";
+import { IconHeadphones, IconPlayerPlayFilled, IconPlayerStopFilled } from "../icons";
+import { useDisclosure } from "@mantine/hooks";
+import { errNotify } from "../notifications";
+import { EVENTS, useEventSourceStore } from "../store/events";
 
 export const Playback: FC<{}> = () => {
-    const intervalID = useRef(0);
+    const updateIntervalID = useRef(0);
+    const [loader, handLoader] = useDisclosure(false);
     const playback = usePlaybackStore((s) => s.playback);
+    const setPlayback = usePlaybackStore((s) => s.setPlayback);
     const fetchPlayback = usePlaybackStore((s) => s.fetchPlayback);
     const incElapsedTime = usePlaybackStore((s) => s.incElapsedTime);
     const rotateQueue = useTrackQueueStore((s) => s.rotateQueue);
+    const addEventHandler = useEventSourceStore((s) => s.addEventHandler);
 
     useEffect(() => {
-        const events = new EventSource(EVENT_SOURCE_URL);
-
         (async () => {
             await fetchPlayback();
-            intervalID.current = setInterval(() => {
+            updateIntervalID.current = setInterval(() => {
                 incElapsedTime(1);
             }, 1000);
         })();
 
-        events.addEventListener(EVENTS.newTrack, async () => {
+        addEventHandler(EVENTS.newTrack, async () => {
             rotateQueue();
             await fetchPlayback();
         });
 
-        return () => clearInterval(intervalID.current);
+        return () => clearInterval(updateIntervalID.current);
     }, []);
 
+    const togglePlayback = async () => {
+        handLoader.open();
+        try {
+            const pb = playback.isPlaying ? await airstationAPI.pausePlayback() : await airstationAPI.playPlayback();
+
+            if (pb.isPlaying) {
+                updateIntervalID.current = setInterval(() => {
+                    incElapsedTime(1);
+                }, 1000);
+            } else {
+                clearInterval(updateIntervalID.current);
+            }
+
+            setPlayback(pb);
+        } catch (error) {
+            errNotify(error);
+        } finally {
+            handLoader.close();
+        }
+    };
+
     return (
-        <Paper p="sm" w="100%" h={95} pos="relative">
-            <Flex gap="sm">
+        <Paper p="sm" w="100%" h={95}>
+            <Flex gap="sm" justify="center" align="center">
+                <Box>
+                    <ActionIcon
+                        onClick={togglePlayback}
+                        disabled={loader}
+                        variant="subtle"
+                        color="black"
+                        size="sm"
+                        aria-label="Settings"
+                    >
+                        {playback?.isPlaying ? (
+                            <IconPlayerStopFilled fill="black" />
+                        ) : (
+                            <IconPlayerPlayFilled fill="black" />
+                        )}
+                    </ActionIcon>
+                </Box>
                 <Box w="100%">
-                    <Text>{playback?.currentTrack?.name || "Unknown"}</Text>
+                    <Flex justify="space-between" align="center">
+                        <Text>{playback?.currentTrack?.name || "Unknown"}</Text>
+                        <ListenersCounter />
+                    </Flex>
                     <Space h={10} />
                     <Progress
                         color="air"
@@ -54,5 +93,25 @@ export const Playback: FC<{}> = () => {
                 </Box>
             </Flex>
         </Paper>
+    );
+};
+
+const ListenersCounter = () => {
+    const [count, setCount] = useState(0);
+    const addEventHandler = useEventSourceStore((s) => s.addEventHandler);
+
+    const handleCounter = (msg: MessageEvent<string>) => {
+        setCount(Number(msg.data));
+    };
+
+    useEffect(() => {
+        addEventHandler(EVENTS.countListeners, handleCounter);
+    }, []);
+
+    return (
+        <Flex gap={5} justify="center" align="center" opacity={0.5}>
+            <IconHeadphones size={18} />
+            <Text>{count}</Text>
+        </Flex>
     );
 };

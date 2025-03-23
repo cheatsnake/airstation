@@ -5,12 +5,17 @@ import { errNotify } from "../notifications";
 
 interface PlaybackStore {
     playback: PlaybackState;
+    setPlayback: (pb: PlaybackState) => void;
     fetchPlayback: () => Promise<void>;
     incElapsedTime: (value: number) => void;
 }
 
 export const usePlaybackStore = create<PlaybackStore>()((set) => ({
     playback: { currentTrack: null, currentTrackElapsed: 0, isPlaying: false },
+
+    setPlayback(pb) {
+        set({ playback: pb });
+    },
 
     async fetchPlayback() {
         try {

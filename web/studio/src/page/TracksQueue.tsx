@@ -36,10 +36,24 @@ export const TrackQueue: FC<{}> = () => {
         handLoader.close();
     };
 
-    const handleRemove = async (trackID: string) => {
+    const handleRemove = async (trackIDs: string[]) => {
         handLoader.open();
         try {
-            const { message } = await airstationAPI.removeFromQueue([trackID]);
+            const { message } = await airstationAPI.removeFromQueue(trackIDs);
+            await fetchQueue();
+            okNotify(message);
+        } catch (error) {
+            errNotify(error);
+        } finally {
+            handLoader.close();
+        }
+    };
+
+    const handleClear = async () => {
+        handLoader.open();
+        try {
+            const trackIDs = queue.filter(({ id }) => id !== playback.currentTrack?.id).map(({ id }) => id);
+            const { message } = await airstationAPI.removeFromQueue(trackIDs);
             await fetchQueue();
             okNotify(message);
         } catch (error) {
@@ -115,16 +129,7 @@ export const TrackQueue: FC<{}> = () => {
             <Space h={12} />
 
             <Group gap="xs">
-                {playback?.isPlaying ? (
-                    <Button variant="light" color="yellow" disabled>
-                        Pause
-                    </Button>
-                ) : (
-                    <Button variant="light" color="green">
-                        Play
-                    </Button>
-                )}
-                <Button variant="light" color="red" disabled>
+                <Button onClick={handleClear} variant="light" color="red" disabled={loader || queue.length <= 1}>
                     Clear
                 </Button>
             </Group>
@@ -132,12 +137,12 @@ export const TrackQueue: FC<{}> = () => {
     );
 };
 
-const QueueItem: FC<{ track: Track; handleRemove: (id: string) => Promise<void> }> = ({ track, handleRemove }) => {
+const QueueItem: FC<{ track: Track; handleRemove: (ids: string[]) => Promise<void> }> = ({ track, handleRemove }) => {
     return (
         <Paper p="xs" key={track.id} mb="xs">
             <Flex justify="space-between" align="center">
                 <Text style={{ whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}>{track.name}</Text>
-                <CloseButton size="sm" onClick={() => handleRemove(track.id)} />
+                <CloseButton size="sm" onClick={() => handleRemove([track.id])} />
             </Flex>
         </Paper>
     );
