@@ -67,7 +67,7 @@ func (s *State) Run() {
 		s.CurrentTrackElapsed += s.refreshInterval
 		s.refreshCount++
 
-		// every time a new segment is played
+		// every time a new segment is playing
 		if math.Mod(float64(s.refreshCount), float64(s.playlist.MaxSegmentDuration)) == 0 {
 			s.playlist.UpdateMediaSequence()
 		}
@@ -103,7 +103,6 @@ func (s *State) Pause() {
 	defer s.mutex.Unlock()
 
 	s.IsPlaying = false
-	s.CurrentTrack = nil
 }
 
 func (s *State) Load() error {
