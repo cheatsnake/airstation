@@ -43,9 +43,9 @@ func (s *Server) Run() {
 	s.mux.HandleFunc("GET /api/v1/events", s.handleEvents)
 	s.mux.HandleFunc("POST /api/v1/login", s.handleLogin)
 	s.mux.Handle("GET /static/tmp/", s.handleStaticDirWithoutCache("/static/tmp", s.config.TmpDir))
+	s.mux.Handle("GET /api/v1/playback", http.HandlerFunc(s.handlePlaybackState))
 
 	// Protected handlers
-	s.mux.Handle("GET /api/v1/playback", s.jwtAuth(http.HandlerFunc(s.handlePlaybackState)))
 	s.mux.Handle("POST /api/v1/track", s.jwtAuth(http.HandlerFunc(s.handleTrackUpload)))
 	s.mux.Handle("POST /api/v1/tracks", s.jwtAuth(http.HandlerFunc(s.handleTracksUpload)))
 	s.mux.Handle("GET /api/v1/tracks", s.jwtAuth(http.HandlerFunc(s.handleTracks)))
