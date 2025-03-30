@@ -26,7 +26,7 @@ export const AuthGuard: FC<{ children: JSX.Element }> = (props) => {
         (async () => {
             try {
                 handLoader.open();
-                await airstationAPI.getPlayback();
+                await airstationAPI.getQueue();
                 setIsAuth(true);
             } catch (error) {
                 const msg = handleErr(error);

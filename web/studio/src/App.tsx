@@ -24,7 +24,7 @@ const theme = createTheme({
 
 const App = () => {
     return (
-        <MantineProvider defaultColorScheme="light" theme={theme}>
+        <MantineProvider defaultColorScheme="dark" theme={theme}>
             <Notifications position="bottom-right" autoClose={7000} />
             <AuthGuard>
                 <Page />
