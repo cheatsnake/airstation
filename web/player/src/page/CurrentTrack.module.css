@@ -1,0 +1,16 @@
+.box {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+}
+
+.label {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    align-items: center;
+    color: #fff;
+    font-size: 0.9rem;
+    cursor: pointer;
+    padding: 0.5rem;
+}
