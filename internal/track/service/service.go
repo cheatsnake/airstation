@@ -179,7 +179,7 @@ func defineTrackName(fileName, metaName string) string {
 
 	name := strings.ReplaceAll(fileName, ".mp3", "")
 	name = strings.ReplaceAll(name, ".aac", "")
-	name = strings.ReplaceAll(name, "_", "")
+	name = strings.ReplaceAll(name, "_", " ")
 
 	return name
 }
