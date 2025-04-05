@@ -8,6 +8,7 @@ export default defineConfig({
         proxy: {
             "/api": { target: "http://localhost:7331", changeOrigin: true },
             "/static": { target: "http://localhost:7331", changeOrigin: true },
+            "/stream": { target: "http://localhost:7331", changeOrigin: true },
         },
     },
 });

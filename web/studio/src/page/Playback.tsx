@@ -1,13 +1,17 @@
 import { ActionIcon, Box, Flex, Paper, Progress, Space, Text } from "@mantine/core";
 import { FC, useEffect, useRef, useState } from "react";
-import { airstationAPI } from "../api";
+import { airstationAPI, API_HOST } from "../api";
 import { usePlaybackStore } from "../store/playback";
 import { formatTime } from "../utils/time";
 import { useTrackQueueStore } from "../store/track-queue";
-import { IconHeadphones, IconPlayerPlayFilled, IconPlayerStopFilled } from "../icons";
+import { IconHeadphones, IconPlayerPlayFilled, IconPlayerStopFilled, IconVolumeOff, IconVolumeOn } from "../icons";
 import { useDisclosure } from "@mantine/hooks";
 import { errNotify } from "../notifications";
 import { EVENTS, useEventSourceStore } from "../store/events";
+import { useThemeBlackColor } from "../hooks/useThemeBlackColor";
+import HLS from "hls.js";
+import { PlaybackState } from "../api/types";
+import Hls from "hls.js";
 
 export const Playback: FC<{}> = () => {
     const updateIntervalID = useRef(0);
@@ -59,22 +63,23 @@ export const Playback: FC<{}> = () => {
     return (
         <Paper p="sm" w="100%" h={95}>
             <Flex gap="sm" justify="center" align="center">
-                <Box>
+                <Flex gap="xs">
                     <ActionIcon
                         onClick={togglePlayback}
                         disabled={loader}
                         variant="subtle"
-                        color="black"
+                        color={useThemeBlackColor()}
                         size="sm"
                         aria-label="Settings"
                     >
                         {playback?.isPlaying ? (
-                            <IconPlayerStopFilled fill="black" />
+                            <IconPlayerStopFilled fill={useThemeBlackColor()} />
                         ) : (
-                            <IconPlayerPlayFilled fill="black" />
+                            <IconPlayerPlayFilled fill={useThemeBlackColor()} />
                         )}
                     </ActionIcon>
-                </Box>
+                    <StreamToggler playback={playback} />
+                </Flex>
                 <Box w="100%">
                     <Flex justify="space-between" align="center">
                         <Text>{playback?.currentTrack?.name || "Unknown"}</Text>
@@ -113,5 +118,67 @@ const ListenersCounter = () => {
             <IconHeadphones size={18} />
             <Text>{count}</Text>
         </Flex>
+    );
+};
+
+const StreamToggler: FC<{ playback: PlaybackState }> = (props) => {
+    const videoRef = useRef<HTMLVideoElement | null>(null);
+    const streamRef = useRef<Hls | null>(null);
+    const [isPlaying, setIsPlaying] = useState(false);
+
+    const initStream = () => {
+        if (isPlaying) return;
+
+        streamRef.current = new HLS();
+        streamRef.current.loadSource(API_HOST + "/stream");
+        streamRef.current.attachMedia(videoRef.current as unknown as HTMLMediaElement);
+    };
+
+    const destroyStream = () => {
+        streamRef.current?.destroy();
+        streamRef.current = null;
+        setIsPlaying(false);
+    };
+
+    const togglePlayback = async () => {
+        try {
+            initStream();
+
+            if (isPlaying) {
+                videoRef.current?.pause();
+                destroyStream();
+                setIsPlaying(false);
+            } else {
+                await videoRef.current?.play();
+                setIsPlaying(true);
+            }
+        } catch (error) {
+            console.log("Failed to play: ", error);
+        }
+    };
+
+    useEffect(() => {
+        if (!props.playback.isPlaying && streamRef.current) {
+            destroyStream();
+        }
+    }, [props.playback]);
+
+    return (
+        <>
+            <video style={{ display: "none" }} id="stream" ref={videoRef}></video>
+            <ActionIcon
+                onClick={togglePlayback}
+                variant="subtle"
+                color={useThemeBlackColor()}
+                size="sm"
+                aria-label="Settings"
+            >
+                {isPlaying ? (
+                    <IconVolumeOn fill={useThemeBlackColor()} />
+                ) : (
+                    <IconVolumeOff fill={useThemeBlackColor()} />
+                )}
+            </ActionIcon>
+        </>
     );
 };
