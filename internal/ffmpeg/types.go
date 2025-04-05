@@ -2,6 +2,7 @@ package ffmpeg
 
 // AudioMetadata holds metadata information about an audio file.
 type AudioMetadata struct {
+	Name         string  // The name of the audio
 	Duration     float64 // The total duration of the audio file in seconds.
 	BitRate      int     // The bit rate of the audio file in kbps (kilobits per second).
 	CodecName    string  // The name of the codec used for encoding the audio.
@@ -13,6 +14,9 @@ type rawAudioMetadata struct {
 	Format struct {
 		Duration string `json:"duration"`
 		BitRate  string `json:"bit_rate"`
+		Tags     struct {
+			Title string `json:"title"`
+		} `json:"tags"`
 	} `json:"format"`
 	Streams []struct {
 		CodecName  string `json:"codec_name"`

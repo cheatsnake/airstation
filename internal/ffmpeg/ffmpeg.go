@@ -84,7 +84,7 @@ func (cli *CLI) AudioMetadata(filePath string) (AudioMetadata, error) {
 		ffprobeBin,
 		"-i", filePath,
 		"-v", "error",
-		"-show_entries", "format=duration,bit_rate:stream=codec_name,sample_rate,channels",
+		"-show_entries", "format=duration,bit_rate:stream=codec_name,sample_rate,channels:format_tags=title:stream_tags=title",
 		"-of", "json",
 	)
 
@@ -103,6 +103,7 @@ func (cli *CLI) AudioMetadata(filePath string) (AudioMetadata, error) {
 		return metadata, fmt.Errorf("parsing metadata retrieve failed: %v", err)
 	}
 
+	name := rawMetadata.Format.Tags.Title
 	duration, err := strconv.ParseFloat(rawMetadata.Format.Duration, 64)
 	if err != nil {
 		return metadata, fmt.Errorf("parsing metadata duration failed: %v", err)
@@ -124,6 +125,7 @@ func (cli *CLI) AudioMetadata(filePath string) (AudioMetadata, error) {
 		return metadata, fmt.Errorf("parsing metadata sample rate failed: %v", err)
 	}
 
+	metadata.Name = name
 	metadata.Duration = duration
 	metadata.BitRate = int(bitRate / 1000)
 	metadata.ChannelCount = channels
