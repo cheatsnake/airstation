@@ -4,6 +4,7 @@ package trackservice
 import (
 	"log/slog"
 	"math"
+	"strings"
 
 	"github.com/cheatsnake/airstation/internal/ffmpeg"
 	"github.com/cheatsnake/airstation/internal/hls"
@@ -54,7 +55,8 @@ func (s *Service) AddTrack(name, path string) (*track.Track, error) {
 		return nil, err
 	}
 
-	newTrack, err := s.store.AddTrack(name, path, modDuration, metadata.BitRate)
+	trackName := defineTrackName(name, metadata.Name)
+	newTrack, err := s.store.AddTrack(trackName, path, modDuration, metadata.BitRate)
 	if err != nil {
 		return nil, err
 	}
@@ -168,4 +170,16 @@ func roundDuration(trackDuration, segmentDuration float64) float64 {
 
 	padding := segmentDuration - remainder
 	return math.Floor(trackDuration + padding)
+}
+
+func defineTrackName(fileName, metaName string) string {
+	if len(metaName) != 0 {
+		return metaName
+	}
+
+	name := strings.ReplaceAll(fileName, ".mp3", "")
+	name = strings.ReplaceAll(name, ".aac", "")
+	name = strings.ReplaceAll(name, "_", "")
+
+	return name
 }
