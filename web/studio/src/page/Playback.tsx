@@ -9,7 +9,6 @@ import { useDisclosure } from "@mantine/hooks";
 import { errNotify } from "../notifications";
 import { EVENTS, useEventSourceStore } from "../store/events";
 import { useThemeBlackColor } from "../hooks/useThemeBlackColor";
-import HLS from "hls.js";
 import { PlaybackState } from "../api/types";
 import Hls from "hls.js";
 
@@ -26,9 +25,6 @@ export const Playback: FC<{}> = () => {
     useEffect(() => {
         (async () => {
             await fetchPlayback();
-            updateIntervalID.current = setInterval(() => {
-                incElapsedTime(1);
-            }, 1000);
         })();
 
         addEventHandler(EVENTS.newTrack, async () => {
@@ -39,19 +35,22 @@ export const Playback: FC<{}> = () => {
         return () => clearInterval(updateIntervalID.current);
     }, []);
 
+    useEffect(() => {
+        if (playback.isPlaying && updateIntervalID.current === 0) {
+            updateIntervalID.current = setInterval(() => {
+                incElapsedTime(1);
+            }, 1000);
+        }
+
+        if (!playback.isPlaying && updateIntervalID.current !== 0) {
+            clearInterval(updateIntervalID.current);
+        }
+    }, [playback]);
+
     const togglePlayback = async () => {
         handLoader.open();
         try {
             const pb = playback.isPlaying ? await airstationAPI.pausePlayback() : await airstationAPI.playPlayback();
-
-            if (pb.isPlaying) {
-                updateIntervalID.current = setInterval(() => {
-                    incElapsedTime(1);
-                }, 1000);
-            } else {
-                clearInterval(updateIntervalID.current);
-            }
-
             setPlayback(pb);
         } catch (error) {
             errNotify(error);
@@ -129,7 +128,7 @@ const StreamToggler: FC<{ playback: PlaybackState }> = (props) => {
     const initStream = () => {
         if (isPlaying) return;
 
-        streamRef.current = new HLS();
+        streamRef.current = new Hls();
         streamRef.current.loadSource(API_HOST + "/stream");
         streamRef.current.attachMedia(videoRef.current as unknown as HTMLMediaElement);
     };
