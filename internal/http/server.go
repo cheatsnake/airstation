@@ -61,11 +61,17 @@ func (s *Server) Run() {
 	s.mux.Handle("GET /", s.handleStaticDir("", s.config.WebDir))
 
 	s.listenEvents()
+	err := s.state.Play()
+	if err != nil {
+		s.logger.Warn("Auto start playing failed: " + err.Error())
+	}
+
+	go s.state.Run()
 
 	server := cors.Default().Handler(s.mux) // CORS middleware
 
 	s.logger.Info("Server starts on http://localhost:" + s.config.HTTPPort)
-	err := http.ListenAndServe(":"+s.config.HTTPPort, server)
+	err = http.ListenAndServe(":"+s.config.HTTPPort, server)
 	if err != nil {
 		s.logger.Error("Listen and serve failed", slog.String("info", err.Error()))
 	}
@@ -96,9 +102,9 @@ func (s *Server) listenEvents() {
 			case trackName := <-s.state.NewTrackNotify:
 				s.eventsEmitter.RegisterEvent(eventNewTrack, trackName)
 			case <-s.state.PlayNotify:
-				s.eventsEmitter.RegisterEvent(eventPlay, "")
+				s.eventsEmitter.RegisterEvent(eventPlay, s.state.CurrentTrack.Name)
 			case <-s.state.PauseNotify:
-				s.eventsEmitter.RegisterEvent(eventPause, "")
+				s.eventsEmitter.RegisterEvent(eventPause, " ")
 
 			}
 		}
