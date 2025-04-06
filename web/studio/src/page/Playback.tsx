@@ -32,7 +32,10 @@ export const Playback: FC<{}> = () => {
             await fetchPlayback();
         });
 
-        return () => clearInterval(updateIntervalID.current);
+        return () => {
+            clearInterval(updateIntervalID.current);
+            updateIntervalID.current = 0;
+        };
     }, []);
 
     useEffect(() => {
@@ -44,6 +47,7 @@ export const Playback: FC<{}> = () => {
 
         if (!playback.isPlaying && updateIntervalID.current !== 0) {
             clearInterval(updateIntervalID.current);
+            updateIntervalID.current = 0;
         }
     }, [playback]);
 
