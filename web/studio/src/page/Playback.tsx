@@ -101,7 +101,7 @@ export const Playback: FC<{}> = () => {
 };
 
 const ListenersCounter = () => {
-    const [count, setCount] = useState(0);
+    const [count, setCount] = useState(1);
     const addEventHandler = useEventSourceStore((s) => s.addEventHandler);
 
     const handleCounter = (msg: MessageEvent<string>) => {

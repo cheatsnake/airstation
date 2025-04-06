@@ -13,7 +13,6 @@ import {
     useMantineColorScheme,
 } from "@mantine/core";
 import { FC, useEffect, useState } from "react";
-import { airstationAPI } from "../api";
 import { useTrackQueueStore } from "../store/track-queue";
 import { useTracksStore } from "../store/tracks";
 import { EmptyLabel } from "../components/EmptyLabel";
@@ -37,8 +36,13 @@ export const TrackLibrary: FC<{}> = () => {
 
     const loadTracks = async (page = 1, limit = 100) => {
         handLoader.open();
-        await fetchTracks(page, limit, search);
-        handLoader.close();
+        try {
+            await fetchTracks(page, limit, search);
+        } catch (error) {
+            errNotify(error);
+        } finally {
+            handLoader.close();
+        }
     };
 
     const toggleTrackPlaying = (id: string) => {
@@ -118,7 +122,7 @@ export const TrackLibrary: FC<{}> = () => {
 };
 
 const TrackUploader: FC<{ handLoader: DisclosureHandler }> = (props) => {
-    const addTracks = useTracksStore((s) => s.addTracks);
+    const uploadTracks = useTracksStore((s) => s.uploadTracks);
 
     const handleUpload = async (files: File[]) => {
         if (!files.length) {
@@ -128,8 +132,7 @@ const TrackUploader: FC<{ handLoader: DisclosureHandler }> = (props) => {
 
         props.handLoader.open();
         try {
-            const tracks = await airstationAPI.uploadTracks(files);
-            addTracks(tracks);
+            await uploadTracks(files);
         } catch (error) {
             errNotify(error);
         } finally {
@@ -157,7 +160,9 @@ const TrackActions: FC<{
     availableTracks: Track[];
     disabled?: boolean;
 }> = (props) => {
-    const fetchQueue = useTrackQueueStore((s) => s.fetchQueue);
+    const addToQueue = useTrackQueueStore((s) => s.addToQueue);
+    const deleteTracks = useTracksStore((s) => s.deleteTracks);
+
     const toggleSelection = () => {
         if (props.selected.size) {
             props.setSelected(new Set());
@@ -168,9 +173,9 @@ const TrackActions: FC<{
     };
 
     const handleDelete = async () => {
+        props.handLoader.open();
         try {
-            props.handLoader.open();
-            const { message } = await airstationAPI.deleteTracks([...props.selected]);
+            const { message } = await deleteTracks([...props.selected]);
             okNotify(message);
         } catch (error) {
             errNotify(error);
@@ -179,11 +184,10 @@ const TrackActions: FC<{
         }
     };
 
-    const handleQueue = async () => {
+    const handleAddToQueue = async () => {
+        props.handLoader.open();
         try {
-            props.handLoader.open();
-            const { message } = await airstationAPI.addToQueue([...props.selected]);
-            await fetchQueue();
+            const { message } = await addToQueue([...props.selected]);
             props.setSelected(new Set());
             okNotify(message);
         } catch (error) {
@@ -198,7 +202,7 @@ const TrackActions: FC<{
             <Button disabled={props.disabled} onClick={handleDelete} variant="light" color="red">
                 Delete
             </Button>
-            <Button disabled={props.disabled} onClick={handleQueue} variant="light">
+            <Button disabled={props.disabled} onClick={handleAddToQueue} variant="light">
                 Queue
             </Button>
             <Checkbox size="md" color="dimmed" readOnly checked={props.selected.size > 0} onClick={toggleSelection} />

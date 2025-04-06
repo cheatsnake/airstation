@@ -1,30 +1,41 @@
 import { create } from "zustand";
-import { Track } from "../api/types";
+import { ResponseOK, Track } from "../api/types";
 import { airstationAPI } from "../api";
-import { errNotify } from "../notifications";
 
 interface TrackQueueStore {
     queue: Track[];
     fetchQueue: () => Promise<void>;
     updateQueue: (tracks: Track[]) => Promise<void>;
+    addToQueue(trackIDs: string[]): Promise<ResponseOK>;
+    removeFromQueue(trackIDs: string[]): Promise<ResponseOK>;
     rotateQueue: () => void;
 }
 
-export const useTrackQueueStore = create<TrackQueueStore>()((set) => ({
+export const useTrackQueueStore = create<TrackQueueStore>()((set, get) => ({
     queue: [],
 
     async fetchQueue() {
-        try {
-            const q = await airstationAPI.getQueue();
-            set({ queue: q });
-        } catch (error) {
-            errNotify(error);
-        }
+        const q = await airstationAPI.getQueue();
+        set({ queue: q });
     },
 
     async updateQueue(tracks) {
         set({ queue: tracks });
         await airstationAPI.updateQueue(tracks.map(({ id }) => id));
+    },
+
+    async addToQueue(trackIDs: string[]) {
+        const resp = await airstationAPI.addToQueue(trackIDs);
+        const q = await airstationAPI.getQueue();
+        set({ queue: q });
+        return resp;
+    },
+
+    async removeFromQueue(trackIDs: string[]) {
+        const resp = await airstationAPI.removeFromQueue(trackIDs);
+        const filtered = get().queue.filter(({ id }) => !trackIDs.includes(id));
+        set({ queue: filtered });
+        return resp;
     },
 
     rotateQueue() {

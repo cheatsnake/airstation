@@ -17,7 +17,6 @@ import { useTrackQueueStore } from "../store/track-queue";
 import { EmptyLabel } from "../components/EmptyLabel";
 import { errNotify, okNotify } from "../notifications";
 import { useDisclosure } from "@mantine/hooks";
-import { airstationAPI } from "../api";
 import { moveArrayItem } from "../utils/array";
 import { Track } from "../api/types";
 import { handleErr } from "../utils/error";
@@ -28,19 +27,24 @@ export const TrackQueue: FC<{}> = () => {
     const queue = useTrackQueueStore((s) => s.queue);
     const fetchQueue = useTrackQueueStore((s) => s.fetchQueue);
     const updateQueue = useTrackQueueStore((s) => s.updateQueue);
+    const removeFromQueue = useTrackQueueStore((s) => s.removeFromQueue);
     const { colorScheme } = useMantineColorScheme();
 
     const loadQueue = async () => {
         handLoader.open();
-        await fetchQueue();
-        handLoader.close();
+        try {
+            await fetchQueue();
+        } catch (error) {
+            errNotify(error);
+        } finally {
+            handLoader.close();
+        }
     };
 
     const handleRemove = async (trackIDs: string[]) => {
         handLoader.open();
         try {
-            const { message } = await airstationAPI.removeFromQueue(trackIDs);
-            await fetchQueue();
+            const { message } = await removeFromQueue(trackIDs);
             okNotify(message);
         } catch (error) {
             errNotify(error);
@@ -53,8 +57,7 @@ export const TrackQueue: FC<{}> = () => {
         handLoader.open();
         try {
             const trackIDs = queue.filter(({ id }) => id !== playback.currentTrack?.id).map(({ id }) => id);
-            const { message } = await airstationAPI.removeFromQueue(trackIDs);
-            await fetchQueue();
+            const { message } = await removeFromQueue(trackIDs);
             okNotify(message);
         } catch (error) {
             errNotify(error);

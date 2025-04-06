@@ -1,33 +1,37 @@
 import { create } from "zustand";
-import { Track } from "../api/types";
+import { ResponseOK, Track } from "../api/types";
 import { airstationAPI } from "../api";
-import { errNotify } from "../notifications";
 
 interface TracksStore {
     tracks: Track[];
 
-    fetchTracks: (p: number, l: number, s: string) => Promise<void>;
-    setTracks: (tracks: Track[]) => void;
-    addTracks: (tracks: Track[]) => void;
+    setTracks(tracks: Track[]): void;
+    fetchTracks(p: number, l: number, s: string): Promise<void>;
+    uploadTracks(files: File[]): Promise<void>;
+    deleteTracks(trackIDs: string[]): Promise<ResponseOK>;
 }
 
-export const useTracksStore = create<TracksStore>()((set) => ({
+export const useTracksStore = create<TracksStore>()((set, get) => ({
     tracks: [],
-
-    async fetchTracks(p: number, l: number, s: string) {
-        try {
-            const { tracks } = await airstationAPI.getTracks(p, l, s);
-            set({ tracks });
-        } catch (error) {
-            errNotify(error);
-        }
-    },
 
     setTracks(q) {
         set({ tracks: q });
     },
 
-    addTracks(tracks) {
+    async fetchTracks(p: number, l: number, s: string) {
+        const { tracks } = await airstationAPI.getTracks(p, l, s);
+        set({ tracks });
+    },
+
+    async uploadTracks(files: File[]) {
+        const tracks = await airstationAPI.uploadTracks(files);
         set((state) => ({ tracks: [...tracks, ...state.tracks] }));
+    },
+
+    async deleteTracks(trackIDs: string[]) {
+        const resp = await airstationAPI.deleteTracks(trackIDs);
+        const filtered = get().tracks.filter(({ id }) => !trackIDs.includes(id));
+        set({ tracks: filtered });
+        return resp;
     },
 }));
