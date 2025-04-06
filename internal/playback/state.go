@@ -94,6 +94,7 @@ func (s *State) Play() error {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 	s.IsPlaying = true
+	s.PlayNotify <- true
 
 	return nil
 }
@@ -103,6 +104,7 @@ func (s *State) Pause() {
 	defer s.mutex.Unlock()
 
 	s.IsPlaying = false
+	s.PauseNotify <- false
 }
 
 func (s *State) Load() error {
