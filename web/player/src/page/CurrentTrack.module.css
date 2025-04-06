@@ -4,7 +4,8 @@
     width: 100%;
 }
 
-.label {
+.label,
+.offline_label {
     display: flex;
     justify-content: center;
     gap: 0.5rem;
@@ -13,4 +14,14 @@
     font-size: 0.9rem;
     cursor: pointer;
     padding: 0.5rem;
+}
+
+.offline_label {
+    font-size: 1.1rem;
+    user-select: none;
+    color: #c3c3c3;
+}
+
+.offline_label > span {
+    color: rgb(255, 75, 75);
 }

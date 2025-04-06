@@ -1,27 +1,26 @@
-import { createSignal, onMount } from "solid-js";
+import { onMount, Show } from "solid-js";
 import { airstationAPI } from "../api";
 import styles from "./CurrentTrack.module.css";
 import { addEventListener, EVENTS } from "../store/events";
+import { setTrackStore, trackStore } from "../store/track";
 
 export const CurrentTrack = () => {
-    const [track, setTrack] = createSignal("");
-
     onMount(async () => {
         try {
             const cs = await airstationAPI.getPlayback();
-            if (cs.currentTrack) setTrack(cs.currentTrack.name);
+            if (cs.isPlaying && cs.currentTrack) setTrackStore("trackName", cs.currentTrack.name);
         } catch (error) {
             console.log(error);
         }
 
         addEventListener(EVENTS.newTrack, (e: MessageEvent<string>) => {
-            setTrack(e.data);
+            setTrackStore("trackName", e.data);
         });
     });
 
     const copyToClipboard = async () => {
         try {
-            await navigator.clipboard.writeText(track());
+            await navigator.clipboard.writeText(trackStore.trackName);
         } catch (error) {
             console.log(error);
         }
@@ -29,9 +28,19 @@ export const CurrentTrack = () => {
 
     return (
         <div class={styles.box}>
-            <div onClick={copyToClipboard} class={styles.label}>
-                {track()}
-            </div>
+            <Show when={trackStore.trackName.length > 0} fallback={<OfflineLabel />}>
+                <div onClick={copyToClipboard} class={styles.label}>
+                    {trackStore.trackName}
+                </div>
+            </Show>
+        </div>
+    );
+};
+
+const OfflineLabel = () => {
+    return (
+        <div class={styles.offline_label}>
+            Stream is <span>offline</span>
         </div>
     );
 };

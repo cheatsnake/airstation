@@ -5,6 +5,8 @@ export const EVENT_SOURCE_URL = API_HOST + API_PREFIX + "/events";
 export const EVENTS = {
     newTrack: "new_track",
     countListeners: "count_listeners",
+    pause: "pause",
+    play: "play",
 };
 
 const [eventSourceStore, setEventSourceStore] = createStore<{ eventSource: EventSource | null }>({
