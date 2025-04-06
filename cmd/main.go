@@ -28,29 +28,17 @@ func main() {
 	signal.Notify(stopSignal, os.Interrupt, syscall.SIGTERM)
 
 	log := logger.New()
-	storageLog := log.WithGroup("storage")
-	store, err := sqlite.Open("storage.db", storageLog)
+	store, err := sqlite.Open("storage.db", log.WithGroup("storage"))
 	if err != nil {
 		log.Error("Failed connect to database: " + err.Error())
 		os.Exit(1)
 	}
 
 	ffmpegCLI := ffmpeg.NewCLI()
-	trackServiceLog := log.WithGroup("trackservice")
-	trackService := trackservice.New(store, ffmpegCLI, trackServiceLog)
-
-	playbackLog := log.WithGroup("playback")
-	state := playback.NewState(trackService, conf.TmpDir, playbackLog)
-	err = state.Play()
-	if err != nil {
-		log.Error("Auto start playing failed: " + err.Error())
-	}
-
-	go state.Run()
-
-	httpLog := log.WithGroup("http")
-	server := http.NewServer(state, trackService, conf, httpLog)
-	go server.Run()
+	trackService := trackservice.New(store, ffmpegCLI, log.WithGroup("trackservice"))
+	playbackState := playback.NewState(trackService, conf.TmpDir, log.WithGroup("playback"))
+	httpServer := http.NewServer(playbackState, trackService, conf, log.WithGroup("http"))
+	go httpServer.Run()
 
 	<-stopSignal
 	shutdown(log, store)
