@@ -16,10 +16,12 @@ import { usePlaybackStore } from "../store/playback";
 import { useTrackQueueStore } from "../store/track-queue";
 import { EmptyLabel } from "../components/EmptyLabel";
 import { errNotify, okNotify } from "../notifications";
-import { useDisclosure } from "@mantine/hooks";
+import { useDisclosure, useViewportSize } from "@mantine/hooks";
 import { moveArrayItem } from "../utils/array";
 import { Track } from "../api/types";
 import { handleErr } from "../utils/error";
+import { defineBoxHeight } from "../utils/size";
+import { modals } from "@mantine/modals";
 
 export const TrackQueue: FC<{}> = () => {
     const [loader, handLoader] = useDisclosure(false);
@@ -29,6 +31,7 @@ export const TrackQueue: FC<{}> = () => {
     const updateQueue = useTrackQueueStore((s) => s.updateQueue);
     const removeFromQueue = useTrackQueueStore((s) => s.removeFromQueue);
     const { colorScheme } = useMantineColorScheme();
+    const { width: windowWidth, height: windowHeight } = useViewportSize();
 
     const loadQueue = async () => {
         handLoader.open();
@@ -66,6 +69,16 @@ export const TrackQueue: FC<{}> = () => {
         }
     };
 
+    const confirmClear = () => {
+        modals.openConfirmModal({
+            title: "Confirm clear queue",
+            centered: true,
+            children: <Text size="sm">Do you really want to completely clear the track queue?</Text>,
+            labels: { confirm: "Confirm", cancel: "Cancel" },
+            onConfirm: () => handleClear(),
+        });
+    };
+
     const tracklist = queue.map((track, index) => {
         if (track.id === playback?.currentTrack?.id) return null;
 
@@ -94,24 +107,23 @@ export const TrackQueue: FC<{}> = () => {
                         Live queue
                     </Text>
                 </Flex>
-                <Text c="dimmed">{`${queue.length > 0 ? queue.length - 1 : 0} ${
-                    queue.length > 2 ? "tracks" : "track"
-                }`}</Text>
+                <Text c="dimmed">{`${queue.length > 1 ? queue.length - 1 : ""}`}</Text>
             </Flex>
 
             <Space h={12} />
 
-            <Box h="100%" mah={650} style={{ overflow: "auto", overflowX: "hidden" }}>
+            <Box
+                mah={defineBoxHeight(windowHeight) + 52}
+                mih={windowWidth >= 768 ? defineBoxHeight(windowHeight) + 52 : 0}
+                style={{ overflow: "auto", overflowX: "hidden" }}
+            >
                 {queue.length > 1 ? (
                     <DragDropContext
                         onDragEnd={async ({ destination, source }) => {
-                            handLoader.open();
                             try {
                                 await updateQueue(moveArrayItem(queue, source.index, destination?.index || 0));
                             } catch (error) {
                                 handleErr(error);
-                            } finally {
-                                handLoader.close();
                             }
                         }}
                     >
@@ -132,7 +144,7 @@ export const TrackQueue: FC<{}> = () => {
             <Space h={12} />
 
             <Group gap="xs">
-                <Button onClick={handleClear} variant="light" color="red" disabled={loader || queue.length <= 1}>
+                <Button onClick={confirmClear} variant="light" color="red" disabled={loader || queue.length <= 1}>
                     Clear
                 </Button>
             </Group>

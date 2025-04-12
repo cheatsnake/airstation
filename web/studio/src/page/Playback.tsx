@@ -11,6 +11,7 @@ import { EVENTS, useEventSourceStore } from "../store/events";
 import { useThemeBlackColor } from "../hooks/useThemeBlackColor";
 import { PlaybackState } from "../api/types";
 import Hls from "hls.js";
+import { modals } from "@mantine/modals";
 
 export const Playback: FC<{}> = () => {
     const updateIntervalID = useRef(0);
@@ -63,12 +64,31 @@ export const Playback: FC<{}> = () => {
         }
     };
 
+    const handlePlaybackAction = () => {
+        if (!playback.isPlaying) {
+            togglePlayback();
+            return;
+        }
+
+        modals.openConfirmModal({
+            title: "Confirm stop playback",
+            centered: true,
+            children: (
+                <Text size="sm">
+                    Do you really want to stop playing tracks on the station? This action will affect all listeners.
+                </Text>
+            ),
+            labels: { confirm: "Confirm", cancel: "Cancel" },
+            onConfirm: () => togglePlayback(),
+        });
+    };
+
     return (
         <Paper p="sm" w="100%" h={95}>
             <Flex gap="sm" justify="center" align="center">
                 <Flex gap="xs">
                     <ActionIcon
-                        onClick={togglePlayback}
+                        onClick={handlePlaybackAction}
                         disabled={loader}
                         variant="subtle"
                         color={useThemeBlackColor()}

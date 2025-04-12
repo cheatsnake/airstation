@@ -1,6 +1,7 @@
 import { createTheme, MantineProvider } from "@mantine/core";
 import { Page } from "./page";
 import { Notifications } from "@mantine/notifications";
+import { ModalsProvider } from "@mantine/modals";
 import { AuthGuard } from "./page/AuthGuard";
 
 const theme = createTheme({
@@ -25,10 +26,12 @@ const theme = createTheme({
 const App = () => {
     return (
         <MantineProvider defaultColorScheme="dark" theme={theme}>
-            <Notifications position="bottom-right" autoClose={7000} />
-            <AuthGuard>
-                <Page />
-            </AuthGuard>
+            <ModalsProvider>
+                <Notifications position="bottom-right" autoClose={7000} />
+                <AuthGuard>
+                    <Page />
+                </AuthGuard>
+            </ModalsProvider>
         </MantineProvider>
     );
 };

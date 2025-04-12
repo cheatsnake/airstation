@@ -16,11 +16,13 @@ import { FC, useEffect, useState } from "react";
 import { useTrackQueueStore } from "../store/track-queue";
 import { useTracksStore } from "../store/tracks";
 import { EmptyLabel } from "../components/EmptyLabel";
-import { useDebouncedValue, useDisclosure } from "@mantine/hooks";
+import { useDebouncedValue, useDisclosure, useViewportSize } from "@mantine/hooks";
 import { AudioPlayer } from "../components/AudioPlayer";
 import { errNotify, okNotify, warnNotify } from "../notifications";
 import { DisclosureHandler } from "../types";
 import { Track } from "../api/types";
+import { defineBoxHeight } from "../utils/size";
+import { modals } from "@mantine/modals";
 
 export const TrackLibrary: FC<{}> = () => {
     const [search, setSearch] = useState("");
@@ -29,6 +31,7 @@ export const TrackLibrary: FC<{}> = () => {
     const [debouncedSearch] = useDebouncedValue(search, 500);
     const [loader, handLoader] = useDisclosure(false);
     const { colorScheme } = useMantineColorScheme();
+    const { width: windowWidth, height: windowHeight } = useViewportSize();
 
     const tracks = useTracksStore((s) => s.tracks);
     const queue = useTrackQueueStore((s) => s.queue);
@@ -85,7 +88,11 @@ export const TrackLibrary: FC<{}> = () => {
 
             <Space h={16} />
 
-            <Box mah={600} style={{ overflow: "auto", overflowX: "hidden" }}>
+            <Box
+                mah={defineBoxHeight(windowHeight)}
+                mih={windowWidth >= 768 ? defineBoxHeight(windowHeight) : 0}
+                style={{ overflow: "auto", overflowX: "hidden" }}
+            >
                 <Flex direction="column" gap="sm" justify="center">
                     {tracks.length ? (
                         tracks.map((track) => (
@@ -176,6 +183,7 @@ const TrackActions: FC<{
         props.handLoader.open();
         try {
             const { message } = await deleteTracks([...props.selected]);
+            props.setSelected(new Set());
             okNotify(message);
         } catch (error) {
             errNotify(error);
@@ -197,9 +205,19 @@ const TrackActions: FC<{
         }
     };
 
+    const confirmDelete = () => {
+        modals.openConfirmModal({
+            title: "Confirm clear queue",
+            centered: true,
+            children: <Text size="sm">Do you really want to delete selected tracks from the server?</Text>,
+            labels: { confirm: "Confirm", cancel: "Cancel" },
+            onConfirm: () => handleDelete(),
+        });
+    };
+
     return (
         <Flex align="center" gap="xs">
-            <Button disabled={props.disabled} onClick={handleDelete} variant="light" color="red">
+            <Button disabled={props.disabled} onClick={confirmDelete} variant="light" color="red">
                 Delete
             </Button>
             <Button disabled={props.disabled} onClick={handleAddToQueue} variant="light">
