@@ -2,11 +2,13 @@ package http
 
 import (
 	"crypto/subtle"
+	"errors"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"os"
-	"path"
+	"path/filepath"
 	"slices"
 	"strings"
 	"time"
@@ -17,7 +19,8 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-const chunkLimit = 64 * 1024 * 1024 // 64 MB
+const multipartChunkLimit = 64 * 1024 * 1024 // 64 MB
+const copyBufferSize = 256 * 1024            // 256 KB
 
 func (s *Server) handleHLSPlaylist(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "audio/mpegurl")
@@ -114,45 +117,8 @@ func (s *Server) handleTracks(w http.ResponseWriter, r *http.Request) {
 	jsonResponse(w, result)
 }
 
-func (s *Server) handleTrackUpload(w http.ResponseWriter, r *http.Request) {
-	r.ParseMultipartForm(chunkLimit)
-
-	file, handler, err := r.FormFile("track")
-	if err != nil {
-		s.logger.Debug(err.Error())
-		jsonBadRequest(w, "Track parsing failed: "+err.Error())
-		return
-	}
-	defer file.Close()
-
-	trackPath := path.Join(s.config.TracksDir, handler.Filename)
-	dst, err := os.Create(trackPath)
-	if err != nil {
-		s.logger.Debug(err.Error())
-		jsonInternalError(w, "Track saving to disk failed")
-		return
-	}
-	defer dst.Close()
-
-	_, err = io.Copy(dst, file)
-	if err != nil {
-		s.logger.Debug(err.Error())
-		jsonInternalError(w, "Track upload failed")
-		return
-	}
-
-	track, err := s.trackService.AddTrack(handler.Filename, trackPath)
-	if err != nil {
-		s.logger.Debug(err.Error())
-		jsonBadRequest(w, "Track saving to database failed")
-		return
-	}
-
-	jsonResponse(w, track)
-}
-
 func (s *Server) handleTracksUpload(w http.ResponseWriter, r *http.Request) {
-	err := r.ParseMultipartForm(chunkLimit)
+	err := r.ParseMultipartForm(multipartChunkLimit)
 	if err != nil {
 		s.logger.Debug(err.Error())
 		jsonBadRequest(w, "Failed to parse multipart form: "+err.Error())
@@ -168,27 +134,9 @@ func (s *Server) handleTracksUpload(w http.ResponseWriter, r *http.Request) {
 	var uploadedTracks []*track.Track
 
 	for _, fileHeader := range files {
-		file, err := fileHeader.Open()
+		trackPath, err := s.saveFile(fileHeader)
 		if err != nil {
-			s.logger.Debug(err.Error())
-			jsonBadRequest(w, "Failed to open file: "+err.Error())
-			return
-		}
-		defer file.Close()
-
-		trackPath := path.Join(s.config.TracksDir, fileHeader.Filename)
-		dst, err := os.Create(trackPath)
-		if err != nil {
-			s.logger.Debug(err.Error())
-			jsonInternalError(w, "Failed to create file on disk: "+err.Error())
-			return
-		}
-		defer dst.Close()
-
-		_, err = io.Copy(dst, file)
-		if err != nil {
-			s.logger.Debug(err.Error())
-			jsonInternalError(w, "Failed to save file: "+err.Error())
+			jsonBadRequest(w, err.Error())
 			return
 		}
 
@@ -339,4 +287,34 @@ func (s *Server) handleStaticDirWithoutCache(prefix string, path string) http.Ha
 		w.Header().Set("Cache-Control", "no-cache")
 		fileHandler.ServeHTTP(w, r)
 	})
+}
+
+func (s *Server) saveFile(fileHeader *multipart.FileHeader) (string, error) {
+	file, err := fileHeader.Open()
+	if err != nil {
+		msg := "Failed to open file: " + err.Error()
+		s.logger.Debug(msg)
+		return "", errors.New(msg)
+	}
+
+	fileName := filepath.Base(fileHeader.Filename)
+	filePath := filepath.Join(s.config.TracksDir, fileName)
+	dst, err := os.Create(filePath)
+	if err != nil {
+		msg := "Failed to create file on disk: " + err.Error()
+		s.logger.Debug(msg)
+		return "", errors.New(msg)
+	}
+
+	_, err = io.CopyBuffer(dst, file, make([]byte, copyBufferSize))
+	if err != nil {
+		msg := "Failed to save file: " + err.Error()
+		s.logger.Debug(msg)
+		return "", errors.New(msg)
+	}
+
+	file.Close()
+	dst.Close()
+
+	return filePath, nil
 }
