@@ -16,22 +16,20 @@ import { FC, useEffect, useState } from "react";
 import { useTrackQueueStore } from "../store/track-queue";
 import { useTracksStore } from "../store/tracks";
 import { EmptyLabel } from "../components/EmptyLabel";
-import { useDebouncedValue, useDisclosure, useViewportSize } from "@mantine/hooks";
+import { useDebouncedValue, useDisclosure } from "@mantine/hooks";
 import { AudioPlayer } from "../components/AudioPlayer";
 import { errNotify, okNotify, warnNotify } from "../notifications";
 import { DisclosureHandler } from "../types";
 import { Track } from "../api/types";
-import { defineBoxHeight } from "../utils/size";
 import { modals } from "@mantine/modals";
 
-export const TrackLibrary: FC<{}> = () => {
+export const TrackLibrary: FC<{ isMobile?: boolean }> = (props) => {
     const [search, setSearch] = useState("");
     const [playingTrackID, setPlayingTrackID] = useState("");
     const [selectedTrackIDs, setSelectedTrackIDs] = useState<Set<string>>(new Set());
     const [debouncedSearch] = useDebouncedValue(search, 500);
     const [loader, handLoader] = useDisclosure(false);
     const { colorScheme } = useMantineColorScheme();
-    const { width: windowWidth, height: windowHeight } = useViewportSize();
 
     const tracks = useTracksStore((s) => s.tracks);
     const queue = useTrackQueueStore((s) => s.queue);
@@ -64,66 +62,64 @@ export const TrackLibrary: FC<{}> = () => {
     }, [debouncedSearch]);
 
     return (
-        <Paper p="xs" radius="md" pos="relative" bg={colorScheme === "dark" ? "dark" : "#f7f7f7"}>
-            <LoadingOverlay visible={loader} zIndex={1000} />
+        <Paper radius="md" pos="relative" bg={colorScheme === "dark" ? "dark" : "#f7f7f7"}>
+            <Flex p="xs" direction="column" h={props.isMobile ? "calc(100vh - 60px)" : "75vh"} mah={1200}>
+                <LoadingOverlay visible={loader} zIndex={1000} />
 
-            <Flex justify="space-between" align="center">
-                <Text fw={700} size="lg">
-                    Tracks library
-                </Text>
-                <Text c="dimmed">{`${tracks.length} ${tracks.length > 1 ? "tracks" : "track"}`}</Text>
-            </Flex>
-
-            <Space h={12} />
-
-            <Flex gap="xs">
-                <TextInput
-                    style={{ flexGrow: 1 }}
-                    placeholder="Search"
-                    value={search}
-                    onChange={(event) => setSearch(event.currentTarget.value)}
-                />
-                <TrackUploader handLoader={handLoader} />
-            </Flex>
-
-            <Space h={16} />
-
-            <Box
-                mah={defineBoxHeight(windowHeight)}
-                mih={windowWidth >= 768 ? defineBoxHeight(windowHeight) : 0}
-                style={{ overflow: "auto", overflowX: "hidden" }}
-            >
-                <Flex direction="column" gap="sm" justify="center">
-                    {tracks.length ? (
-                        tracks.map((track) => (
-                            <Paper p="xs" key={track.id} c={isTrackInQueue(track.id) ? "dimmed" : undefined}>
-                                <AudioPlayer
-                                    track={track}
-                                    isPlaying={playingTrackID === track.id}
-                                    isTrackInQueue={isTrackInQueue(track.id)}
-                                    selected={selectedTrackIDs}
-                                    setSelected={setSelectedTrackIDs}
-                                    togglePlaying={() => toggleTrackPlaying(track.id)}
-                                />
-                            </Paper>
-                        ))
-                    ) : (
-                        <EmptyLabel label={"No tracks found"} />
-                    )}
+                <Flex justify="space-between" align="center">
+                    <Text fw={700} size="lg">
+                        Tracks library
+                    </Text>
+                    <Text c="dimmed">{`${tracks.length} ${tracks.length > 1 ? "tracks" : "track"}`}</Text>
                 </Flex>
-            </Box>
-            <Space h={12} />
 
-            <Group justify="space-between">
-                {selectedTrackIDs.size ? <Text c="dimmed">{`Selected: ${selectedTrackIDs.size}`}</Text> : <div />}
-                <TrackActions
-                    handLoader={handLoader}
-                    selected={selectedTrackIDs}
-                    setSelected={setSelectedTrackIDs}
-                    availableTracks={tracks.filter((t) => !isTrackInQueue(t.id))}
-                    disabled={!selectedTrackIDs.size}
-                />
-            </Group>
+                <Space h={12} />
+
+                <Flex gap="xs">
+                    <TextInput
+                        style={{ flexGrow: 1 }}
+                        placeholder="Search"
+                        value={search}
+                        onChange={(event) => setSearch(event.currentTarget.value)}
+                    />
+                    <TrackUploader handLoader={handLoader} />
+                </Flex>
+
+                <Space h={16} />
+
+                <Box flex={1} style={{ overflow: "auto", overflowX: "hidden" }}>
+                    <Flex direction="column" gap="sm" justify="center">
+                        {tracks.length ? (
+                            tracks.map((track) => (
+                                <Paper p="xs" key={track.id} c={isTrackInQueue(track.id) ? "dimmed" : undefined}>
+                                    <AudioPlayer
+                                        track={track}
+                                        isPlaying={playingTrackID === track.id}
+                                        isTrackInQueue={isTrackInQueue(track.id)}
+                                        selected={selectedTrackIDs}
+                                        setSelected={setSelectedTrackIDs}
+                                        togglePlaying={() => toggleTrackPlaying(track.id)}
+                                    />
+                                </Paper>
+                            ))
+                        ) : (
+                            <EmptyLabel label={"No tracks found"} />
+                        )}
+                    </Flex>
+                </Box>
+                <Space h={12} />
+
+                <Group justify="space-between">
+                    {selectedTrackIDs.size ? <Text c="dimmed">{`Selected: ${selectedTrackIDs.size}`}</Text> : <div />}
+                    <TrackActions
+                        handLoader={handLoader}
+                        selected={selectedTrackIDs}
+                        setSelected={setSelectedTrackIDs}
+                        availableTracks={tracks.filter((t) => !isTrackInQueue(t.id))}
+                        disabled={!selectedTrackIDs.size}
+                    />
+                </Group>
+            </Flex>
         </Paper>
     );
 };

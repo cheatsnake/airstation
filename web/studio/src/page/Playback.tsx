@@ -1,4 +1,4 @@
-import { ActionIcon, Box, Flex, Paper, Progress, Space, Text } from "@mantine/core";
+import { ActionIcon, Box, Flex, MantineSize, Paper, Progress, Space, Text, useMantineColorScheme } from "@mantine/core";
 import { FC, useEffect, useRef, useState } from "react";
 import { airstationAPI, API_HOST } from "../api";
 import { usePlaybackStore } from "../store/playback";
@@ -13,7 +13,7 @@ import { PlaybackState } from "../api/types";
 import Hls from "hls.js";
 import { modals } from "@mantine/modals";
 
-export const Playback: FC<{}> = () => {
+export const Playback: FC<{ isMobile?: boolean }> = (props) => {
     const updateIntervalID = useRef(0);
     const [loader, handLoader] = useDisclosure(false);
     const playback = usePlaybackStore((s) => s.playback);
@@ -22,6 +22,7 @@ export const Playback: FC<{}> = () => {
     const incElapsedTime = usePlaybackStore((s) => s.incElapsedTime);
     const rotateQueue = useTrackQueueStore((s) => s.rotateQueue);
     const addEventHandler = useEventSourceStore((s) => s.addEventHandler);
+    const { colorScheme } = useMantineColorScheme();
 
     useEffect(() => {
         (async () => {
@@ -84,15 +85,24 @@ export const Playback: FC<{}> = () => {
     };
 
     return (
-        <Paper p="sm" w="100%" h={95}>
-            <Flex gap="sm" justify="center" align="center">
-                <Flex gap="xs">
+        <Paper w="100%" radius="md" bg={colorScheme === "dark" ? "dark" : "#f7f7f7"}>
+            <Flex
+                p="sm"
+                gap="md"
+                w="100%"
+                h={props.isMobile ? "calc(100vh - 60px)" : "95"}
+                direction={props.isMobile ? "column-reverse" : "row"}
+                justify={props.isMobile ? "space-between" : "cener"}
+                align="center"
+            >
+                {props.isMobile ? <Box h="1" /> : null}
+                <Flex gap={props.isMobile ? "lg" : "xs"} direction="column" justify="center" align="center">
                     <ActionIcon
                         onClick={handlePlaybackAction}
                         disabled={loader}
                         variant="subtle"
                         color={useThemeBlackColor()}
-                        size="sm"
+                        size={props.isMobile ? 100 : "md"}
                         aria-label="Settings"
                     >
                         {playback?.isPlaying ? (
@@ -101,24 +111,26 @@ export const Playback: FC<{}> = () => {
                             <IconPlayerPlayFilled fill={useThemeBlackColor()} />
                         )}
                     </ActionIcon>
-                    <StreamToggler playback={playback} />
+                    <StreamToggler size={props.isMobile ? "xl" : "md"} playback={playback} />
                 </Flex>
-                <Box w="100%">
-                    <Flex justify="space-between" align="center">
+                <Flex w="100%" direction="column">
+                    <Flex justify="space-between" direction={props.isMobile ? "column-reverse" : "row"} gap="sm">
                         <Text>{playback?.currentTrack?.name || "Unknown"}</Text>
                         <ListenersCounter />
                     </Flex>
                     <Space h={10} />
-                    <Progress
-                        color="air"
-                        radius="xl"
-                        value={(playback.currentTrackElapsed / (playback?.currentTrack?.duration || 1)) * 100}
-                    />
-                    <Text ta="end" mt={3} c="dimmed">
-                        {formatTime(playback?.currentTrackElapsed || 0)}/
-                        {formatTime(playback?.currentTrack?.duration || 0)}
-                    </Text>
-                </Box>
+                    <Box>
+                        <Progress
+                            color="air"
+                            radius="xl"
+                            value={(playback.currentTrackElapsed / (playback?.currentTrack?.duration || 1)) * 100}
+                        />
+                        <Text ta="end" mt={3} c="dimmed">
+                            {formatTime(playback?.currentTrackElapsed || 0)}/
+                            {formatTime(playback?.currentTrack?.duration || 0)}
+                        </Text>
+                    </Box>
+                </Flex>
             </Flex>
         </Paper>
     );
@@ -144,7 +156,7 @@ const ListenersCounter = () => {
     );
 };
 
-const StreamToggler: FC<{ playback: PlaybackState }> = (props) => {
+const StreamToggler: FC<{ playback: PlaybackState; size: MantineSize }> = (props) => {
     const videoRef = useRef<HTMLVideoElement | null>(null);
     const streamRef = useRef<Hls | null>(null);
     const [isPlaying, setIsPlaying] = useState(false);
@@ -193,7 +205,7 @@ const StreamToggler: FC<{ playback: PlaybackState }> = (props) => {
                 onClick={togglePlayback}
                 variant="subtle"
                 color={useThemeBlackColor()}
-                size="sm"
+                size={props.size}
                 aria-label="Settings"
             >
                 {isPlaying ? (

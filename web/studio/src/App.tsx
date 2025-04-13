@@ -2,7 +2,7 @@ import { createTheme, MantineProvider } from "@mantine/core";
 import { Page } from "./page";
 import { Notifications } from "@mantine/notifications";
 import { ModalsProvider } from "@mantine/modals";
-import { AuthGuard } from "./page/AuthGuard";
+import { AuthGuard } from "./components/AuthGuard";
 
 const theme = createTheme({
     fontFamily: '"Exo 2", serif',

@@ -16,14 +16,13 @@ import { usePlaybackStore } from "../store/playback";
 import { useTrackQueueStore } from "../store/track-queue";
 import { EmptyLabel } from "../components/EmptyLabel";
 import { errNotify, okNotify } from "../notifications";
-import { useDisclosure, useViewportSize } from "@mantine/hooks";
+import { useDisclosure } from "@mantine/hooks";
 import { moveArrayItem } from "../utils/array";
 import { Track } from "../api/types";
 import { handleErr } from "../utils/error";
-import { defineBoxHeight } from "../utils/size";
 import { modals } from "@mantine/modals";
 
-export const TrackQueue: FC<{}> = () => {
+export const TrackQueue: FC<{ isMobile?: boolean }> = (props) => {
     const [loader, handLoader] = useDisclosure(false);
     const playback = usePlaybackStore((s) => s.playback);
     const queue = useTrackQueueStore((s) => s.queue);
@@ -31,7 +30,6 @@ export const TrackQueue: FC<{}> = () => {
     const updateQueue = useTrackQueueStore((s) => s.updateQueue);
     const removeFromQueue = useTrackQueueStore((s) => s.removeFromQueue);
     const { colorScheme } = useMantineColorScheme();
-    const { width: windowWidth, height: windowHeight } = useViewportSize();
 
     const loadQueue = async () => {
         handLoader.open();
@@ -98,56 +96,59 @@ export const TrackQueue: FC<{}> = () => {
     }, []);
 
     return (
-        <Paper p="sm" radius="md" pos="relative" bg={colorScheme === "dark" ? "dark" : "#f7f7f7"}>
-            <LoadingOverlay visible={loader} zIndex={1000} />
-            <Flex justify="space-between" align="center">
-                <Flex align="center" gap="xs">
-                    <Box w={10} h={10} bg={playback?.isPlaying ? "red" : "gray"} style={{ borderRadius: "50%" }} />
-                    <Text fw={700} size="lg">
-                        Live queue
-                    </Text>
+        <Paper radius="md" pos="relative" bg={colorScheme === "dark" ? "dark" : "#f7f7f7"}>
+            <Flex p="sm" direction="column" h={props.isMobile ? "calc(100vh - 60px)" : "75vh"} mah={1200}>
+                <LoadingOverlay visible={loader} zIndex={1000} />
+                <Flex justify="space-between" align="center">
+                    <Flex align="center" gap="xs">
+                        <Box w={10} h={10} bg={playback?.isPlaying ? "red" : "gray"} style={{ borderRadius: "50%" }} />
+                        <Text fw={700} size="lg">
+                            Live queue
+                        </Text>
+                    </Flex>
+                    <Text c="dimmed">{`${queue.length > 1 ? queue.length - 1 : ""}`}</Text>
                 </Flex>
-                <Text c="dimmed">{`${queue.length > 1 ? queue.length - 1 : ""}`}</Text>
+
+                <Space h={12} />
+
+                <Box flex={1} style={{ overflow: "auto", overflowX: "hidden" }}>
+                    {queue.length > 1 ? (
+                        <DragDropContext
+                            onDragEnd={async ({ destination, source }) => {
+                                try {
+                                    await updateQueue(moveArrayItem(queue, source.index, destination?.index || 0));
+                                } catch (error) {
+                                    handleErr(error);
+                                }
+                            }}
+                        >
+                            <Droppable droppableId="dnd-list" direction="vertical">
+                                {(provided) => (
+                                    <Flex
+                                        direction="column"
+                                        mih={100}
+                                        {...provided.droppableProps}
+                                        ref={provided.innerRef}
+                                    >
+                                        {tracklist}
+                                        {provided.placeholder}
+                                    </Flex>
+                                )}
+                            </Droppable>
+                        </DragDropContext>
+                    ) : (
+                        <EmptyLabel label={"Queue is empty"} />
+                    )}
+                </Box>
+
+                <Space h={12} />
+
+                <Group gap="xs">
+                    <Button onClick={confirmClear} variant="light" color="red" disabled={loader || queue.length <= 1}>
+                        Clear
+                    </Button>
+                </Group>
             </Flex>
-
-            <Space h={12} />
-
-            <Box
-                mah={defineBoxHeight(windowHeight) + 52}
-                mih={windowWidth >= 768 ? defineBoxHeight(windowHeight) + 52 : 0}
-                style={{ overflow: "auto", overflowX: "hidden" }}
-            >
-                {queue.length > 1 ? (
-                    <DragDropContext
-                        onDragEnd={async ({ destination, source }) => {
-                            try {
-                                await updateQueue(moveArrayItem(queue, source.index, destination?.index || 0));
-                            } catch (error) {
-                                handleErr(error);
-                            }
-                        }}
-                    >
-                        <Droppable droppableId="dnd-list" direction="vertical">
-                            {(provided) => (
-                                <Flex direction="column" mih={100} {...provided.droppableProps} ref={provided.innerRef}>
-                                    {tracklist}
-                                    {provided.placeholder}
-                                </Flex>
-                            )}
-                        </Droppable>
-                    </DragDropContext>
-                ) : (
-                    <EmptyLabel label={"Queue is empty"} />
-                )}
-            </Box>
-
-            <Space h={12} />
-
-            <Group gap="xs">
-                <Button onClick={confirmClear} variant="light" color="red" disabled={loader || queue.length <= 1}>
-                    Clear
-                </Button>
-            </Group>
         </Paper>
     );
 };
