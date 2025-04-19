@@ -17,11 +17,8 @@
 }
 
 .offline_label {
-    font-size: 1.1rem;
+    font-size: 1rem;
     user-select: none;
     color: #c3c3c3;
-}
-
-.offline_label > span {
     color: rgb(255, 75, 75);
 }

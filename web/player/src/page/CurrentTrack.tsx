@@ -38,9 +38,5 @@ export const CurrentTrack = () => {
 };
 
 const OfflineLabel = () => {
-    return (
-        <div class={styles.offline_label}>
-            Stream is <span>offline</span>
-        </div>
-    );
+    return <div class={styles.offline_label}>Stream offline</div>;
 };
