@@ -13,6 +13,7 @@ export const MobileBar: FC<MobileBarProps> = ({ activeBar, setActiveBar }) => {
         <Flex w="100%" justify="space-around" align="center" px="sm">
             {MOBILE_BARS.map((bar) => (
                 <Button
+                    key={bar}
                     my="sm"
                     variant="transparent"
                     c={bar === activeBar ? "air" : "white"}
