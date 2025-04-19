@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/cheatsnake/airstation/internal/events"
+	"github.com/cheatsnake/airstation/internal/tools/fs"
 	"github.com/cheatsnake/airstation/internal/track"
 	trackservice "github.com/cheatsnake/airstation/internal/track/service"
 	"github.com/golang-jwt/jwt/v5"
@@ -25,8 +26,9 @@ const copyBufferSize = 256 * 1024            // 256 KB
 func (s *Server) handleHLSPlaylist(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "audio/mpegurl")
 
-	playlist := s.state.GenerateHLSPlaylist()
-	fmt.Fprint(w, playlist)
+	if s.state.IsPlaying {
+		fmt.Fprint(w, s.state.PlaylistStr)
+	}
 }
 
 func (s *Server) handleEvents(w http.ResponseWriter, r *http.Request) {
@@ -140,7 +142,15 @@ func (s *Server) handleTracksUpload(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		track, err := s.trackService.AddTrack(fileHeader.Filename, trackPath)
+		preparedTrackPath, err := s.trackService.PrepareTrack(trackPath)
+		fs.DeleteFile(trackPath)
+		if err != nil {
+			s.logger.Warn(err.Error())
+			jsonBadRequest(w, "Failed to prepare a track for streaming, try changing the format or using a different track.")
+			return
+		}
+
+		track, err := s.trackService.AddTrack(fileHeader.Filename, preparedTrackPath)
 		if err != nil {
 			s.logger.Debug(err.Error())
 			jsonBadRequest(w, "Failed to save track to database: "+err.Error())
