@@ -223,6 +223,35 @@ func (cli *CLI) TrimAudio(filePath string, totalDuration float64) error {
 	return nil
 }
 
+// ConvertAudioToAAC converts an audio file to AAC format.
+//
+// Parameters:
+//   - inputPath:  Path to the input audio file (supports various formats like MP3, WAV, etc.)
+//   - outputPath: Destination path for the converted AAC file (should end with .aac or .m4a)
+//   - bitRate:    Audio bitrate in kbps (e.g., 128 for 128kbps)
+//
+// Returns:
+//   - error: Returns nil on success, or an error if conversion fails. The error includes
+//     FFmpeg's output when available for debugging purposes.
+func (cli *CLI) ConvertAudioToAAC(inputPath, outputPath string, bitRate int) error {
+	cmd := exec.Command(
+		ffmpegBin,
+		"-i", inputPath,
+		"-vn", // Ignore video streams
+		"-c:a", "aac",
+		"-b:a", strconv.Itoa(bitRate)+"k",
+		outputPath,
+		"-y",
+	)
+
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("triming audio failed: %v\nOutput: %s", err, string(output))
+	}
+
+	return nil
+}
+
 // generateSilence generates a silent audio file with the specified duration, bitrate, sample rate,
 // and number of channels. The resulting audio file is saved to the provided file path.
 func (cli *CLI) generateSilence(duration float64, bitRate, sampleRate, channelCount int, filePath string) error {
