@@ -17,6 +17,7 @@ type Playlist struct {
 	lastDisconUpdate     time.Time
 	currentTrackSegments []*Segment
 	nextTrackSegments    []*Segment
+	currentSegmentPath   string
 }
 
 // NewPlaylist creates and returns a new Playlist instance with the provided current and next track segments.
@@ -40,6 +41,8 @@ func NewPlaylist(cur, next []*Segment) *Playlist {
 
 		currentTrackSegments: cur,
 		nextTrackSegments:    next,
+
+		currentSegmentPath: "",
 	}
 }
 
@@ -53,13 +56,20 @@ func NewPlaylist(cur, next []*Segment) *Playlist {
 // Returns:
 //   - A string representing the generated HLS playlist.
 func (p *Playlist) Generate(elapsedTime float64) string {
-	p.UpdateDisconSequence(elapsedTime)
-
 	offset := math.Mod(elapsedTime, float64(p.MaxSegmentDuration))
-	playlist := hlsHeader(p.MaxSegmentDuration, p.mediaSequence, p.disconSequence, offset)
-	firstSegmentIndex := p.calcCurrentSegmentIndex(elapsedTime)
-	liveSegments := p.collectLiveSegments(firstSegmentIndex)
+	liveSegments := p.currentSegments(elapsedTime)
+	prevSegmentPath := p.currentSegmentPath
 
+	if len(liveSegments) > 0 {
+		p.currentSegmentPath = liveSegments[0].Path
+	}
+
+	p.UpdateDisconSequence(elapsedTime)
+	if prevSegmentPath != p.currentSegmentPath {
+		p.UpdateMediaSequence()
+	}
+
+	playlist := hlsHeader(p.MaxSegmentDuration, p.mediaSequence, p.disconSequence, offset)
 	for _, seg := range liveSegments {
 		playlist += hlsSegment(seg.Duration, seg.Path, seg.IsFirst)
 	}
@@ -118,12 +128,9 @@ func (p *Playlist) UpdateDisconSequence(elapsedTime float64) {
 	}
 }
 
-func (p *Playlist) calcCurrentSegmentIndex(elapsedTime float64) int {
-	return int(math.Floor(elapsedTime / float64(p.MaxSegmentDuration)))
-}
-
-// collectLiveSegments gathers enough segments from current and next tracks to meet liveSegmentsAmount
-func (p *Playlist) collectLiveSegments(startIndex int) []*Segment {
+// currentSegments gathers enough segments from current and next tracks to meet liveSegmentsAmount
+func (p *Playlist) currentSegments(elapsedTime float64) []*Segment {
+	startIndex := p.calcCurrentSegmentIndex(elapsedTime)
 	liveSegments := make([]*Segment, 0, p.LiveSegmentsAmount)
 
 	if startIndex < len(p.currentTrackSegments) {
@@ -143,10 +150,16 @@ func (p *Playlist) collectLiveSegments(startIndex int) []*Segment {
 	return liveSegments
 }
 
+func (p *Playlist) calcCurrentSegmentIndex(elapsedTime float64) int {
+	return int(math.Floor(elapsedTime / float64(p.MaxSegmentDuration)))
+}
+
 // hlsHeader generates the header string for an HLS playlist with the specified target duration.
 func hlsHeader(dur int, mediaSeq, disconSeq int64, offset float64) string {
+	currentTime := time.Now().UTC().Round(time.Millisecond).Format(timeFormat)
 	return "#EXTM3U\n" +
 		"#EXT-X-VERSION:6\n" +
+		"#EXT-X-PROGRAM-DATE-TIME:" + currentTime + "\n" +
 		"#EXT-X-TARGETDURATION:" + strconv.Itoa(dur) + "\n" +
 		"#EXT-X-MEDIA-SEQUENCE:" + strconv.FormatInt(mediaSeq, 10) + "\n" +
 		"#EXT-X-DISCONTINUITY-SEQUENCE:" + strconv.FormatInt(disconSeq, 10) + "\n" +

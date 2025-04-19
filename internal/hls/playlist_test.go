@@ -191,7 +191,7 @@ func TestCollectLiveSegments(t *testing.T) {
 		}
 
 		playlist := NewPlaylist(current, next)
-		liveSegments := playlist.collectLiveSegments(0)
+		liveSegments := playlist.currentSegments(0)
 		expected := current
 
 		if !reflect.DeepEqual(liveSegments, expected) {
@@ -210,7 +210,7 @@ func TestCollectLiveSegments(t *testing.T) {
 		}
 
 		playlist := NewPlaylist(current, next)
-		liveSegments := playlist.collectLiveSegments(0)
+		liveSegments := playlist.currentSegments(0)
 		expected := []*Segment{
 			{Duration: 5.0, Path: "segment1.ts"},
 			{Duration: 5.0, Path: "segment2.ts"},
@@ -233,7 +233,7 @@ func TestCollectLiveSegments(t *testing.T) {
 		}
 		playlist := NewPlaylist(current, next)
 
-		liveSegments := playlist.collectLiveSegments(1)
+		liveSegments := playlist.currentSegments(1)
 
 		expected := []*Segment{
 			{Duration: 5.0, Path: "segment2.ts"},
@@ -256,7 +256,7 @@ func TestCollectLiveSegments(t *testing.T) {
 		}
 		playlist := NewPlaylist(current, next)
 
-		liveSegments := playlist.collectLiveSegments(2)
+		liveSegments := playlist.currentSegments(2)
 		expected := next
 
 		if !reflect.DeepEqual(liveSegments, expected) {
@@ -273,7 +273,7 @@ func TestCollectLiveSegments(t *testing.T) {
 		}
 		playlist := NewPlaylist(current, next)
 
-		liveSegments := playlist.collectLiveSegments(0)
+		liveSegments := playlist.currentSegments(0)
 
 		expected := []*Segment{
 			{Duration: 5.0, Path: "segment1.ts"},
@@ -294,7 +294,7 @@ func TestCollectLiveSegments(t *testing.T) {
 		}
 
 		playlist := NewPlaylist(current, next)
-		liveSegments := playlist.collectLiveSegments(2)
+		liveSegments := playlist.currentSegments(2)
 		expected := next
 
 		if !reflect.DeepEqual(liveSegments, expected) {
@@ -307,7 +307,7 @@ func TestCollectLiveSegments(t *testing.T) {
 		next := []*Segment{}
 		playlist := NewPlaylist(current, next)
 
-		liveSegments := playlist.collectLiveSegments(0)
+		liveSegments := playlist.currentSegments(0)
 
 		expected := []*Segment{}
 		if !reflect.DeepEqual(liveSegments, expected) {
