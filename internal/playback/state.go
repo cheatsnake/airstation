@@ -3,7 +3,6 @@ package playback
 import (
 	"errors"
 	"log/slog"
-	"math"
 	"sync"
 	"time"
 
@@ -21,6 +20,7 @@ type State struct {
 	PlayNotify     chan bool   `json:"-"`
 	PauseNotify    chan bool   `json:"-"`
 
+	PlaylistStr string        // String representation of hsl playlist
 	playlist    *hls.Playlist // HLS playlist for streaming
 	playlistDir string        // Directory for temporary playlist data
 
@@ -67,13 +67,7 @@ func (s *State) Run() {
 		s.CurrentTrackElapsed += s.refreshInterval
 		s.refreshCount++
 
-		// every time a new segment is playing
-		if math.Mod(float64(s.refreshCount), float64(s.playlist.MaxSegmentDuration)) == 0 {
-			s.playlist.UpdateMediaSequence()
-		}
-
-		s.playlist.UpdateDisconSequence(s.CurrentTrackElapsed)
-
+		// Load next track
 		if s.CurrentTrackElapsed >= s.CurrentTrack.Duration {
 			err := s.loadNextTrack()
 			if err != nil {
@@ -81,6 +75,7 @@ func (s *State) Run() {
 			}
 		}
 
+		s.PlaylistStr = s.playlist.Generate(s.CurrentTrackElapsed)
 		s.mutex.Unlock()
 	}
 }
@@ -137,11 +132,6 @@ func (s *State) Load() error {
 	s.CurrentTrack = current
 
 	return nil
-}
-
-func (s *State) GenerateHLSPlaylist() string {
-	pl := s.playlist.Generate(s.CurrentTrackElapsed)
-	return pl
 }
 
 func (s *State) initHLSPlaylist(current, next *track.Track) error {
