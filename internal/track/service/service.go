@@ -4,6 +4,7 @@ package trackservice
 import (
 	"log/slog"
 	"math"
+	"path/filepath"
 	"strings"
 
 	"github.com/cheatsnake/airstation/internal/ffmpeg"
@@ -62,6 +63,16 @@ func (s *Service) AddTrack(name, path string) (*track.Track, error) {
 	}
 
 	return newTrack, nil
+}
+
+func (s *Service) PrepareTrack(filePath string) (string, error) {
+	newPath := replaceExtension(filePath, ".m4a")
+	err := s.ffmpegCLI.ConvertAudioToAAC(filePath, newPath, 192)
+	if err != nil {
+		return "", err
+	}
+
+	return newPath, nil
 }
 
 func (s *Service) Tracks(page, limit int, search string) (*TracksPage, error) {
@@ -142,18 +153,10 @@ func (s *Service) MakeHLSPlaylist(trackPath string, outDir string, segName strin
 // modifyTrackDuration changes the original track duration (slightly) to avoid small HLS segments.
 func (s *Service) modifyTrackDuration(path string, metadata ffmpeg.AudioMetadata) (float64, error) {
 	roundDur := roundDuration(metadata.Duration, hls.DefaultMaxSegmentDuration)
-	roundDur -= 0.1 // need to avoid extra ms after padding/trimming
+	roundDur -= 0.001 // need to avoid extra ms after padding/trimming
 
-	if roundDur > metadata.Duration {
-		if err := s.ffmpegCLI.PadAudio(path, roundDur-metadata.Duration, metadata); err != nil {
-			return 0, err
-		}
-	}
-
-	if roundDur < metadata.Duration {
-		if err := s.ffmpegCLI.TrimAudio(path, roundDur); err != nil {
-			return 0, err
-		}
+	if err := s.ffmpegCLI.TrimAudio(path, roundDur); err != nil {
+		return 0, err
 	}
 
 	return roundDur, nil
@@ -163,13 +166,14 @@ func (s *Service) modifyTrackDuration(path string, metadata ffmpeg.AudioMetadata
 func roundDuration(trackDuration, segmentDuration float64) float64 {
 	remainder := math.Mod(trackDuration, segmentDuration)
 
-	// if the difference is not significant (less than second), just crop it
-	if remainder < 1 {
+	// if the difference is not significant (less than 1.2 second), just crop it
+	if remainder < 1.2 {
 		return math.Floor(trackDuration - remainder)
 	}
 
-	padding := segmentDuration - remainder
-	return math.Floor(trackDuration + padding)
+	// padding := segmentDuration - remainder
+	// return math.Floor(trackDuration + padding)
+	return math.Floor(trackDuration)
 }
 
 func defineTrackName(fileName, metaName string) string {
@@ -182,4 +186,15 @@ func defineTrackName(fileName, metaName string) string {
 	name = strings.ReplaceAll(name, "_", " ")
 
 	return name
+}
+
+func replaceExtension(path string, newExt string) string {
+	if newExt != "" && !strings.HasPrefix(newExt, ".") {
+		newExt = "." + newExt
+	}
+
+	ext := filepath.Ext(path)
+	name := path[:len(path)-len(ext)]
+
+	return name + newExt
 }
