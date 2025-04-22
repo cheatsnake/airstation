@@ -13,7 +13,8 @@ const minSecretLength = 10
 type Config struct {
 	TracksDir string
 	TmpDir    string
-	WebDir    string
+	PlayerDir string
+	StudioDir string
 	HTTPPort  string
 	JWTSign   string
 	SecretKey string
@@ -28,7 +29,8 @@ func Load() *Config {
 	return &Config{
 		TracksDir: getEnv("AIRSTATION_TRACKS_DIR", filepath.Join("static", "tracks")),
 		TmpDir:    getEnv("AIRSTATION_TMP_DIR", filepath.Join("static", "tmp")),
-		WebDir:    getEnv("AIRSTATION_WEB_DIR", filepath.Join("web")),
+		PlayerDir: getEnv("AIRSTATION_PLAYER_DIR", filepath.Join("player")),
+		StudioDir: getEnv("AIRSTATION_STUDIO_DIR", filepath.Join("studio")),
 		HTTPPort:  getEnv("AIRSTATION_HTTP_PORT", "7331"),
 		JWTSign:   getSecret("AIRSTATION_JWT_SIGN"),
 		SecretKey: getSecret("AIRSTATION_SECRET_KEY"),
