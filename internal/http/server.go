@@ -57,7 +57,8 @@ func (s *Server) Run() {
 	s.mux.Handle("POST /api/v1/playback/play", s.jwtAuth(http.HandlerFunc(s.handlePlayPlayback)))
 	s.mux.Handle("GET /static/tracks/", s.jwtAuth(s.handleStaticDir("/static/tracks", s.config.TracksDir)))
 
-	s.mux.Handle("GET /", s.handleStaticDir("", s.config.WebDir))
+	s.mux.Handle("GET /studio/", s.handleStaticDir("/studio/", s.config.StudioDir))
+	s.mux.Handle("GET /", s.handleStaticDir("/", s.config.PlayerDir))
 
 	s.listenEvents()
 	err := s.state.Play()
