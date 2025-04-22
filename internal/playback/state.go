@@ -87,8 +87,10 @@ func (s *State) Play() error {
 	}
 
 	s.mutex.Lock()
-	defer s.mutex.Unlock()
 	s.IsPlaying = true
+	s.PlaylistStr = s.playlist.Generate(s.CurrentTrackElapsed)
+	s.mutex.Unlock()
+
 	s.PlayNotify <- true
 
 	return nil
@@ -96,9 +98,13 @@ func (s *State) Play() error {
 
 func (s *State) Pause() {
 	s.mutex.Lock()
-	defer s.mutex.Unlock()
-
+	s.CurrentTrack = nil
+	s.CurrentTrackElapsed = 0
+	s.playlist = nil
+	s.PlaylistStr = ""
 	s.IsPlaying = false
+	s.mutex.Unlock()
+
 	s.PauseNotify <- false
 }
 
@@ -128,8 +134,8 @@ func (s *State) Load() error {
 	}
 
 	s.mutex.Lock()
-	defer s.mutex.Unlock()
 	s.CurrentTrack = current
+	s.mutex.Unlock()
 
 	return nil
 }
