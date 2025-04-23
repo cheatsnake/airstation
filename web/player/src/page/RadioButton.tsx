@@ -4,7 +4,7 @@ import { setTrackStore, trackStore } from "../store/track";
 import { onMount } from "solid-js";
 import { addEventListener, EVENTS } from "../store/events";
 
-const STREAM_SOURCE = "http://localhost:7331/stream";
+const STREAM_SOURCE = "/stream";
 
 export const RadioButton = () => {
     let videoRef: HTMLVideoElement | undefined;
