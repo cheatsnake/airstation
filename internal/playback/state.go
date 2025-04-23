@@ -20,7 +20,7 @@ type State struct {
 	PlayNotify     chan bool   `json:"-"`
 	PauseNotify    chan bool   `json:"-"`
 
-	PlaylistStr string        // String representation of hsl playlist
+	PlaylistStr string        `json:"-"` // String representation of HLS playlist
 	playlist    *hls.Playlist // HLS playlist for streaming
 	playlistDir string        // Directory for temporary playlist data
 
