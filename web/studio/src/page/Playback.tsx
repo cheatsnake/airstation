@@ -19,7 +19,7 @@ export const Playback: FC<{ isMobile?: boolean }> = (props) => {
     const playback = usePlaybackStore((s) => s.playback);
     const setPlayback = usePlaybackStore((s) => s.setPlayback);
     const fetchPlayback = usePlaybackStore((s) => s.fetchPlayback);
-    const incElapsedTime = usePlaybackStore((s) => s.incElapsedTime);
+    const syncElapsedTime = usePlaybackStore((s) => s.syncElapsedTime);
     const rotateQueue = useTrackQueueStore((s) => s.rotateQueue);
     const addEventHandler = useEventSourceStore((s) => s.addEventHandler);
     const { colorScheme } = useMantineColorScheme();
@@ -43,7 +43,7 @@ export const Playback: FC<{ isMobile?: boolean }> = (props) => {
     useEffect(() => {
         if (playback.isPlaying && updateIntervalID.current === 0) {
             updateIntervalID.current = setInterval(() => {
-                incElapsedTime(1);
+                syncElapsedTime();
             }, 1000);
         }
 

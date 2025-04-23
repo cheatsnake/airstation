@@ -15,6 +15,7 @@ type State struct {
 	CurrentTrack        *track.Track `json:"currentTrack"`        // The currently playing track
 	CurrentTrackElapsed float64      `json:"currentTrackElapsed"` // Seconds elapsed since the track started playing
 	IsPlaying           bool         `json:"isPlaying"`           // Whether the track is currently playing
+	UpdatedAt           int64        `json:"updatedAt"`           // Unix timestamp of last state update
 
 	NewTrackNotify chan string `json:"-"`
 	PlayNotify     chan bool   `json:"-"`
@@ -38,6 +39,7 @@ func NewState(ts *trackservice.Service, tmpDir string, log *slog.Logger) *State 
 		CurrentTrack:        nil,
 		CurrentTrackElapsed: 0,
 		IsPlaying:           false,
+		UpdatedAt:           time.Now().Unix(),
 
 		NewTrackNotify: make(chan string),
 		PlayNotify:     make(chan bool),
@@ -76,6 +78,8 @@ func (s *State) Run() {
 		}
 
 		s.PlaylistStr = s.playlist.Generate(s.CurrentTrackElapsed)
+		s.UpdatedAt = time.Now().Unix()
+
 		s.mutex.Unlock()
 	}
 }
@@ -89,6 +93,7 @@ func (s *State) Play() error {
 	s.mutex.Lock()
 	s.IsPlaying = true
 	s.PlaylistStr = s.playlist.Generate(s.CurrentTrackElapsed)
+	s.UpdatedAt = time.Now().Unix()
 	s.mutex.Unlock()
 
 	s.PlayNotify <- true
@@ -103,6 +108,7 @@ func (s *State) Pause() {
 	s.playlist = nil
 	s.PlaylistStr = ""
 	s.IsPlaying = false
+	s.UpdatedAt = time.Now().Unix()
 	s.mutex.Unlock()
 
 	s.PauseNotify <- false
@@ -130,11 +136,14 @@ func (s *State) Load() error {
 		}
 		s.mutex.Lock()
 		s.playlist.ChangeNext(nextSeg)
+		s.UpdatedAt = time.Now().Unix()
 		s.mutex.Unlock()
+
 	}
 
 	s.mutex.Lock()
 	s.CurrentTrack = current
+	s.UpdatedAt = time.Now().Unix()
 	s.mutex.Unlock()
 
 	return nil
@@ -152,8 +161,9 @@ func (s *State) initHLSPlaylist(current, next *track.Track) error {
 	}
 
 	s.mutex.Lock()
-	defer s.mutex.Unlock()
 	s.playlist = hls.NewPlaylist(currentSeg, nextSeg)
+	s.UpdatedAt = time.Now().Unix()
+	s.mutex.Unlock()
 
 	return nil
 }

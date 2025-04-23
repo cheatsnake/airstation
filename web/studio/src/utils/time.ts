@@ -7,3 +7,5 @@ export const formatTime = (seconds: number): string => {
 
     return `${formattedMinutes}:${formattedSeconds}`;
 };
+
+export const getUnixTime = (): number => Math.floor(Date.now() / 1000);

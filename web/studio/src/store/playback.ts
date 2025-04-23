@@ -2,16 +2,17 @@ import { create } from "zustand";
 import { PlaybackState } from "../api/types";
 import { airstationAPI } from "../api";
 import { errNotify } from "../notifications";
+import { getUnixTime } from "../utils/time";
 
 interface PlaybackStore {
     playback: PlaybackState;
     setPlayback: (pb: PlaybackState) => void;
     fetchPlayback: () => Promise<void>;
-    incElapsedTime: (value: number) => void;
+    syncElapsedTime: () => void;
 }
 
 export const usePlaybackStore = create<PlaybackStore>()((set) => ({
-    playback: { currentTrack: null, currentTrackElapsed: 0, isPlaying: false },
+    playback: { currentTrack: null, currentTrackElapsed: 0, isPlaying: false, updatedAt: getUnixTime() },
 
     setPlayback(pb) {
         set({ playback: pb });
@@ -26,11 +27,13 @@ export const usePlaybackStore = create<PlaybackStore>()((set) => ({
         }
     },
 
-    incElapsedTime(value) {
+    syncElapsedTime() {
         set((state) => {
             if (!state.playback.currentTrack) return state;
 
-            const elapsed = state.playback.currentTrackElapsed + value;
+            const currentTime = getUnixTime();
+            const diff = currentTime - state.playback.updatedAt;
+            const elapsed = state.playback.currentTrackElapsed + diff;
             if (elapsed > state.playback.currentTrack.duration) return state;
 
             return {
@@ -38,6 +41,7 @@ export const usePlaybackStore = create<PlaybackStore>()((set) => ({
                 playback: {
                     ...state.playback,
                     currentTrackElapsed: elapsed,
+                    updatedAt: currentTime,
                 },
             };
         });

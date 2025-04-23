@@ -17,6 +17,7 @@ export interface PlaybackState {
     currentTrack: Track | null;
     currentTrackElapsed: number;
     isPlaying: boolean;
+    updatedAt: number;
 }
 
 export interface ResponseErr {
