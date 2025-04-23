@@ -15,12 +15,15 @@ export const usePlaybackStore = create<PlaybackStore>()((set) => ({
     playback: { currentTrack: null, currentTrackElapsed: 0, isPlaying: false, updatedAt: getUnixTime() },
 
     setPlayback(pb) {
+        if (pb.currentTrack) pb.currentTrack.duration = Math.ceil(pb.currentTrack.duration);
         set({ playback: pb });
     },
 
     async fetchPlayback() {
         try {
             const pb = await airstationAPI.getPlayback();
+            if (pb.currentTrack) pb.currentTrack.duration = Math.ceil(pb.currentTrack.duration);
+
             set({ playback: pb });
         } catch (error) {
             errNotify(error);
