@@ -2,6 +2,7 @@
 package trackservice
 
 import (
+	"fmt"
 	"log/slog"
 	"math"
 	"path/filepath"
@@ -148,6 +149,49 @@ func (s *Service) CurrentAndNextTrack() (*track.Track, *track.Track, error) {
 func (s *Service) MakeHLSPlaylist(trackPath string, outDir string, segName string, segDuration int) error {
 	err := s.ffmpegCLI.MakeHLSPlaylist(trackPath, outDir, segName, segDuration)
 	return err
+}
+
+func (s *Service) LoadTracksFromDisk(tracksDir string) ([]*track.Track, error) {
+	tracks := make([]*track.Track, 0)
+
+	mp3Filenames, err := fs.ListFilesFromDir(tracksDir, "mp3")
+	if err != nil {
+		return tracks, err
+	}
+
+	aacFilenames, err := fs.ListFilesFromDir(tracksDir, "aac")
+	if err != nil {
+		return tracks, err
+	}
+
+	trackFilenames := make([]string, 0, len(mp3Filenames)+len(aacFilenames))
+	trackFilenames = append(trackFilenames, mp3Filenames...)
+	trackFilenames = append(trackFilenames, aacFilenames...)
+
+	for _, trackFilename := range trackFilenames {
+		trackPath := filepath.Join(tracksDir, trackFilename)
+		preparedTrackPath, err := s.PrepareTrack(trackPath)
+		if err != nil {
+			s.log.Warn("Failed to prepare a track for streaming: " + err.Error())
+			return tracks, err
+		}
+
+		track, err := s.AddTrack(trackFilename, preparedTrackPath)
+		if err != nil {
+			s.log.Warn("Failed to save track to database: " + err.Error())
+			return tracks, err
+		}
+
+		err = fs.DeleteFile(trackPath)
+		if err != nil {
+			s.log.Warn("Failed to delete original copy of prepared track: " + err.Error())
+		}
+
+		tracks = append(tracks, track)
+	}
+
+	s.log.Info(fmt.Sprintf("Loaded %d new track(s) from disk.", len(tracks)))
+	return tracks, nil
 }
 
 // modifyTrackDuration changes the original track duration (slightly) to avoid small HLS segments.

@@ -36,6 +36,8 @@ func main() {
 
 	ffmpegCLI := ffmpeg.NewCLI()
 	trackService := trackservice.New(store, ffmpegCLI, log.WithGroup("trackservice"))
+	go trackService.LoadTracksFromDisk(conf.TracksDir)
+
 	playbackState := playback.NewState(trackService, conf.TmpDir, log.WithGroup("playback"))
 	httpServer := http.NewServer(playbackState, trackService, conf, log.WithGroup("http"))
 	go httpServer.Run()
