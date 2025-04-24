@@ -21,7 +21,7 @@ func FileExists(filePath string) error {
 	}
 
 	if err != nil {
-		return fmt.Errorf("retrieving file info failed: %s", err.Error())
+		return fmt.Errorf("retrieving file info failed: %v", err)
 	}
 
 	return nil
@@ -30,7 +30,7 @@ func FileExists(filePath string) error {
 func DeleteFile(filePath string) error {
 	err := os.Remove(filePath)
 	if err != nil {
-		return fmt.Errorf("deleting file failed: %s", err.Error())
+		return fmt.Errorf("deleting file failed: %v", err)
 	}
 
 	return nil
@@ -55,7 +55,7 @@ func DeleteDirIfExists(path string) error {
 func RenameFile(oldPath, newPath string) error {
 	err := os.Rename(oldPath, newPath)
 	if err != nil {
-		return fmt.Errorf("renaming file failed: %v", err.Error())
+		return fmt.Errorf("renaming file failed: %v", err)
 	}
 
 	return nil
