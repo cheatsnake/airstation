@@ -34,7 +34,7 @@ func DeleteFile(filePath string) error {
 	return nil
 }
 
-func DeleteFolderIfExists(path string) error {
+func DeleteDirIfExists(path string) error {
 	_, err := os.Stat(path)
 	if os.IsNotExist(err) {
 		return nil

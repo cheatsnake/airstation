@@ -20,7 +20,7 @@ import (
 func main() {
 	conf := config.Load()
 
-	fs.DeleteFolderIfExists(conf.TmpDir)
+	fs.DeleteDirIfExists(conf.TmpDir)
 	fs.MustDir(conf.TmpDir)
 	fs.MustDir(conf.TracksDir)
 
