@@ -1,8 +1,9 @@
 package http
 
 const (
-	eventNewTrack       = "new_track"
 	eventPlay           = "play"
 	eventPause          = "pause"
+	eventNewTrack       = "new_track"
+	eventLoadedTracks   = "loaded_tracks"
 	eventCountListeners = "count_listeners"
 )

@@ -7,7 +7,7 @@ interface TracksStore {
 
     setTracks(tracks: Track[]): void;
     fetchTracks(p: number, l: number, s: string): Promise<void>;
-    uploadTracks(files: File[]): Promise<void>;
+    uploadTracks(files: File[]): Promise<ResponseOK>;
     deleteTracks(trackIDs: string[]): Promise<ResponseOK>;
 }
 
@@ -24,8 +24,8 @@ export const useTracksStore = create<TracksStore>()((set, get) => ({
     },
 
     async uploadTracks(files: File[]) {
-        const tracks = await airstationAPI.uploadTracks(files);
-        set((state) => ({ tracks: [...tracks, ...state.tracks] }));
+        const resp = await airstationAPI.uploadTracks(files);
+        return resp;
     },
 
     async deleteTracks(trackIDs: string[]) {

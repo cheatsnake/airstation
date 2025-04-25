@@ -20,6 +20,8 @@ type Service struct {
 	store     storage.TrackStore // An instance of TrackStore for managing audio file storage.
 	ffmpegCLI *ffmpeg.CLI        // A pointer to the FFmpeg CLI wrapper for executing media processing commands.
 	log       *slog.Logger
+
+	LoadedTracksNotify chan int // Notification of the number of loaded tracks
 }
 
 // New creates and returns a new instance of Service.
@@ -35,6 +37,8 @@ func New(store storage.TrackStore, ffmpegCLI *ffmpeg.CLI, log *slog.Logger) *Ser
 		store:     store,
 		ffmpegCLI: ffmpegCLI,
 		log:       log,
+
+		LoadedTracksNotify: make(chan int),
 	}
 }
 
@@ -190,7 +194,11 @@ func (s *Service) LoadTracksFromDisk(tracksDir string) ([]*track.Track, error) {
 		tracks = append(tracks, track)
 	}
 
-	s.log.Info(fmt.Sprintf("Loaded %d new track(s) from disk.", len(tracks)))
+	if len(tracks) > 0 {
+		s.log.Info(fmt.Sprintf("Loaded %d new track(s) from disk.", len(tracks)))
+		s.LoadedTracksNotify <- len(tracks)
+	}
+
 	return tracks, nil
 }
 

@@ -48,7 +48,7 @@ class AirstationAPI {
             formData.append("tracks", files[i]);
         }
 
-        return await this.makeRequest<Track[]>(url, {
+        return await this.makeRequest<ResponseOK>(url, {
             method: "POST",
             body: formData,
         });

@@ -18,10 +18,11 @@ import { useTracksStore } from "../store/tracks";
 import { EmptyLabel } from "../components/EmptyLabel";
 import { useDebouncedValue, useDisclosure } from "@mantine/hooks";
 import { AudioPlayer } from "../components/AudioPlayer";
-import { errNotify, okNotify, warnNotify } from "../notifications";
+import { errNotify, infoNotify, okNotify, warnNotify } from "../notifications";
 import { DisclosureHandler } from "../types";
 import { Track } from "../api/types";
 import { modals } from "@mantine/modals";
+import { EVENTS, useEventSourceStore } from "../store/events";
 
 export const TrackLibrary: FC<{ isMobile?: boolean }> = (props) => {
     const [search, setSearch] = useState("");
@@ -29,6 +30,7 @@ export const TrackLibrary: FC<{ isMobile?: boolean }> = (props) => {
     const [selectedTrackIDs, setSelectedTrackIDs] = useState<Set<string>>(new Set());
     const [debouncedSearch] = useDebouncedValue(search, 500);
     const [loader, handLoader] = useDisclosure(false);
+    const addEventHandler = useEventSourceStore((s) => s.addEventHandler);
     const { colorScheme } = useMantineColorScheme();
 
     const tracks = useTracksStore((s) => s.tracks);
@@ -56,6 +58,13 @@ export const TrackLibrary: FC<{ isMobile?: boolean }> = (props) => {
     const isTrackInQueue = (trackID: string) => {
         return queue.map((t) => t.id).includes(trackID);
     };
+
+    useEffect(() => {
+        addEventHandler(EVENTS.loadedTracks, async (msg: MessageEvent<string>) => {
+            await loadTracks();
+            infoNotify(`${msg.data} new track(s) are now available in your library.`);
+        });
+    }, []);
 
     useEffect(() => {
         loadTracks();
@@ -135,7 +144,8 @@ const TrackUploader: FC<{ handLoader: DisclosureHandler }> = (props) => {
 
         props.handLoader.open();
         try {
-            await uploadTracks(files);
+            const { message } = await uploadTracks(files);
+            okNotify(message);
         } catch (error) {
             errNotify(error);
         } finally {

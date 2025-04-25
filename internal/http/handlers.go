@@ -14,8 +14,6 @@ import (
 	"time"
 
 	"github.com/cheatsnake/airstation/internal/events"
-	"github.com/cheatsnake/airstation/internal/tools/fs"
-	"github.com/cheatsnake/airstation/internal/track"
 	trackservice "github.com/cheatsnake/airstation/internal/track/service"
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -122,7 +120,6 @@ func (s *Server) handleTracks(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleTracksUpload(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseMultipartForm(multipartChunkLimit)
 	if err != nil {
-		s.logger.Debug(err.Error())
 		jsonBadRequest(w, "Failed to parse multipart form: "+err.Error())
 		return
 	}
@@ -133,34 +130,18 @@ func (s *Server) handleTracksUpload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var uploadedTracks []*track.Track
-
 	for _, fileHeader := range files {
-		trackPath, err := s.saveFile(fileHeader)
+		_, err := s.saveFile(fileHeader)
 		if err != nil {
 			jsonBadRequest(w, err.Error())
 			return
 		}
-
-		preparedTrackPath, err := s.trackService.PrepareTrack(trackPath)
-		fs.DeleteFile(trackPath)
-		if err != nil {
-			s.logger.Warn(err.Error())
-			jsonBadRequest(w, "Failed to prepare a track for streaming, try changing the format or using a different track.")
-			return
-		}
-
-		track, err := s.trackService.AddTrack(fileHeader.Filename, preparedTrackPath)
-		if err != nil {
-			s.logger.Debug(err.Error())
-			jsonBadRequest(w, "Failed to save track to database: "+err.Error())
-			return
-		}
-
-		uploadedTracks = append(uploadedTracks, track)
 	}
 
-	jsonResponse(w, uploadedTracks)
+	go s.trackService.LoadTracksFromDisk(s.config.TracksDir)
+
+	msg := fmt.Sprintf("%d track(s) uploaded successfully. They will be available in your library once processed.", len(files))
+	jsonOK(w, msg)
 }
 
 func (s *Server) handleDeleteTracks(w http.ResponseWriter, r *http.Request) {
