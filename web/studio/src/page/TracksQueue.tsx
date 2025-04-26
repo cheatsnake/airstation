@@ -78,7 +78,7 @@ export const TrackQueue: FC<{ isMobile?: boolean }> = (props) => {
     };
 
     const tracklist = queue.map((track, index) => {
-        if (track.id === playback?.currentTrack?.id) return null;
+        if (track.id === playback?.currentTrack?.id && playback.isPlaying) return null;
 
         return (
             <Draggable key={track.id} index={index} draggableId={track.id}>
@@ -106,39 +106,33 @@ export const TrackQueue: FC<{ isMobile?: boolean }> = (props) => {
                             Live queue
                         </Text>
                     </Flex>
-                    <Text c="dimmed">{`${queue.length > 1 ? queue.length - 1 : ""}`}</Text>
+                    <Text c="dimmed">{queue.length > 1 ? queue.length - (playback.isPlaying ? 1 : 0) : ""}</Text>
                 </Flex>
 
                 <Space h={12} />
 
                 <Box flex={1} style={{ overflow: "auto", overflowX: "hidden" }}>
-                    {queue.length > 1 ? (
-                        <DragDropContext
-                            onDragEnd={async ({ destination, source }) => {
-                                try {
-                                    await updateQueue(moveArrayItem(queue, source.index, destination?.index || 0));
-                                } catch (error) {
-                                    handleErr(error);
-                                }
-                            }}
-                        >
-                            <Droppable droppableId="dnd-list" direction="vertical">
-                                {(provided) => (
-                                    <Flex
-                                        direction="column"
-                                        mih={100}
-                                        {...provided.droppableProps}
-                                        ref={provided.innerRef}
-                                    >
-                                        {tracklist}
-                                        {provided.placeholder}
-                                    </Flex>
-                                )}
-                            </Droppable>
-                        </DragDropContext>
-                    ) : (
+                    <DragDropContext
+                        onDragEnd={async ({ destination, source }) => {
+                            try {
+                                await updateQueue(moveArrayItem(queue, source.index, destination?.index || 0));
+                            } catch (error) {
+                                handleErr(error);
+                            }
+                        }}
+                    >
+                        <Droppable droppableId="dnd-list" direction="vertical">
+                            {(provided) => (
+                                <Flex direction="column" {...provided.droppableProps} ref={provided.innerRef}>
+                                    {tracklist}
+                                    {provided.placeholder}
+                                </Flex>
+                            )}
+                        </Droppable>
+                    </DragDropContext>
+                    {!queue.length || (queue.length === 1 && playback.isPlaying) ? (
                         <EmptyLabel label={"Queue is empty"} />
-                    )}
+                    ) : null}
                 </Box>
 
                 <Space h={12} />

@@ -115,8 +115,8 @@ export const Playback: FC<{ isMobile?: boolean }> = (props) => {
                 </Flex>
                 <Flex w="100%" direction="column">
                     <Flex justify="space-between" direction={props.isMobile ? "column-reverse" : "row"} gap="sm">
-                        {playback?.currentTrack?.name ? (
-                            <Text>{playback.currentTrack.name}</Text>
+                        {playback.isPlaying ? (
+                            <Text>{playback?.currentTrack?.name}</Text>
                         ) : (
                             <Text c="dimmed">Stream is stopped</Text>
                         )}

@@ -230,8 +230,7 @@ func (s *Server) handleRemoveFromQueue(w http.ResponseWriter, r *http.Request) {
 	if s.state.CurrentTrack != nil {
 		hasCurrent := slices.Contains(ids.IDs, s.state.CurrentTrack.ID)
 		if hasCurrent {
-			jsonBadRequest(w, "Can't delete a track that is being played")
-			return
+			s.state.Pause()
 		}
 	}
 
