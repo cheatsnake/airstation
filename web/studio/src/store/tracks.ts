@@ -6,7 +6,7 @@ interface TracksStore {
     tracks: Track[];
 
     setTracks(tracks: Track[]): void;
-    fetchTracks(p: number, l: number, s: string): Promise<void>;
+    fetchTracks(p: number, l: number, s: string, sb: keyof Track, so: "asc" | "desc"): Promise<void>;
     uploadTracks(files: File[]): Promise<ResponseOK>;
     deleteTracks(trackIDs: string[]): Promise<ResponseOK>;
 }
@@ -18,8 +18,8 @@ export const useTracksStore = create<TracksStore>()((set, get) => ({
         set({ tracks: q });
     },
 
-    async fetchTracks(p: number, l: number, s: string) {
-        const { tracks } = await airstationAPI.getTracks(p, l, s);
+    async fetchTracks(p: number, l: number, s: string, sb: keyof Track, so: "asc" | "desc") {
+        const { tracks } = await airstationAPI.getTracks(p, l, s, sb, so);
         set({ tracks });
     },
 

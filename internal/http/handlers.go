@@ -107,8 +107,10 @@ func (s *Server) handleTracks(w http.ResponseWriter, r *http.Request) {
 	page := parseIntQuery(queries, "page", 1)
 	limit := parseIntQuery(queries, "limit", 20)
 	search := queries.Get("search")
+	sortBy := queries.Get("sort_by")
+	sortOrder := queries.Get("sort_order")
 
-	result, err := s.trackService.Tracks(page, limit, search)
+	result, err := s.trackService.Tracks(page, limit, search, sortBy, sortOrder)
 	if err != nil {
 		jsonBadRequest(w, "Tracks retrieving failed: "+err.Error())
 		return

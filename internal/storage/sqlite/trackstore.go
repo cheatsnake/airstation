@@ -62,7 +62,7 @@ func Open(dbPath string, log *slog.Logger) (*TrackStore, error) {
 	return &TrackStore{db: db}, nil
 }
 
-func (ts *TrackStore) Tracks(page, limit int, search string) ([]*track.Track, int, error) {
+func (ts *TrackStore) Tracks(page, limit int, search, sortBy, sortOrder string) ([]*track.Track, int, error) {
 	ts.mutex.Lock()
 	defer ts.mutex.Unlock()
 
@@ -84,15 +84,11 @@ func (ts *TrackStore) Tracks(page, limit int, search string) ([]*track.Track, in
 		return tracks, 0, fmt.Errorf("failed to get total track count: %w", err)
 	}
 
-	query := `
-		SELECT id, name, path, duration, bitRate
-		FROM tracks`
+	query := "SELECT id, name, path, duration, bitRate FROM tracks"
 	if search != "" {
 		query += " WHERE name LIKE ?"
 	}
-	query += `
-		ORDER BY id ASC
-		LIMIT ? OFFSET ?`
+	query += fmt.Sprintf(" ORDER BY %s %s LIMIT ? OFFSET ?", sortBy, sortOrder)
 
 	var rows *sql.Rows
 	offset := (page - 1) * limit

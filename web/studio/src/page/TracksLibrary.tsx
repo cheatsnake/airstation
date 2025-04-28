@@ -1,4 +1,5 @@
 import {
+    ActionIcon,
     Box,
     Button,
     Checkbox,
@@ -7,6 +8,7 @@ import {
     Group,
     LoadingOverlay,
     Paper,
+    Select,
     Space,
     Text,
     TextInput,
@@ -23,11 +25,16 @@ import { DisclosureHandler } from "../types";
 import { Track } from "../api/types";
 import { modals } from "@mantine/modals";
 import { EVENTS, useEventSourceStore } from "../store/events";
+import { IconSortAscending, IconSortDescending } from "../icons";
 
 export const TrackLibrary: FC<{ isMobile?: boolean }> = (props) => {
+    const [page, setPage] = useState(1);
     const [search, setSearch] = useState("");
+    const [sortBy, setSortBy] = useState<keyof Track>("id");
+    const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
     const [playingTrackID, setPlayingTrackID] = useState("");
     const [selectedTrackIDs, setSelectedTrackIDs] = useState<Set<string>>(new Set());
+    const [forceLoad, setForceLoad] = useState(false);
     const [debouncedSearch] = useDebouncedValue(search, 500);
     const [loader, handLoader] = useDisclosure(false);
     const addEventHandler = useEventSourceStore((s) => s.addEventHandler);
@@ -37,10 +44,10 @@ export const TrackLibrary: FC<{ isMobile?: boolean }> = (props) => {
     const queue = useTrackQueueStore((s) => s.queue);
     const fetchTracks = useTracksStore((s) => s.fetchTracks);
 
-    const loadTracks = async (page = 1, limit = 100) => {
+    const loadTracks = async (limit = 100) => {
         handLoader.open();
         try {
-            await fetchTracks(page, limit, search);
+            await fetchTracks(page, limit, search, sortBy, sortOrder);
         } catch (error) {
             errNotify(error);
         } finally {
@@ -59,16 +66,32 @@ export const TrackLibrary: FC<{ isMobile?: boolean }> = (props) => {
         return queue.map((t) => t.id).includes(trackID);
     };
 
+    const handleSort = (sb: keyof Track, so: "asc" | "desc") => {
+        setSortBy(sb);
+        setSortOrder(so);
+        setPage(1);
+        setForceLoad(!forceLoad);
+    };
+
     useEffect(() => {
         addEventHandler(EVENTS.loadedTracks, async (msg: MessageEvent<string>) => {
-            await loadTracks();
+            setPage(1);
+            setSortBy("id");
+            setSortOrder("desc");
+
+            if (search) {
+                setSearch(""); // trigger loadTracks request
+            } else {
+                setForceLoad(!forceLoad);
+            }
+
             infoNotify(`${msg.data} new track(s) are now available in your library.`);
         });
     }, []);
 
     useEffect(() => {
         loadTracks();
-    }, [debouncedSearch]);
+    }, [debouncedSearch, forceLoad]);
 
     return (
         <Paper radius="md" pos="relative" bg={colorScheme === "dark" ? "dark" : "#f7f7f7"}>
@@ -76,10 +99,37 @@ export const TrackLibrary: FC<{ isMobile?: boolean }> = (props) => {
                 <LoadingOverlay visible={loader} zIndex={1000} />
 
                 <Flex justify="space-between" align="center">
-                    <Text fw={700} size="lg">
-                        Tracks library
-                    </Text>
-                    <Text c="dimmed">{`${tracks.length} ${tracks.length > 1 ? "tracks" : "track"}`}</Text>
+                    <Flex align="center" gap="xs">
+                        <Text fw={700} size="lg">
+                            Tracks library
+                        </Text>
+                        <Text c="dimmed">{`${tracks.length} ${tracks.length > 1 ? "tracks" : "track"}`}</Text>
+                    </Flex>
+
+                    <Flex align="center" gap="xs">
+                        <ActionIcon
+                            onClick={() => handleSort(sortBy, sortOrder === "asc" ? "desc" : "asc")}
+                            variant="default"
+                            size="md"
+                        >
+                            {sortOrder === "asc" ? (
+                                <IconSortAscending size={18} color="gray" />
+                            ) : (
+                                <IconSortDescending size={18} color="gray" />
+                            )}
+                        </ActionIcon>
+                        <Select
+                            w={90}
+                            withCheckIcon={false}
+                            variant="default"
+                            size="xs"
+                            allowDeselect={false}
+                            value={sortBy}
+                            data={["id", "name", "duration"]}
+                            onChange={(value) => handleSort(value as keyof Track, sortOrder)}
+                            comboboxProps={{ offset: 0 }}
+                        />
+                    </Flex>
                 </Flex>
 
                 <Space h={12} />

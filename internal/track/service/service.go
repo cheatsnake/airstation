@@ -80,8 +80,16 @@ func (s *Service) PrepareTrack(filePath string) (string, error) {
 	return newPath, nil
 }
 
-func (s *Service) Tracks(page, limit int, search string) (*TracksPage, error) {
-	tracks, total, err := s.store.Tracks(page, limit, search)
+func (s *Service) Tracks(page, limit int, search, sortBy, sortOrder string) (*TracksPage, error) {
+	if sortBy != "id" && sortBy != "name" && sortBy != "duration" {
+		sortBy = "id"
+	}
+
+	if sortOrder != "asc" {
+		sortOrder = "desc"
+	}
+
+	tracks, total, err := s.store.Tracks(page, limit, search, sortBy, sortOrder)
 	if err != nil {
 		return nil, err
 	}

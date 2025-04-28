@@ -35,8 +35,14 @@ class AirstationAPI {
         return await this.makeRequest<PlaybackState>(url, jsonRequestParams("POST", {}));
     }
 
-    async getTracks(page: number, limit: number, search: string) {
-        const url = `${this.url()}/tracks?${queryParams({ page, limit, search })}`;
+    async getTracks(page: number, limit: number, search: string, sortBy: keyof Track, sortOrder: "asc" | "desc") {
+        const url = `${this.url()}/tracks?${queryParams({
+            page,
+            limit,
+            search,
+            sort_by: sortBy,
+            sort_order: sortOrder,
+        })}`;
         return await this.makeRequest<TracksPage>(url);
     }
 
