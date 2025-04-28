@@ -17,9 +17,8 @@ import { useTrackQueueStore } from "../store/track-queue";
 import { EmptyLabel } from "../components/EmptyLabel";
 import { errNotify, okNotify } from "../notifications";
 import { useDisclosure } from "@mantine/hooks";
-import { moveArrayItem } from "../utils/array";
+import { moveArrayItem, shuffleArray } from "../utils/array";
 import { Track } from "../api/types";
-import { handleErr } from "../utils/error";
 import { modals } from "@mantine/modals";
 
 export const TrackQueue: FC<{ isMobile?: boolean }> = (props) => {
@@ -69,11 +68,30 @@ export const TrackQueue: FC<{ isMobile?: boolean }> = (props) => {
 
     const confirmClear = () => {
         modals.openConfirmModal({
-            title: "Confirm clear queue",
+            title: "Confirm clear the queue",
             centered: true,
             children: <Text size="sm">Do you really want to completely clear the track queue?</Text>,
             labels: { confirm: "Confirm", cancel: "Cancel" },
             onConfirm: () => handleClear(),
+        });
+    };
+
+    const handleShuffle = async () => {
+        try {
+            const shuffled = shuffleArray(queue.filter(({ id }) => id !== playback.currentTrack?.id));
+            await updateQueue(playback.currentTrack ? [playback.currentTrack, ...shuffled] : shuffled);
+        } catch (error) {
+            errNotify(error);
+        }
+    };
+
+    const confirmShuffle = () => {
+        modals.openConfirmModal({
+            title: "Confirm shuffle the queue",
+            centered: true,
+            children: <Text size="sm">Do you really want to shuffle the track queue?</Text>,
+            labels: { confirm: "Confirm", cancel: "Cancel" },
+            onConfirm: () => handleShuffle(),
         });
     };
 
@@ -117,7 +135,7 @@ export const TrackQueue: FC<{ isMobile?: boolean }> = (props) => {
                             try {
                                 await updateQueue(moveArrayItem(queue, source.index, destination?.index || 0));
                             } catch (error) {
-                                handleErr(error);
+                                errNotify(error);
                             }
                         }}
                     >
@@ -138,8 +156,11 @@ export const TrackQueue: FC<{ isMobile?: boolean }> = (props) => {
                 <Space h={12} />
 
                 <Group gap="xs">
-                    <Button onClick={confirmClear} variant="light" color="red" disabled={loader || queue.length <= 1}>
+                    <Button onClick={confirmClear} variant="light" color="gray" disabled={loader || queue.length <= 1}>
                         Clear
+                    </Button>
+                    <Button onClick={confirmShuffle} variant="light" color="pink" disabled={queue.length < 3}>
+                        🎲 Shuffle
                     </Button>
                 </Group>
             </Flex>
