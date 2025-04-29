@@ -139,7 +139,7 @@ const AnimatedPauseButton: Component<{ toggle: () => void; media?: HTMLVideoElem
 
         let bass = 0;
         let treble = 0;
-        const bassEnd = Math.floor(dataArray.length * 0.15);
+        const bassEnd = Math.floor(dataArray.length * 0.3);
         const trebleStart = Math.floor(dataArray.length * 0.6);
 
         for (let i = 0; i < dataArray.length; i++) {

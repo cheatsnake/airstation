@@ -21,7 +21,7 @@ video {
     border-color: transparent transparent transparent rgb(255, 255, 255);
     background-color: white;
     border-radius: 0.2rem;
-    transition: transform 0.1s ease-out, background-color 0.3s, box-shadow 0.3s;
+    transition: transform 0.05s ease-out, background-color 0.3s, box-shadow 0.3s;
     display: flex;
     align-items: center;
     justify-content: center;
