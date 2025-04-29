@@ -14,7 +14,7 @@ export const Page = () => {
     });
 
     return (
-        <div>
+        <div style={{ display: "flex", "flex-direction": "column", height: "100vh" }}>
             <ListenersCounter />
             <RadioButton />
             <CurrentTrack />
