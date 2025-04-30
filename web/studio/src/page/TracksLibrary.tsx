@@ -14,7 +14,7 @@ import {
     TextInput,
     useMantineColorScheme,
 } from "@mantine/core";
-import { FC, useEffect, useState } from "react";
+import { FC, useEffect, useRef, useState } from "react";
 import { useTrackQueueStore } from "../store/track-queue";
 import { useTracksStore } from "../store/tracks";
 import { EmptyLabel } from "../components/EmptyLabel";
@@ -27,27 +27,31 @@ import { modals } from "@mantine/modals";
 import { EVENTS, useEventSourceStore } from "../store/events";
 import { IconSortAscending, IconSortDescending } from "../icons";
 
+const PAGE_LIMIT = 20;
+
 export const TrackLibrary: FC<{ isMobile?: boolean }> = (props) => {
+    const tracksContainerRef = useRef<HTMLDivElement>(null);
     const [page, setPage] = useState(1);
     const [search, setSearch] = useState("");
     const [sortBy, setSortBy] = useState<keyof Track>("id");
     const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
     const [playingTrackID, setPlayingTrackID] = useState("");
     const [selectedTrackIDs, setSelectedTrackIDs] = useState<Set<string>>(new Set());
-    const [forceLoad, setForceLoad] = useState(false);
+    const [triggerTracksLoad, setTriggerTracksLoad] = useState(false);
     const [debouncedSearch] = useDebouncedValue(search, 500);
     const [loader, handLoader] = useDisclosure(false);
     const addEventHandler = useEventSourceStore((s) => s.addEventHandler);
     const { colorScheme } = useMantineColorScheme();
 
     const tracks = useTracksStore((s) => s.tracks);
+    const totalTracks = useTracksStore((s) => s.totalTracks);
     const queue = useTrackQueueStore((s) => s.queue);
     const fetchTracks = useTracksStore((s) => s.fetchTracks);
 
-    const loadTracks = async (limit = 100) => {
+    const loadTracks = async () => {
         handLoader.open();
         try {
-            await fetchTracks(page, limit, search, sortBy, sortOrder);
+            await fetchTracks(page, PAGE_LIMIT, search, sortBy, sortOrder);
         } catch (error) {
             errNotify(error);
         } finally {
@@ -70,7 +74,12 @@ export const TrackLibrary: FC<{ isMobile?: boolean }> = (props) => {
         setSortBy(sb);
         setSortOrder(so);
         setPage(1);
-        setForceLoad(!forceLoad);
+        setTriggerTracksLoad((prev) => !prev);
+    };
+
+    const handleLoadNextPage = () => {
+        setPage((prev) => prev + 1);
+        setTriggerTracksLoad((prev) => !prev);
     };
 
     useEffect(() => {
@@ -82,7 +91,7 @@ export const TrackLibrary: FC<{ isMobile?: boolean }> = (props) => {
             if (search) {
                 setSearch(""); // trigger loadTracks request
             } else {
-                setForceLoad(!forceLoad);
+                setTriggerTracksLoad((prev) => !prev);
             }
 
             infoNotify(`${msg.data} new track(s) are now available in your library.`);
@@ -90,8 +99,13 @@ export const TrackLibrary: FC<{ isMobile?: boolean }> = (props) => {
     }, []);
 
     useEffect(() => {
+        setPage(1);
+        setTriggerTracksLoad((prev) => !prev);
+    }, [debouncedSearch]);
+
+    useEffect(() => {
         loadTracks();
-    }, [debouncedSearch, forceLoad]);
+    }, [triggerTracksLoad]);
 
     return (
         <Paper radius="md" pos="relative" bg={colorScheme === "dark" ? "dark" : "#f7f7f7"}>
@@ -103,7 +117,9 @@ export const TrackLibrary: FC<{ isMobile?: boolean }> = (props) => {
                         <Text fw={700} size="lg">
                             Tracks library
                         </Text>
-                        <Text c="dimmed">{`${tracks.length} ${tracks.length > 1 ? "tracks" : "track"}`}</Text>
+                        <Text c="dimmed">{`${tracks.length}/${totalTracks} ${
+                            totalTracks > 1 ? "tracks" : "track"
+                        }`}</Text>
                     </Flex>
 
                     <Flex align="center" gap="xs">
@@ -146,21 +162,28 @@ export const TrackLibrary: FC<{ isMobile?: boolean }> = (props) => {
 
                 <Space h={16} />
 
-                <Box flex={1} style={{ overflow: "auto", overflowX: "hidden" }}>
+                <Box flex={1} style={{ overflow: "auto", overflowX: "hidden" }} ref={tracksContainerRef}>
                     <Flex direction="column" gap="sm" justify="center">
                         {tracks.length ? (
-                            tracks.map((track) => (
-                                <Paper p="xs" key={track.id} c={isTrackInQueue(track.id) ? "dimmed" : undefined}>
-                                    <AudioPlayer
-                                        track={track}
-                                        isPlaying={playingTrackID === track.id}
-                                        isTrackInQueue={isTrackInQueue(track.id)}
-                                        selected={selectedTrackIDs}
-                                        setSelected={setSelectedTrackIDs}
-                                        togglePlaying={() => toggleTrackPlaying(track.id)}
-                                    />
-                                </Paper>
-                            ))
+                            <>
+                                {tracks.map((track) => (
+                                    <Paper p="xs" key={track.id} c={isTrackInQueue(track.id) ? "dimmed" : undefined}>
+                                        <AudioPlayer
+                                            track={track}
+                                            isPlaying={playingTrackID === track.id}
+                                            isTrackInQueue={isTrackInQueue(track.id)}
+                                            selected={selectedTrackIDs}
+                                            setSelected={setSelectedTrackIDs}
+                                            togglePlaying={() => toggleTrackPlaying(track.id)}
+                                        />
+                                    </Paper>
+                                ))}
+                                {Math.ceil(totalTracks / PAGE_LIMIT) > page ? (
+                                    <Button onClick={handleLoadNextPage} variant="transparent">
+                                        Load more
+                                    </Button>
+                                ) : null}
+                            </>
                         ) : (
                             <EmptyLabel label={"No tracks found"} />
                         )}
