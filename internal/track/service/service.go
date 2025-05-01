@@ -61,8 +61,12 @@ func (s *Service) AddTrack(name, path string) (*track.Track, error) {
 		return nil, err
 	}
 
-	if modDuration < (hls.DefaultMaxSegmentDuration * hls.DefaultLiveSegmentsAmount) {
+	if modDuration < minAllowedTrackDuration {
 		return nil, fmt.Errorf("%s is too short for streaming", name)
+	}
+
+	if modDuration > maxAllowedTrackDuration {
+		return nil, fmt.Errorf("%s is too large for streaming", name)
 	}
 
 	trackName := defineTrackName(name, metadata.Name)
