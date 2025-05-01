@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"log/slog"
 	"math"
+	"path"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/cheatsnake/airstation/internal/ffmpeg"
 	"github.com/cheatsnake/airstation/internal/hls"
@@ -169,6 +171,36 @@ func (s *Service) CurrentAndNextTrack() (*track.Track, *track.Track, error) {
 func (s *Service) MakeHLSPlaylist(trackPath string, outDir string, segName string, segDuration int) error {
 	err := s.ffmpegCLI.MakeHLSPlaylist(trackPath, outDir, segName, segDuration)
 	return err
+}
+
+func (s *Service) CleanupHLSPlaylists(dirPath string) error {
+	// waiting for all the listeners to listen to the last segments of ended track
+	time.Sleep(hls.DefaultMaxSegmentDuration * 2 * time.Second)
+	current, next, err := s.store.CurrentAndNextTrack()
+	if err != nil {
+		return err
+	}
+
+	utilized := []string{current.ID, next.ID}
+	tmpFiles, err := fs.ListFilesFromDir(dirPath, "")
+	if err != nil {
+		return err
+	}
+
+	for _, tmpFile := range tmpFiles {
+		keep := false
+		for _, prefix := range utilized {
+			if strings.HasPrefix(tmpFile, prefix) {
+				keep = true
+				break
+			}
+		}
+		if !keep {
+			fs.DeleteFile(path.Join(dirPath, tmpFile))
+		}
+	}
+
+	return nil
 }
 
 func (s *Service) LoadTracksFromDisk(tracksDir string) ([]*track.Track, error) {

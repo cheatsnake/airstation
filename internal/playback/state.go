@@ -75,6 +75,8 @@ func (s *State) Run() {
 			if err != nil {
 				s.log.Error(err.Error())
 			}
+
+			go s.trackService.CleanupHLSPlaylists(s.playlistDir)
 		}
 
 		s.PlaylistStr = s.playlist.Generate(s.CurrentTrackElapsed)
