@@ -14,7 +14,7 @@ import {
     TextInput,
     useMantineColorScheme,
 } from "@mantine/core";
-import { FC, useEffect, useRef, useState } from "react";
+import { FC, useCallback, useEffect, useRef, useState } from "react";
 import { useTrackQueueStore } from "../store/track-queue";
 import { useTracksStore } from "../store/tracks";
 import { EmptyLabel } from "../components/EmptyLabel";
@@ -33,12 +33,11 @@ export const TrackLibrary: FC<{ isMobile?: boolean }> = (props) => {
     const tracksContainerRef = useRef<HTMLDivElement>(null);
     const [page, setPage] = useState(1);
     const [search, setSearch] = useState("");
+    const [debouncedSearch] = useDebouncedValue(search, 500);
     const [sortBy, setSortBy] = useState<keyof Track>("id");
     const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
     const [playingTrackID, setPlayingTrackID] = useState("");
     const [selectedTrackIDs, setSelectedTrackIDs] = useState<Set<string>>(new Set());
-    const [triggerTracksLoad, setTriggerTracksLoad] = useState(false);
-    const [debouncedSearch] = useDebouncedValue(search, 500);
     const [loader, handLoader] = useDisclosure(false);
     const addEventHandler = useEventSourceStore((s) => s.addEventHandler);
     const { colorScheme } = useMantineColorScheme();
@@ -48,7 +47,7 @@ export const TrackLibrary: FC<{ isMobile?: boolean }> = (props) => {
     const queue = useTrackQueueStore((s) => s.queue);
     const fetchTracks = useTracksStore((s) => s.fetchTracks);
 
-    const loadTracks = async () => {
+    const loadTracks = useCallback(async () => {
         handLoader.open();
         try {
             await fetchTracks(page, PAGE_LIMIT, search, sortBy, sortOrder);
@@ -57,7 +56,7 @@ export const TrackLibrary: FC<{ isMobile?: boolean }> = (props) => {
         } finally {
             handLoader.close();
         }
-    };
+    }, [page, search, sortBy, sortOrder]);
 
     const toggleTrackPlaying = (id: string) => {
         // If the same track is clicked again, pause it
@@ -73,26 +72,17 @@ export const TrackLibrary: FC<{ isMobile?: boolean }> = (props) => {
     const handleSort = (sb: keyof Track, so: "asc" | "desc") => {
         setSortBy(sb);
         setSortOrder(so);
-        setPage(1);
-        setTriggerTracksLoad((prev) => !prev);
     };
 
     const handleLoadNextPage = () => {
         setPage((prev) => prev + 1);
-        setTriggerTracksLoad((prev) => !prev);
     };
 
     useEffect(() => {
         addEventHandler(EVENTS.loadedTracks, async (msg: MessageEvent<string>) => {
-            setPage(1);
             setSortBy("id");
             setSortOrder("desc");
-
-            if (search) {
-                setSearch(""); // trigger loadTracks request
-            } else {
-                setTriggerTracksLoad((prev) => !prev);
-            }
+            if (search) setSearch("");
 
             infoNotify(`${msg.data} new track(s) are now available in your library.`);
         });
@@ -100,12 +90,11 @@ export const TrackLibrary: FC<{ isMobile?: boolean }> = (props) => {
 
     useEffect(() => {
         setPage(1);
-        setTriggerTracksLoad((prev) => !prev);
-    }, [debouncedSearch]);
+    }, [debouncedSearch, sortBy, sortOrder]);
 
     useEffect(() => {
         loadTracks();
-    }, [triggerTracksLoad]);
+    }, [page, debouncedSearch, sortBy, sortOrder]);
 
     return (
         <Paper radius="md" pos="relative" bg={colorScheme === "dark" ? "dark" : "#f7f7f7"}>
