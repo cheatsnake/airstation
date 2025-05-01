@@ -12,6 +12,7 @@ import {
     Space,
     Text,
     TextInput,
+    Tooltip,
     useMantineColorScheme,
 } from "@mantine/core";
 import { FC, useCallback, useEffect, useRef, useState } from "react";
@@ -113,28 +114,32 @@ export const TrackLibrary: FC<{ isMobile?: boolean }> = (props) => {
                     </Flex>
 
                     <Flex align="center" gap="xs">
-                        <ActionIcon
-                            onClick={() => handleSort(sortBy, sortOrder === "asc" ? "desc" : "asc")}
-                            variant="default"
-                            size="md"
-                        >
-                            {sortOrder === "asc" ? (
-                                <IconSortAscending size={18} color="gray" />
-                            ) : (
-                                <IconSortDescending size={18} color="gray" />
-                            )}
-                        </ActionIcon>
-                        <Select
-                            w={90}
-                            withCheckIcon={false}
-                            variant="default"
-                            size="xs"
-                            allowDeselect={false}
-                            value={sortBy}
-                            data={["id", "name", "duration"]}
-                            onChange={(value) => handleSort(value as keyof Track, sortOrder)}
-                            comboboxProps={{ offset: 0 }}
-                        />
+                        <Tooltip openDelay={500} label={`Sort by ${sortOrder === "asc" ? "descending" : "ascending"}`}>
+                            <ActionIcon
+                                onClick={() => handleSort(sortBy, sortOrder === "asc" ? "desc" : "asc")}
+                                variant="default"
+                                size="md"
+                            >
+                                {sortOrder === "asc" ? (
+                                    <IconSortAscending size={18} color="gray" />
+                                ) : (
+                                    <IconSortDescending size={18} color="gray" />
+                                )}
+                            </ActionIcon>
+                        </Tooltip>
+                        <Tooltip openDelay={500} label="Parameter by which tracks are sorted">
+                            <Select
+                                w={90}
+                                withCheckIcon={false}
+                                variant="default"
+                                size="xs"
+                                allowDeselect={false}
+                                value={sortBy}
+                                data={["id", "name", "duration"]}
+                                onChange={(value) => handleSort(value as keyof Track, sortOrder)}
+                                comboboxProps={{ offset: 0 }}
+                            />
+                        </Tooltip>
                     </Flex>
                 </Flex>
 

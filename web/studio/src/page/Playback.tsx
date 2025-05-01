@@ -1,4 +1,15 @@
-import { ActionIcon, Box, Flex, MantineSize, Paper, Progress, Space, Text, useMantineColorScheme } from "@mantine/core";
+import {
+    ActionIcon,
+    Box,
+    Flex,
+    MantineSize,
+    Paper,
+    Progress,
+    Space,
+    Text,
+    Tooltip,
+    useMantineColorScheme,
+} from "@mantine/core";
 import { FC, useEffect, useRef, useState } from "react";
 import { airstationAPI, API_HOST } from "../api";
 import { usePlaybackStore } from "../store/playback";
@@ -97,20 +108,22 @@ export const Playback: FC<{ isMobile?: boolean }> = (props) => {
             >
                 {props.isMobile ? <Box h="1" /> : null}
                 <Flex gap={props.isMobile ? "lg" : "xs"} direction="column" justify="center" align="center">
-                    <ActionIcon
-                        onClick={handlePlaybackAction}
-                        disabled={loader}
-                        variant="subtle"
-                        color={useThemeBlackColor()}
-                        size={props.isMobile ? 100 : "md"}
-                        aria-label="Settings"
-                    >
-                        {playback?.isPlaying ? (
-                            <IconPlayerStopFilled fill={useThemeBlackColor()} />
-                        ) : (
-                            <IconPlayerPlayFilled fill={useThemeBlackColor()} />
-                        )}
-                    </ActionIcon>
+                    <Tooltip openDelay={500} label={`${playback.isPlaying ? "Stop" : "Start"} playback of the stream`}>
+                        <ActionIcon
+                            onClick={handlePlaybackAction}
+                            disabled={loader}
+                            variant="subtle"
+                            color={useThemeBlackColor()}
+                            size={props.isMobile ? 100 : "md"}
+                            aria-label="Settings"
+                        >
+                            {playback?.isPlaying ? (
+                                <IconPlayerStopFilled fill={useThemeBlackColor()} />
+                            ) : (
+                                <IconPlayerPlayFilled fill={useThemeBlackColor()} />
+                            )}
+                        </ActionIcon>
+                    </Tooltip>
                     <StreamToggler size={props.isMobile ? "xl" : "md"} playback={playback} />
                 </Flex>
                 <Flex w="100%" direction="column">
@@ -120,7 +133,7 @@ export const Playback: FC<{ isMobile?: boolean }> = (props) => {
                         ) : (
                             <Text c="dimmed">Stream is stopped</Text>
                         )}
-                        <ListenersCounter />
+                        <ListenerCounter />
                     </Flex>
                     <Space h={10} />
                     <Box>
@@ -140,7 +153,7 @@ export const Playback: FC<{ isMobile?: boolean }> = (props) => {
     );
 };
 
-const ListenersCounter = () => {
+const ListenerCounter = () => {
     const [count, setCount] = useState(1);
     const addEventHandler = useEventSourceStore((s) => s.addEventHandler);
 
@@ -153,10 +166,12 @@ const ListenersCounter = () => {
     }, []);
 
     return (
-        <Flex gap={5} justify="center" align="center" opacity={0.5}>
-            <IconHeadphones size={18} />
-            <Text>{count}</Text>
-        </Flex>
+        <Tooltip openDelay={500} label={`Listener counter`}>
+            <Flex gap={5} justify="center" align="center" opacity={0.5}>
+                <IconHeadphones size={18} />
+                <Text>{count}</Text>
+            </Flex>
+        </Tooltip>
     );
 };
 
@@ -205,19 +220,21 @@ const StreamToggler: FC<{ playback: PlaybackState; size: MantineSize }> = (props
     return (
         <>
             <video style={{ display: "none" }} id="stream" ref={videoRef}></video>
-            <ActionIcon
-                onClick={togglePlayback}
-                variant="subtle"
-                color={useThemeBlackColor()}
-                size={props.size}
-                aria-label="Settings"
-            >
-                {isPlaying ? (
-                    <IconVolumeOn fill={useThemeBlackColor()} />
-                ) : (
-                    <IconVolumeOff fill={useThemeBlackColor()} />
-                )}
-            </ActionIcon>
+            <Tooltip openDelay={500} label={`${isPlaying ? "Mute" : "Unmute"} the stream just for me`}>
+                <ActionIcon
+                    onClick={togglePlayback}
+                    variant="subtle"
+                    color={useThemeBlackColor()}
+                    size={props.size}
+                    aria-label="Settings"
+                >
+                    {isPlaying ? (
+                        <IconVolumeOn fill={useThemeBlackColor()} />
+                    ) : (
+                        <IconVolumeOff fill={useThemeBlackColor()} />
+                    )}
+                </ActionIcon>
+            </Tooltip>
         </>
     );
 };
