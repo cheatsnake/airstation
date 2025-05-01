@@ -11,7 +11,7 @@ import {
     useMantineColorScheme,
 } from "@mantine/core";
 import { DragDropContext, Draggable, Droppable } from "@hello-pangea/dnd";
-import { FC, useEffect } from "react";
+import { FC, useEffect, useState } from "react";
 import { usePlaybackStore } from "../store/playback";
 import { useTrackQueueStore } from "../store/track-queue";
 import { EmptyLabel } from "../components/EmptyLabel";
@@ -29,6 +29,7 @@ export const TrackQueue: FC<{ isMobile?: boolean }> = (props) => {
     const updateQueue = useTrackQueueStore((s) => s.updateQueue);
     const removeFromQueue = useTrackQueueStore((s) => s.removeFromQueue);
     const { colorScheme } = useMantineColorScheme();
+    const [hovered, setHovered] = useState(false);
 
     const loadQueue = async () => {
         handLoader.open();
@@ -129,7 +130,16 @@ export const TrackQueue: FC<{ isMobile?: boolean }> = (props) => {
 
                 <Space h={12} />
 
-                <Box flex={1} style={{ overflow: "auto", overflowX: "hidden" }}>
+                <Box
+                    flex={1}
+                    onMouseEnter={() => setHovered(true)}
+                    onMouseLeave={() => setHovered(false)}
+                    style={{
+                        overflowX: "hidden",
+                        overflowY: hovered ? "scroll" : "hidden",
+                        scrollbarGutter: "stable",
+                    }}
+                >
                     <DragDropContext
                         onDragEnd={async ({ destination, source }) => {
                             try {

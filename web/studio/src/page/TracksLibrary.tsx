@@ -41,6 +41,7 @@ export const TrackLibrary: FC<{ isMobile?: boolean }> = (props) => {
     const [loader, handLoader] = useDisclosure(false);
     const addEventHandler = useEventSourceStore((s) => s.addEventHandler);
     const { colorScheme } = useMantineColorScheme();
+    const [hovered, setHovered] = useState(false);
 
     const tracks = useTracksStore((s) => s.tracks);
     const totalTracks = useTracksStore((s) => s.totalTracks);
@@ -104,7 +105,7 @@ export const TrackLibrary: FC<{ isMobile?: boolean }> = (props) => {
                 <Flex justify="space-between" align="center">
                     <Flex align="center" gap="xs">
                         <Text fw={700} size="lg">
-                            Tracks library
+                            Library
                         </Text>
                         <Text c="dimmed">{`${tracks.length}/${totalTracks} ${
                             totalTracks > 1 ? "tracks" : "track"
@@ -151,7 +152,17 @@ export const TrackLibrary: FC<{ isMobile?: boolean }> = (props) => {
 
                 <Space h={16} />
 
-                <Box flex={1} style={{ overflow: "auto", overflowX: "hidden" }} ref={tracksContainerRef}>
+                <Box
+                    flex={1}
+                    onMouseEnter={() => setHovered(true)}
+                    onMouseLeave={() => setHovered(false)}
+                    style={{
+                        overflowX: "hidden",
+                        overflowY: hovered ? "scroll" : "hidden",
+                        scrollbarGutter: "stable",
+                    }}
+                    ref={tracksContainerRef}
+                >
                     <Flex direction="column" gap="sm" justify="center">
                         {tracks.length ? (
                             <>
