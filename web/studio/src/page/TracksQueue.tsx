@@ -180,7 +180,7 @@ const QueueItem: FC<{ track: Track; handleRemove: (ids: string[]) => Promise<voi
         >
             <Flex justify="space-between" align="center">
                 <Text
-                    td={hovered ? "underline" : undefined}
+                    c={hovered ? "main" : undefined}
                     style={{ whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}
                 >
                     {track.name}
