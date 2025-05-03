@@ -6,7 +6,7 @@ interface MobileBarProps {
     setActiveBar: React.Dispatch<React.SetStateAction<string>>;
 }
 
-export const MOBILE_BARS = ["Playback", "Queue", "Tracks", "Settings"];
+export const MOBILE_BARS = ["Playback", "Queue", "Tracks"];
 
 export const MobileBar: FC<MobileBarProps> = ({ activeBar, setActiveBar }) => {
     return (

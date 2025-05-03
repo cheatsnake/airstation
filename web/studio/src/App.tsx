@@ -7,7 +7,7 @@ import { AuthGuard } from "./components/AuthGuard";
 const theme = createTheme({
     fontFamily: '"Exo 2", serif',
     colors: {
-        air: [
+        main: [
             "#dffbff",
             "#caf2ff",
             "#99e2ff",
@@ -20,7 +20,7 @@ const theme = createTheme({
             "#007cb6",
         ],
     },
-    primaryColor: "air",
+    primaryColor: "main",
 });
 
 const App = () => {

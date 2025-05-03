@@ -1,15 +1,4 @@
-import {
-    ActionIcon,
-    Box,
-    Flex,
-    MantineSize,
-    Paper,
-    Progress,
-    Space,
-    Text,
-    Tooltip,
-    useMantineColorScheme,
-} from "@mantine/core";
+import { ActionIcon, Box, Flex, MantineSize, Paper, Progress, Space, Text, Tooltip } from "@mantine/core";
 import { FC, useEffect, useRef, useState } from "react";
 import { airstationAPI, API_HOST } from "../api";
 import { usePlaybackStore } from "../store/playback";
@@ -23,6 +12,7 @@ import { useThemeBlackColor } from "../hooks/useThemeBlackColor";
 import { PlaybackState } from "../api/types";
 import Hls from "hls.js";
 import { modals } from "@mantine/modals";
+import styles from "./styles.module.css";
 
 export const Playback: FC<{ isMobile?: boolean }> = (props) => {
     const updateIntervalID = useRef(0);
@@ -33,7 +23,6 @@ export const Playback: FC<{ isMobile?: boolean }> = (props) => {
     const syncElapsedTime = usePlaybackStore((s) => s.syncElapsedTime);
     const rotateQueue = useTrackQueueStore((s) => s.rotateQueue);
     const addEventHandler = useEventSourceStore((s) => s.addEventHandler);
-    const { colorScheme } = useMantineColorScheme();
 
     useEffect(() => {
         (async () => {
@@ -96,7 +85,15 @@ export const Playback: FC<{ isMobile?: boolean }> = (props) => {
     };
 
     return (
-        <Paper w="100%" radius="md" bg={colorScheme === "dark" ? "dark" : "#f7f7f7"}>
+        <Paper
+            w="100%"
+            radius="md"
+            // bg={colorScheme === "dark" ? "dark" : "#f7f7f7"}
+            style={{
+                backgroundColor: "rgb(0 0 0 / 30%)",
+                backdropFilter: "blur(10px)",
+            }}
+        >
             <Flex
                 p="sm"
                 gap="md"
@@ -138,7 +135,7 @@ export const Playback: FC<{ isMobile?: boolean }> = (props) => {
                     <Space h={10} />
                     <Box>
                         <Progress
-                            color="air"
+                            className={styles.progress_bar}
                             radius="xl"
                             value={(playback.currentTrackElapsed / (playback?.currentTrack?.duration || 1)) * 100}
                         />

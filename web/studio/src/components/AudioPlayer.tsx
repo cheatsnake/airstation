@@ -6,6 +6,7 @@ import { Track } from "../api/types";
 import { API_HOST } from "../api";
 import { formatTime } from "../utils/time";
 import { useThrottledState } from "@mantine/hooks";
+import styles from "./AudioPlayer.module.css";
 
 interface AudioPlayerProps {
     track: Track;
@@ -89,6 +90,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
                 <Box w="100%" mt="xs" style={{ cursor: "pointer" }}>
                     <Tooltip.Floating label={formatTime(track.duration * cursorPos)} disabled={!isPlaying}>
                         <Progress
+                            className={styles.progress_bar}
                             onMouseMove={(e) => {
                                 const rect = e.currentTarget.getBoundingClientRect();
                                 setCursorPos(Math.abs((e.clientX - rect.left) / rect.width));

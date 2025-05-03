@@ -20,9 +20,6 @@ const MobilePage = () => {
             <div style={{ flex: 1, display: isVisible("Tracks") }}>
                 <TrackLibrary isMobile />
             </div>
-            <div style={{ flex: 1, display: isVisible("Settings") }}>
-                <></>
-            </div>
 
             <MobileBar activeBar={activeBar} setActiveBar={setActiveBar} />
         </Flex>

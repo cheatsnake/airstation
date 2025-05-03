@@ -13,7 +13,6 @@ import {
     Text,
     TextInput,
     Tooltip,
-    useMantineColorScheme,
 } from "@mantine/core";
 import { FC, useCallback, useEffect, useRef, useState } from "react";
 import { useTrackQueueStore } from "../store/track-queue";
@@ -27,6 +26,7 @@ import { Track } from "../api/types";
 import { modals } from "@mantine/modals";
 import { EVENTS, useEventSourceStore } from "../store/events";
 import { IconSortAscending, IconSortDescending } from "../icons";
+import styles from "./styles.module.css";
 
 const PAGE_LIMIT = 20;
 
@@ -41,7 +41,6 @@ export const TrackLibrary: FC<{ isMobile?: boolean }> = (props) => {
     const [selectedTrackIDs, setSelectedTrackIDs] = useState<Set<string>>(new Set());
     const [loader, handLoader] = useDisclosure(false);
     const addEventHandler = useEventSourceStore((s) => s.addEventHandler);
-    const { colorScheme } = useMantineColorScheme();
     const [hovered, setHovered] = useState(false);
 
     const tracks = useTracksStore((s) => s.tracks);
@@ -99,7 +98,7 @@ export const TrackLibrary: FC<{ isMobile?: boolean }> = (props) => {
     }, [page, debouncedSearch, sortBy, sortOrder]);
 
     return (
-        <Paper radius="md" pos="relative" bg={colorScheme === "dark" ? "dark" : "#f7f7f7"}>
+        <Paper radius="md" className={styles.transparent_paper}>
             <Flex p="xs" direction="column" h={props.isMobile ? "calc(100vh - 60px)" : "75vh"} mah={1200}>
                 <LoadingOverlay visible={loader} zIndex={1000} />
 
@@ -117,7 +116,7 @@ export const TrackLibrary: FC<{ isMobile?: boolean }> = (props) => {
                         <Tooltip openDelay={500} label={`Sort by ${sortOrder === "asc" ? "descending" : "ascending"}`}>
                             <ActionIcon
                                 onClick={() => handleSort(sortBy, sortOrder === "asc" ? "desc" : "asc")}
-                                variant="default"
+                                variant="transparent"
                                 size="md"
                             >
                                 {sortOrder === "asc" ? (
@@ -131,13 +130,13 @@ export const TrackLibrary: FC<{ isMobile?: boolean }> = (props) => {
                             <Select
                                 w={90}
                                 withCheckIcon={false}
-                                variant="default"
+                                variant="transparent"
                                 size="xs"
                                 allowDeselect={false}
                                 value={sortBy}
                                 data={["id", "name", "duration"]}
                                 onChange={(value) => handleSort(value as keyof Track, sortOrder)}
-                                comboboxProps={{ offset: 0 }}
+                                comboboxProps={{ offset: 0, variant: "transparent" }}
                             />
                         </Tooltip>
                     </Flex>
@@ -148,6 +147,8 @@ export const TrackLibrary: FC<{ isMobile?: boolean }> = (props) => {
                 <Flex gap="xs">
                     <TextInput
                         style={{ flexGrow: 1 }}
+                        className={styles.search_input}
+                        variant="unstyled"
                         placeholder="Search"
                         value={search}
                         onChange={(event) => setSearch(event.currentTarget.value)}
@@ -172,7 +173,12 @@ export const TrackLibrary: FC<{ isMobile?: boolean }> = (props) => {
                         {tracks.length ? (
                             <>
                                 {tracks.map((track) => (
-                                    <Paper p="xs" key={track.id} c={isTrackInQueue(track.id) ? "dimmed" : undefined}>
+                                    <Paper
+                                        p="xs"
+                                        key={track.id}
+                                        c={isTrackInQueue(track.id) ? "dimmed" : undefined}
+                                        bg="transparent"
+                                    >
                                         <AudioPlayer
                                             track={track}
                                             isPlaying={playingTrackID === track.id}
@@ -197,7 +203,7 @@ export const TrackLibrary: FC<{ isMobile?: boolean }> = (props) => {
                 <Space h={12} />
 
                 <Group justify="space-between">
-                    {selectedTrackIDs.size ? <Text c="dimmed">{`Selected: ${selectedTrackIDs.size}`}</Text> : <div />}
+                    {selectedTrackIDs.size ? <Text>{`Selected: ${selectedTrackIDs.size}`}</Text> : <div />}
                     <TrackActions
                         handLoader={handLoader}
                         selected={selectedTrackIDs}

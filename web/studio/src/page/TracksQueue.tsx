@@ -1,15 +1,4 @@
-import {
-    Box,
-    Button,
-    CloseButton,
-    Flex,
-    Group,
-    LoadingOverlay,
-    Paper,
-    Space,
-    Text,
-    useMantineColorScheme,
-} from "@mantine/core";
+import { Box, Button, CloseButton, Flex, Group, LoadingOverlay, Paper, Space, Text } from "@mantine/core";
 import { DragDropContext, Draggable, Droppable } from "@hello-pangea/dnd";
 import { FC, useEffect, useState } from "react";
 import { usePlaybackStore } from "../store/playback";
@@ -20,6 +9,7 @@ import { useDisclosure } from "@mantine/hooks";
 import { moveArrayItem, shuffleArray } from "../utils/array";
 import { Track } from "../api/types";
 import { modals } from "@mantine/modals";
+import styles from "./styles.module.css";
 
 export const TrackQueue: FC<{ isMobile?: boolean }> = (props) => {
     const [loader, handLoader] = useDisclosure(false);
@@ -28,7 +18,6 @@ export const TrackQueue: FC<{ isMobile?: boolean }> = (props) => {
     const fetchQueue = useTrackQueueStore((s) => s.fetchQueue);
     const updateQueue = useTrackQueueStore((s) => s.updateQueue);
     const removeFromQueue = useTrackQueueStore((s) => s.removeFromQueue);
-    const { colorScheme } = useMantineColorScheme();
     const [hovered, setHovered] = useState(false);
 
     const loadQueue = async () => {
@@ -50,6 +39,7 @@ export const TrackQueue: FC<{ isMobile?: boolean }> = (props) => {
             errNotify(error);
         } finally {
             handLoader.close();
+            setHovered(true);
         }
     };
 
@@ -114,7 +104,7 @@ export const TrackQueue: FC<{ isMobile?: boolean }> = (props) => {
     }, []);
 
     return (
-        <Paper radius="md" pos="relative" bg={colorScheme === "dark" ? "dark" : "#f7f7f7"}>
+        <Paper radius="md" className={styles.transparent_paper}>
             <Flex p="sm" direction="column" h={props.isMobile ? "calc(100vh - 60px)" : "75vh"} mah={1200}>
                 <LoadingOverlay visible={loader} zIndex={1000} />
                 <Flex justify="space-between" align="center">
@@ -178,11 +168,28 @@ export const TrackQueue: FC<{ isMobile?: boolean }> = (props) => {
 };
 
 const QueueItem: FC<{ track: Track; handleRemove: (ids: string[]) => Promise<void> }> = ({ track, handleRemove }) => {
+    const [hovered, setHovered] = useState(false);
+
     return (
-        <Paper p="xs" key={track.id} mb="xs">
+        <Paper
+            p="xs"
+            key={track.id}
+            mb="xs"
+            bg="transparent"
+            onMouseEnter={() => setHovered(true)}
+            onMouseLeave={() => setHovered(false)}
+        >
             <Flex justify="space-between" align="center">
                 <Text style={{ whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}>{track.name}</Text>
-                <CloseButton size="sm" onClick={() => handleRemove([track.id])} />
+                <CloseButton
+                    variant="transparent"
+                    display={hovered ? undefined : "none"}
+                    size="sm"
+                    onClick={() => {
+                        handleRemove([track.id]);
+                        setHovered(false);
+                    }}
+                />
             </Flex>
         </Paper>
     );
