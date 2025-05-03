@@ -154,7 +154,7 @@ export const Playback: FC<{ isMobile?: boolean }> = (props) => {
 };
 
 const ListenerCounter = () => {
-    const [count, setCount] = useState(1);
+    const [count, setCount] = useState(0);
     const addEventHandler = useEventSourceStore((s) => s.addEventHandler);
 
     const handleCounter = (msg: MessageEvent<string>) => {
@@ -169,7 +169,7 @@ const ListenerCounter = () => {
         <Tooltip openDelay={500} label={`Listener counter`}>
             <Flex gap={5} justify="center" align="center" opacity={0.5}>
                 <IconHeadphones size={18} />
-                <Text>{count}</Text>
+                <Text>{!count ? "" : count}</Text>
             </Flex>
         </Tooltip>
     );
