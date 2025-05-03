@@ -193,9 +193,9 @@ func (s *Server) handleAddToQueue(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = s.state.Load()
+	err = s.state.Reload()
 	if err != nil {
-		s.logger.Debug(err.Error())
+		s.logger.Debug("Playback reload failed: " + err.Error())
 	}
 
 	jsonOK(w, "Tracks added")
@@ -214,9 +214,9 @@ func (s *Server) handleReorderQueue(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = s.state.Load()
+	err = s.state.Reload()
 	if err != nil {
-		s.logger.Debug(err.Error())
+		s.logger.Debug("Playback reload failed: " + err.Error())
 	}
 
 	jsonOK(w, "Queue reordered")
@@ -242,9 +242,9 @@ func (s *Server) handleRemoveFromQueue(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = s.state.Load()
+	err = s.state.Reload()
 	if err != nil {
-		s.logger.Debug(err.Error())
+		s.logger.Debug("Playback reload failed: " + err.Error())
 	}
 
 	jsonOK(w, "Tracks removed")

@@ -3,6 +3,7 @@ package playback
 import (
 	"errors"
 	"log/slog"
+	"strings"
 	"sync"
 	"time"
 
@@ -87,15 +88,18 @@ func (s *State) Run() {
 }
 
 func (s *State) Play() error {
-	err := s.Load()
+	current, next, err := s.trackService.CurrentAndNextTrack()
+	if err != nil {
+		return err
+	}
+
+	err = s.Load(current, next)
 	if err != nil {
 		return err
 	}
 
 	s.mutex.Lock()
 	s.IsPlaying = true
-	s.PlaylistStr = s.playlist.Generate(s.CurrentTrackElapsed)
-	s.UpdatedAt = time.Now().Unix()
 	s.mutex.Unlock()
 
 	s.PlayNotify <- true
@@ -116,37 +120,56 @@ func (s *State) Pause() {
 	s.PauseNotify <- false
 }
 
-func (s *State) Load() error {
+func (s *State) Load(current, next *track.Track) error {
+	if current == nil {
+		return errors.New("no tracks for playing")
+	}
+
+	err := s.initHLSPlaylist(current, next)
+	if err != nil {
+		return err
+	}
+
+	s.mutex.Lock()
+	s.CurrentTrack = current
+	s.PlaylistStr = s.playlist.Generate(s.CurrentTrackElapsed)
+	s.UpdatedAt = time.Now().Unix()
+	s.mutex.Unlock()
+
+	return nil
+}
+
+// Reload state for queue changes
+func (s *State) Reload() error {
+	if !s.IsPlaying {
+		return nil
+	}
+
 	current, next, err := s.trackService.CurrentAndNextTrack()
 	if err != nil {
 		return err
 	}
 
-	if current == nil {
-		return errors.New("no tracks for playing")
-	}
-
-	if s.playlist == nil {
-		err = s.initHLSPlaylist(current, next)
+	isCurrentTrackChanged := current != nil && s.CurrentTrack.ID != current.ID
+	if isCurrentTrackChanged { // Restart if current track changed
+		s.Pause()
+		err = s.Play()
 		if err != nil {
 			return err
 		}
-	} else {
+	}
+
+	segment := s.playlist.FirstNextTrackSegment()
+	isNextTrackChanged := segment != nil && !strings.Contains(segment.Path, next.ID)
+	if isNextTrackChanged { // Change segments for next track if it changed
 		nextSeg, err := s.makeHLSSegments(next, s.playlistDir)
 		if err != nil {
 			return err
 		}
 		s.mutex.Lock()
 		s.playlist.ChangeNext(nextSeg)
-		s.UpdatedAt = time.Now().Unix()
 		s.mutex.Unlock()
-
 	}
-
-	s.mutex.Lock()
-	s.CurrentTrack = current
-	s.UpdatedAt = time.Now().Unix()
-	s.mutex.Unlock()
 
 	return nil
 }

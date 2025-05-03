@@ -66,7 +66,7 @@ func (p *Playlist) Generate(elapsedTime float64) string {
 
 	p.UpdateDisconSequence(elapsedTime)
 	if prevSegmentPath != p.currentSegmentPath {
-		p.UpdateMediaSequence()
+		p.mediaSequence++
 	}
 
 	playlist := hlsHeader(p.MaxSegmentDuration, p.mediaSequence, p.disconSequence, offset)
@@ -103,9 +103,9 @@ func (p *Playlist) AddSegments(segments []*Segment) {
 	p.nextTrackSegments = append(p.nextTrackSegments, segments...)
 }
 
-// UpdateMediaSequence increments the media sequence number by 1.
-func (p *Playlist) UpdateMediaSequence() {
-	p.mediaSequence++
+// SetMediaSequence set a new sequence number for mediaSequence.
+func (p *Playlist) SetMediaSequence(sequence int64) {
+	p.mediaSequence = sequence
 }
 
 // UpdateDisconSequence updates the discontinuity sequence if a discontinuity is detected.
@@ -126,6 +126,14 @@ func (p *Playlist) UpdateDisconSequence(elapsedTime float64) {
 		p.disconSequence++
 		p.lastDisconUpdate = time.Now()
 	}
+}
+
+func (p *Playlist) FirstNextTrackSegment() *Segment {
+	if len(p.nextTrackSegments) > 0 {
+		return p.nextTrackSegments[0]
+	}
+
+	return nil
 }
 
 // currentSegments gathers enough segments from current and next tracks to meet liveSegmentsAmount
