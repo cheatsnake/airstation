@@ -1,7 +1,7 @@
 import { FC, JSX, useEffect, useState } from "react";
 import { airstationAPI } from "../api";
 import { useDisclosure } from "@mantine/hooks";
-import { errNotify, okNotify } from "../notifications";
+import { errNotify } from "../notifications";
 import { handleErr } from "../utils/error";
 import { Box, Button, Flex, Group, LoadingOverlay, Paper, TextInput } from "@mantine/core";
 
@@ -12,9 +12,8 @@ export const AuthGuard: FC<{ children: JSX.Element }> = (props) => {
     const handleLogin = async (secret: string) => {
         try {
             handLoader.open();
-            const resp = await airstationAPI.login(secret);
+            await airstationAPI.login(secret);
             setIsAuth(true);
-            okNotify(resp.message);
         } catch (error) {
             errNotify(error);
         } finally {

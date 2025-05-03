@@ -45,8 +45,7 @@ export const TrackQueue: FC<{ isMobile?: boolean }> = (props) => {
     const handleRemove = async (trackIDs: string[]) => {
         handLoader.open();
         try {
-            const { message } = await removeFromQueue(trackIDs);
-            okNotify(message);
+            await removeFromQueue(trackIDs);
         } catch (error) {
             errNotify(error);
         } finally {

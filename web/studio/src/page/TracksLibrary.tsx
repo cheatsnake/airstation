@@ -279,9 +279,8 @@ const TrackActions: FC<{
     const handleAddToQueue = async () => {
         props.handLoader.open();
         try {
-            const { message } = await addToQueue([...props.selected]);
+            await addToQueue([...props.selected]);
             props.setSelected(new Set());
-            okNotify(message);
         } catch (error) {
             errNotify(error);
         } finally {
