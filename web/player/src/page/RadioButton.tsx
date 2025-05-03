@@ -162,7 +162,7 @@ const AnimatedPauseButton: Component<{ toggle: () => void; media?: HTMLVideoElem
         currentHue += trebleImpact * 2;
         currentHue = (currentHue + 360) % 360;
 
-        const color = `hsl(${currentHue}, 80%, 60%)`;
+        const color = `hsl(${currentHue}, 50%, 60%)`;
         pauseIconRef.style.backgroundColor = color;
 
         const glowIntensity = bass / 2 + 20;
