@@ -172,15 +172,19 @@ const QueueItem: FC<{ track: Track; handleRemove: (ids: string[]) => Promise<voi
 
     return (
         <Paper
-            p="xs"
+            p="0.3rem"
             key={track.id}
-            mb="xs"
             bg="transparent"
             onMouseEnter={() => setHovered(true)}
             onMouseLeave={() => setHovered(false)}
         >
             <Flex justify="space-between" align="center">
-                <Text style={{ whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}>{track.name}</Text>
+                <Text
+                    td={hovered ? "underline" : undefined}
+                    style={{ whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}
+                >
+                    {track.name}
+                </Text>
                 <CloseButton
                     variant="transparent"
                     display={hovered ? undefined : "none"}
