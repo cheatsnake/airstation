@@ -85,15 +85,7 @@ export const Playback: FC<{ isMobile?: boolean }> = (props) => {
     };
 
     return (
-        <Paper
-            w="100%"
-            radius="md"
-            // bg={colorScheme === "dark" ? "dark" : "#f7f7f7"}
-            style={{
-                backgroundColor: "rgb(0 0 0 / 30%)",
-                backdropFilter: "blur(10px)",
-            }}
-        >
+        <Paper w="100%" radius="md" className={styles.transparent_paper}>
             <Flex
                 p="sm"
                 gap="md"
