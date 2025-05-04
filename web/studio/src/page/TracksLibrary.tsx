@@ -164,7 +164,7 @@ export const TrackLibrary: FC<{ isMobile?: boolean }> = (props) => {
                     onMouseLeave={() => setHovered(false)}
                     style={{
                         overflowX: "hidden",
-                        overflowY: hovered ? "scroll" : "hidden",
+                        overflowY: hovered ? "auto" : "hidden",
                         scrollbarGutter: "stable",
                     }}
                     ref={tracksContainerRef}
