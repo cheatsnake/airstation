@@ -435,12 +435,13 @@ func (ts *TrackStore) AddPlaybackHistory(playedAt int64, trackName string) error
 	return nil
 }
 
-func (ts *TrackStore) RecentPlaybackHistory() ([]*track.PlaybackHistory, error) {
+func (ts *TrackStore) RecentPlaybackHistory(limit int) ([]*track.PlaybackHistory, error) {
 	query := `
 		SELECT id, played_at, track_name 
 		FROM playback_history 
-		WHERE played_at >= (strftime('%s', 'now') - 24 * 60 * 60)
 		ORDER BY played_at DESC`
+
+	query += fmt.Sprintf(" LIMIT %d", limit)
 
 	rows, err := ts.db.Query(query)
 	if err != nil {

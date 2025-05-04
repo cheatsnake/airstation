@@ -257,8 +257,8 @@ func (s *Service) AddPlaybackHistory(trackName string) {
 	}
 }
 
-func (s *Service) RecentPlaybackHistory() ([]*track.PlaybackHistory, error) {
-	history, err := s.store.RecentPlaybackHistory()
+func (s *Service) RecentPlaybackHistory(limit int) ([]*track.PlaybackHistory, error) {
+	history, err := s.store.RecentPlaybackHistory(limit)
 	return history, err
 }
 

@@ -269,8 +269,10 @@ func (s *Server) handlePlayPlayback(w http.ResponseWriter, _ *http.Request) {
 	jsonResponse(w, s.state)
 }
 
-func (s *Server) handlePlaybackHistory(w http.ResponseWriter, _ *http.Request) {
-	history, err := s.trackService.RecentPlaybackHistory()
+func (s *Server) handlePlaybackHistory(w http.ResponseWriter, r *http.Request) {
+	queries := r.URL.Query()
+	limit := parseIntQuery(queries, "limit", 50)
+	history, err := s.trackService.RecentPlaybackHistory(limit)
 	if err != nil {
 		s.logger.Debug(err.Error())
 		jsonBadRequest(w, "Playback history retrieving failed")
