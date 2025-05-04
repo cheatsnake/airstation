@@ -6,8 +6,8 @@
 .offline_label {
     display: flex;
     justify-content: center;
-    gap: 0.5rem;
     align-items: center;
+    gap: 0.5rem;
     color: #fff;
     font-size: 0.9rem;
     cursor: pointer;
@@ -15,8 +15,14 @@
 }
 
 .offline_label {
-    font-size: 1rem;
     user-select: none;
-    color: #c3c3c3;
-    color: rgb(255, 75, 75);
+    cursor: none;
+    color: #a8a8a8;
+}
+
+.offline_label_icon {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: rgb(244, 63, 63);
 }

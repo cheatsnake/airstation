@@ -42,5 +42,10 @@ export const CurrentTrack = () => {
 };
 
 const OfflineLabel = () => {
-    return <div class={styles.offline_label}>Stream offline</div>;
+    return (
+        <div class={styles.offline_label}>
+            <div class={styles.offline_label_icon}></div>
+            <div class={styles.offline_label_title}>Stream offline</div>
+        </div>
+    );
 };
