@@ -21,5 +21,9 @@ type TrackStore interface {
 	SpinQueue() error
 	CurrentAndNextTrack() (*track.Track, *track.Track, error)
 
+	AddPlaybackHistory(playedAt int64, trackName string) error
+	RecentPlaybackHistory() ([]*track.PlaybackHistory, error)
+	DeleteOldPlaybackHistory() (int64, error)
+
 	Close() error
 }

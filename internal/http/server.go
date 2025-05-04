@@ -44,6 +44,7 @@ func (s *Server) Run() {
 	s.router.HandleFunc("POST /api/v1/login", s.handleLogin)
 	s.router.Handle("GET /static/tmp/", s.handleStaticDirWithoutCache("/static/tmp", s.config.TmpDir))
 	s.router.Handle("GET /api/v1/playback", http.HandlerFunc(s.handlePlaybackState))
+	s.router.Handle("GET /api/v1/playback/history", http.HandlerFunc(s.handlePlaybackHistory))
 
 	// Protected handlers
 	s.router.Handle("POST /api/v1/tracks", s.jwtAuth(http.HandlerFunc(s.handleTracksUpload)))
@@ -69,6 +70,7 @@ func (s *Server) Run() {
 
 	go s.state.Run()
 	go s.trackService.LoadTracksFromDisk(s.config.TracksDir)
+	s.trackService.DeleteOldPlaybackHistory()
 
 	s.logger.Info("Server starts on http://localhost:" + s.config.HTTPPort)
 	err = http.ListenAndServe(":"+s.config.HTTPPort, cors.Default().Handler(s.router))

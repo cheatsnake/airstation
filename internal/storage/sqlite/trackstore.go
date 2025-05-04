@@ -27,6 +27,7 @@ func Open(dbPath string, log *slog.Logger) (*TrackStore, error) {
 		return nil, fmt.Errorf("failed to open database: %w", err)
 	}
 
+	db.SetMaxOpenConns(1)
 	log.Info("Sqlite database connected.")
 
 	tracksTable := `
@@ -57,6 +58,23 @@ func Open(dbPath string, log *slog.Logger) (*TrackStore, error) {
 	_, err = db.Exec(queueTable)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create queue table: %w", err)
+	}
+
+	playbackHistoryTable := `
+		CREATE TABLE IF NOT EXISTS playback_history (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			played_at INTEGER NOT NULL,
+			track_name TEXT NOT NULL
+		);`
+	_, err = db.Exec(playbackHistoryTable)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create table for playback history: %w", err)
+	}
+
+	playedAtIndexQuery := `CREATE INDEX IF NOT EXISTS idx_playback_history_played_at ON playback_history(played_at);`
+	_, err = db.Exec(playedAtIndexQuery)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create index on playback_history.played_at: %w", err)
 	}
 
 	return &TrackStore{db: db}, nil
@@ -404,6 +422,59 @@ func (ts *TrackStore) SpinQueue() error {
 	}
 
 	return nil
+}
+
+func (ts *TrackStore) AddPlaybackHistory(playedAt int64, trackName string) error {
+	query := `INSERT INTO playback_history (played_at, track_name) VALUES (?, ?)`
+
+	_, err := ts.db.Exec(query, playedAt, trackName)
+	if err != nil {
+		return fmt.Errorf("failed to insert playback entry: %v", err)
+	}
+
+	return nil
+}
+
+func (ts *TrackStore) RecentPlaybackHistory() ([]*track.PlaybackHistory, error) {
+	query := `
+		SELECT id, played_at, track_name 
+		FROM playback_history 
+		WHERE played_at >= (strftime('%s', 'now') - 24 * 60 * 60)
+		ORDER BY played_at DESC`
+
+	rows, err := ts.db.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var history []*track.PlaybackHistory
+	for rows.Next() {
+		var item track.PlaybackHistory
+		if err := rows.Scan(&item.ID, &item.PlayedAt, &item.TrackName); err != nil {
+			return nil, err
+		}
+		history = append(history, &item)
+	}
+	return history, nil
+}
+
+func (ts *TrackStore) DeleteOldPlaybackHistory() (int64, error) {
+	query := `
+		DELETE FROM playback_history 
+		WHERE played_at < (strftime('%s', 'now') - 30 * 24 * 60 * 60)`
+
+	result, err := ts.db.Exec(query)
+	if err != nil {
+		return 0, fmt.Errorf("failed to delete old entries: %v", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return 0, fmt.Errorf("failed to get rows affected: %v", err)
+	}
+
+	return rowsAffected, nil
 }
 
 func (ts *TrackStore) Close() error {

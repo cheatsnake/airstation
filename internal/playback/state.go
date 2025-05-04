@@ -78,6 +78,7 @@ func (s *State) Run() {
 			}
 
 			go s.trackService.CleanupHLSPlaylists(s.playlistDir)
+			go s.trackService.AddPlaybackHistory(s.CurrentTrack.Name)
 		}
 
 		s.PlaylistStr = s.playlist.Generate(s.CurrentTrackElapsed)
@@ -103,6 +104,7 @@ func (s *State) Play() error {
 	s.mutex.Unlock()
 
 	s.PlayNotify <- true
+	go s.trackService.AddPlaybackHistory(current.Name)
 
 	return nil
 }
@@ -235,3 +237,5 @@ func (s *State) makeHLSSegments(track *track.Track, dir string) ([]*hls.Segment,
 
 	return segments, nil
 }
+
+// func (s *State)

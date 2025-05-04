@@ -250,6 +250,25 @@ func (s *Service) LoadTracksFromDisk(tracksDir string) ([]*track.Track, error) {
 	return tracks, nil
 }
 
+func (s *Service) AddPlaybackHistory(trackName string) {
+	err := s.store.AddPlaybackHistory(time.Now().Unix(), trackName)
+	if err != nil {
+		s.log.Error("Failed to add playback history: " + err.Error())
+	}
+}
+
+func (s *Service) RecentPlaybackHistory() ([]*track.PlaybackHistory, error) {
+	history, err := s.store.RecentPlaybackHistory()
+	return history, err
+}
+
+func (s *Service) DeleteOldPlaybackHistory() {
+	_, err := s.store.DeleteOldPlaybackHistory()
+	if err != nil {
+		s.log.Warn("Failed to delete old playback history: " + err.Error())
+	}
+}
+
 // modifyTrackDuration changes the original track duration (slightly) to avoid small HLS segments.
 func (s *Service) modifyTrackDuration(path string, metadata ffmpeg.AudioMetadata) (float64, error) {
 	roundDur := roundDuration(metadata.Duration, hls.DefaultMaxSegmentDuration)

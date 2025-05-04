@@ -269,6 +269,17 @@ func (s *Server) handlePlayPlayback(w http.ResponseWriter, _ *http.Request) {
 	jsonResponse(w, s.state)
 }
 
+func (s *Server) handlePlaybackHistory(w http.ResponseWriter, _ *http.Request) {
+	history, err := s.trackService.RecentPlaybackHistory()
+	if err != nil {
+		s.logger.Debug(err.Error())
+		jsonBadRequest(w, "Playback history retrieving failed")
+		return
+	}
+
+	jsonResponse(w, history)
+}
+
 func (s *Server) handleStaticDir(prefix string, path string) http.Handler {
 	return http.StripPrefix(prefix, http.FileServer(http.Dir(path)))
 }
