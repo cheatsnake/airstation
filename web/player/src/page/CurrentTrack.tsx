@@ -3,6 +3,8 @@ import { airstationAPI } from "../api";
 import styles from "./CurrentTrack.module.css";
 import { addEventListener, EVENTS } from "../store/events";
 import { setTrackStore, trackStore } from "../store/track";
+import { addHistory } from "../store/history";
+import { getUnixTime } from "../utils/date";
 
 export const CurrentTrack = () => {
     onMount(async () => {
@@ -14,7 +16,9 @@ export const CurrentTrack = () => {
         }
 
         addEventListener(EVENTS.newTrack, (e: MessageEvent<string>) => {
+            const unixTime = getUnixTime();
             setTrackStore("trackName", e.data);
+            addHistory({ id: unixTime, playedAt: unixTime, trackName: e.data });
         });
     });
 

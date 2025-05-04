@@ -12,6 +12,12 @@ export interface PlaybackState {
     isPlaying: boolean;
 }
 
+export interface PlaybackHistory {
+    id: number;
+    playedAt: number;
+    trackName: string;
+}
+
 export interface ResponseErr {
     message: string;
 }
