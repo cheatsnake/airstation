@@ -10,15 +10,14 @@
   },
   "dependencies": {
     "@hello-pangea/dnd": "^18.0.1",
-    "@mantine/core": "^7.17.5",
-    "@mantine/dropzone": "^7.17.5",
-    "@mantine/hooks": "^7.17.5",
-    "@mantine/modals": "^7.17.5",
-    "@mantine/notifications": "^7.17.5",
+    "@mantine/core": "^8.0.0",
+    "@mantine/hooks": "^8.0.0",
+    "@mantine/modals": "^8.0.0",
+    "@mantine/notifications": "^8.0.0",
     "hls.js": "^1.6.2",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "zustand": "^5.0.3"
+    "zustand": "^5.0.4"
   },
   "devDependencies": {
     "@types/react": "^19.1.2",
@@ -26,6 +25,6 @@
     "@vitejs/plugin-react": "^4.4.1",
     "globals": "^16.0.0",
     "typescript": "~5.8.3",
-    "vite": "^6.3.4"
+    "vite": "^6.3.5"
   }
 }
