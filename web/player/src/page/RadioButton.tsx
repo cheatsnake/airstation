@@ -3,6 +3,8 @@ import styles from "./RadioButton.module.css";
 import { setTrackStore, trackStore } from "../store/track";
 import { Component, onCleanup, onMount } from "solid-js";
 import { addEventListener, EVENTS } from "../store/events";
+import { getUnixTime } from "../utils/date";
+import { addHistory } from "../store/history";
 
 const STREAM_SOURCE = "/stream";
 
@@ -46,7 +48,10 @@ export const RadioButton = () => {
         });
 
         addEventListener(EVENTS.play, (e: MessageEvent<string>) => {
+            const unixTime = getUnixTime();
             setTrackStore("trackName", e.data);
+            addHistory({ id: unixTime, playedAt: unixTime, trackName: e.data });
+
             if (trackStore.isPlay) handlePause();
             initStream();
             handlePlay();
