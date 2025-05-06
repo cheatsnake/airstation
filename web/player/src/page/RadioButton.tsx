@@ -21,6 +21,7 @@ export const RadioButton = () => {
     };
 
     const handlePlay = () => {
+        if (!trackStore.trackName) return;
         setTrackStore("isPlay", true);
         videoRef?.play();
     };
