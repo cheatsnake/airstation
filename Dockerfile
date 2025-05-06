@@ -18,7 +18,6 @@ COPY go.mod go.sum ./
 RUN go mod download
 COPY cmd/ ./cmd/
 COPY internal/ ./internal/
-COPY static/ ./static/
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /app/bin/main ./cmd/main.go
 
 FROM alpine:latest
@@ -28,7 +27,5 @@ COPY --from=server /app/bin/main .
 COPY --from=player /app/dist ./player
 COPY --from=studio /app/dist ./studio
 COPY .env .
-VOLUME /app/storage.db
-VOLUME /app/static
 EXPOSE 7331
 ENTRYPOINT ["./main"]
