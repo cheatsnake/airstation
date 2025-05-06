@@ -6,12 +6,15 @@ export default defineConfig({
     plugins: [
         solid(),
         VitePWA({
+            scope: "/",
             registerType: "autoUpdate",
             workbox: { cleanupOutdatedCaches: true },
             devOptions: {
                 enabled: true,
             },
             manifest: {
+                scope: "/",
+                start_url: "/",
                 lang: "en",
                 name: "Radio",
                 short_name: "Radio",

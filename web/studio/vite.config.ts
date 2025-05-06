@@ -8,12 +8,15 @@ export default defineConfig({
     plugins: [
         react(),
         VitePWA({
+            scope: "/studio/",
             registerType: "autoUpdate",
             workbox: { cleanupOutdatedCaches: true },
             devOptions: {
                 enabled: true,
             },
             manifest: {
+                scope: "/studio/",
+                start_url: "/studio/",
                 lang: "en",
                 name: "Airstation Studio",
                 short_name: "Airstation",
