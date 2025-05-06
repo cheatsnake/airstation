@@ -11,6 +11,7 @@ import (
 const minSecretLength = 10
 
 type Config struct {
+	DBFile    string
 	TracksDir string
 	TmpDir    string
 	PlayerDir string
@@ -27,6 +28,7 @@ func Load() *Config {
 	}
 
 	return &Config{
+		DBFile:    getEnv("AIRSTATION_DB_FILE", filepath.Join("storage", "storage.db")),
 		TracksDir: getEnv("AIRSTATION_TRACKS_DIR", filepath.Join("static", "tracks")),
 		TmpDir:    getEnv("AIRSTATION_TMP_DIR", filepath.Join("static", "tmp")),
 		PlayerDir: getEnv("AIRSTATION_PLAYER_DIR", filepath.Join("player")),
