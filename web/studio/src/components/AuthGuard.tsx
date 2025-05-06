@@ -4,6 +4,7 @@ import { useDisclosure } from "@mantine/hooks";
 import { errNotify } from "../notifications";
 import { handleErr } from "../utils/error";
 import { Box, Button, Flex, Group, LoadingOverlay, Paper, TextInput } from "@mantine/core";
+import styles from "./AuthGuard.module.css";
 
 export const AuthGuard: FC<{ children: JSX.Element }> = (props) => {
     const [isAuth, setIsAuth] = useState(false);
@@ -55,9 +56,11 @@ const LoginForm: FC<{ handleLogin: (s: string) => Promise<void> }> = (props) => 
 
     return (
         <Flex h="100%" justify="center" align="center">
-            <Paper mb="sm" w={250}>
+            <Paper mb="sm" w={250} bg="transparent">
                 <TextInput
                     type="password"
+                    className={styles.search_input}
+                    variant="unstyled"
                     required
                     value={secret}
                     onChange={(event) => setSecret(event.currentTarget.value)}
