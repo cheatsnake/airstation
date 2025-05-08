@@ -80,10 +80,12 @@ export const TrackLibrary: FC<{ isMobile?: boolean }> = (props) => {
     };
 
     useEffect(() => {
-        addEventHandler(EVENTS.loadedTracks, async (msg: MessageEvent<string>) => {
+        addEventHandler(EVENTS.loadedTracks, (msg: MessageEvent<string>) => {
             setSortBy("id");
             setSortOrder("desc");
-            if (search) setSearch("");
+            setSearch("");
+            setPage(1);
+            loadTracks();
 
             infoNotify(`${msg.data} new track(s) are now available in your library.`);
         });
