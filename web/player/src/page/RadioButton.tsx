@@ -9,7 +9,7 @@ import { addHistory } from "../store/history";
 const STREAM_SOURCE = "/stream";
 
 export const RadioButton = () => {
-    let videoRef: HTMLVideoElement | undefined;
+    let videoRef: HTMLAudioElement | undefined;
     let hls: HLS | undefined;
 
     const initStream = () => {
@@ -61,7 +61,7 @@ export const RadioButton = () => {
 
     return (
         <div class={styles.container}>
-            <video id="video" ref={videoRef}></video>
+            <audio id="video" ref={videoRef}></audio>
             <div class={styles.box}>
                 {trackStore.isPlay ? (
                     <AnimatedPauseButton toggle={togglePlayback} media={videoRef} />
@@ -76,7 +76,7 @@ export const RadioButton = () => {
 let audioSource: MediaElementAudioSourceNode | null = null;
 let audioContext: AudioContext | null = null;
 
-const AnimatedPauseButton: Component<{ toggle: () => void; media?: HTMLVideoElement }> = (props) => {
+const AnimatedPauseButton: Component<{ toggle: () => void; media?: HTMLAudioElement }> = (props) => {
     let pauseIconRef: HTMLDivElement | undefined;
     let analyser: AnalyserNode | null = null;
     let dataArray: Uint8Array | null = null;

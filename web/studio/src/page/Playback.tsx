@@ -170,7 +170,7 @@ const ListenerCounter = () => {
 };
 
 const StreamToggler: FC<{ playback: PlaybackState; size: MantineSize }> = (props) => {
-    const videoRef = useRef<HTMLVideoElement | null>(null);
+    const videoRef = useRef<HTMLAudioElement | null>(null);
     const streamRef = useRef<Hls | null>(null);
     const [isPlaying, setIsPlaying] = useState(false);
 
@@ -213,7 +213,7 @@ const StreamToggler: FC<{ playback: PlaybackState; size: MantineSize }> = (props
 
     return (
         <>
-            <video style={{ display: "none" }} id="stream" ref={videoRef}></video>
+            <audio style={{ display: "none" }} id="stream" ref={videoRef}></audio>
             <Tooltip openDelay={500} label={`${isPlaying ? "Mute" : "Unmute"} the stream just for me`}>
                 <ActionIcon
                     onClick={togglePlayback}
