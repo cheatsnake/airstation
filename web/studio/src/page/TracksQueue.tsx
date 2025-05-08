@@ -1,4 +1,16 @@
-import { Box, Button, CloseButton, Flex, Group, LoadingOverlay, Paper, Space, Text } from "@mantine/core";
+import {
+    ActionIcon,
+    Box,
+    Button,
+    CloseButton,
+    Flex,
+    Group,
+    LoadingOverlay,
+    Paper,
+    Space,
+    Text,
+    Tooltip,
+} from "@mantine/core";
 import { DragDropContext, Draggable, Droppable } from "@hello-pangea/dnd";
 import { FC, useEffect, useState } from "react";
 import { usePlaybackStore } from "../store/playback";
@@ -10,6 +22,7 @@ import { moveArrayItem, shuffleArray } from "../utils/array";
 import { Track } from "../api/types";
 import { modals } from "@mantine/modals";
 import styles from "./styles.module.css";
+import { IconReload } from "../icons";
 
 export const TrackQueue: FC<{ isMobile?: boolean }> = (props) => {
     const [loader, handLoader] = useDisclosure(false);
@@ -110,13 +123,23 @@ export const TrackQueue: FC<{ isMobile?: boolean }> = (props) => {
             <Flex p="sm" direction="column" h={props.isMobile ? "calc(100vh - 60px)" : "75vh"} mah={1200}>
                 <LoadingOverlay visible={loader} zIndex={300} overlayProps={{ radius: "md", opacity: 0.7 }} />
                 <Flex justify="space-between" align="center">
-                    <Flex align="center" gap="xs">
-                        <Box w={10} h={10} bg={playback?.isPlaying ? "red" : "gray"} style={{ borderRadius: "50%" }} />
+                    <Flex align="center" justify="center" gap="xs">
+                        <Box
+                            w={10}
+                            h={10}
+                            bg={playback?.isPlaying ? "red" : "#ffffff33"}
+                            style={{ borderRadius: "50%" }}
+                        />
                         <Text fw={700} size="lg">
                             Live queue
                         </Text>
+                        <Text c="dimmed">{queue.length > 1 ? queue.length - (playback.isPlaying ? 1 : 0) : ""}</Text>
                     </Flex>
-                    <Text c="dimmed">{queue.length > 1 ? queue.length - (playback.isPlaying ? 1 : 0) : ""}</Text>
+                    <Tooltip openDelay={500} label="Reload list">
+                        <ActionIcon onClick={loadQueue} variant="transparent" size="md">
+                            <IconReload size={18} color="gray" />
+                        </ActionIcon>
+                    </Tooltip>
                 </Flex>
 
                 <Space h={12} />

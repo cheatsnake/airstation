@@ -25,7 +25,7 @@ import { DisclosureHandler } from "../types";
 import { Track } from "../api/types";
 import { modals } from "@mantine/modals";
 import { EVENTS, useEventSourceStore } from "../store/events";
-import { IconSortAscending, IconSortDescending } from "../icons";
+import { IconReload, IconSortAscending, IconSortDescending } from "../icons";
 import styles from "./styles.module.css";
 
 const PAGE_LIMIT = 20;
@@ -115,6 +115,11 @@ export const TrackLibrary: FC<{ isMobile?: boolean }> = (props) => {
                     </Flex>
 
                     <Flex align="center" gap="xs">
+                        <Tooltip openDelay={500} label="Reload list">
+                            <ActionIcon onClick={loadTracks} variant="transparent" size="md">
+                                <IconReload size={18} color="gray" />
+                            </ActionIcon>
+                        </Tooltip>
                         <Tooltip openDelay={500} label={`Sort by ${sortOrder === "asc" ? "descending" : "ascending"}`}>
                             <ActionIcon
                                 onClick={() => handleSort(sortBy, sortOrder === "asc" ? "desc" : "asc")}
