@@ -77,6 +77,7 @@ export const Playback: FC<{ isMobile?: boolean }> = (props) => {
 
         modals.openConfirmModal({
             title: "Confirm stop playback",
+            cancelProps: { variant: "light", color: "gray" },
             centered: true,
             children: (
                 <Text size="sm">

@@ -102,7 +102,7 @@ export const TrackLibrary: FC<{ isMobile?: boolean }> = (props) => {
     return (
         <Paper radius="md" className={styles.transparent_paper}>
             <Flex p="xs" direction="column" h={props.isMobile ? "calc(100vh - 60px)" : "75vh"} mah={1200}>
-                <LoadingOverlay visible={loader} zIndex={1000} />
+                <LoadingOverlay visible={loader} zIndex={300} overlayProps={{ radius: "md", opacity: 0.7 }} />
 
                 <Flex justify="space-between" align="center">
                     <Flex align="center" gap="xs">
@@ -299,6 +299,7 @@ const TrackActions: FC<{
     const confirmDelete = () => {
         modals.openConfirmModal({
             title: "Confirm clear queue",
+            cancelProps: { variant: "light", color: "gray" },
             centered: true,
             children: <Text size="sm">Do you really want to delete selected tracks from the server?</Text>,
             labels: { confirm: "Confirm", cancel: "Cancel" },

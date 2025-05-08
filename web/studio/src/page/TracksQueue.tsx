@@ -59,6 +59,7 @@ export const TrackQueue: FC<{ isMobile?: boolean }> = (props) => {
     const confirmClear = () => {
         modals.openConfirmModal({
             title: "Confirm clear the queue",
+            cancelProps: { variant: "light", color: "gray" },
             centered: true,
             children: <Text size="sm">Do you really want to completely clear the track queue?</Text>,
             labels: { confirm: "Confirm", cancel: "Cancel" },
@@ -78,6 +79,7 @@ export const TrackQueue: FC<{ isMobile?: boolean }> = (props) => {
     const confirmShuffle = () => {
         modals.openConfirmModal({
             title: "Confirm shuffle the queue",
+            cancelProps: { variant: "light", color: "gray" },
             centered: true,
             children: <Text size="sm">Do you really want to shuffle the track queue?</Text>,
             labels: { confirm: "Confirm", cancel: "Cancel" },
@@ -106,7 +108,7 @@ export const TrackQueue: FC<{ isMobile?: boolean }> = (props) => {
     return (
         <Paper radius="md" className={styles.transparent_paper}>
             <Flex p="sm" direction="column" h={props.isMobile ? "calc(100vh - 60px)" : "75vh"} mah={1200}>
-                <LoadingOverlay visible={loader} zIndex={1000} />
+                <LoadingOverlay visible={loader} zIndex={300} overlayProps={{ radius: "md", opacity: 0.7 }} />
                 <Flex justify="space-between" align="center">
                     <Flex align="center" gap="xs">
                         <Box w={10} h={10} bg={playback?.isPlaying ? "red" : "gray"} style={{ borderRadius: "50%" }} />

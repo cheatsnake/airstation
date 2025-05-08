@@ -19,13 +19,9 @@
 }
 
 body {
-    background: #485563; /* fallback for old browsers */
-    background: -webkit-linear-gradient(to top, #29323c, #485563); /* Chrome 10-25, Safari 5.1-6 */
-    background: linear-gradient(
-        to top,
-        #29323c,
-        #485563
-    ); /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
+    background: #485563;
+    background: -webkit-linear-gradient(to top, #29323c, #485563);
+    background: linear-gradient(to top, #29323c, #485563);
 }
 
 .mantine-Checkbox-input {
@@ -47,4 +43,10 @@ body {
 
 .mantine-LoadingOverlay-overlay {
     background-color: rgba(0, 0, 0, 0.5);
+}
+
+.mantine-Notifications-notification,
+.mantine-Modal-content,
+.mantine-Modal-header {
+    background-color: #29323c;
 }
