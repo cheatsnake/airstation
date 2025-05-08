@@ -47,6 +47,11 @@ body {
 
 .mantine-Notifications-notification,
 .mantine-Modal-content,
-.mantine-Modal-header {
+.mantine-Modal-header,
+.mantine-Popover-dropdown {
     background-color: #29323c;
+}
+
+.mantine-Select-option:hover {
+    background-color: #485563;
 }
