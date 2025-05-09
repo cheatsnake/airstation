@@ -33,20 +33,11 @@ export const Playback: FC<{ isMobile?: boolean }> = (props) => {
             rotateQueue();
             await fetchPlayback();
         });
-    }, []);
 
-    useEffect(() => {
-        if (playback.isPlaying) {
-            if (!updateIntervalID.current) {
-                updateIntervalID.current = setInterval(() => {
-                    syncElapsedTime();
-                }, 1000);
-            }
-        } else {
-            if (updateIntervalID.current) {
-                clearInterval(updateIntervalID.current);
-                updateIntervalID.current = 0;
-            }
+        if (!updateIntervalID.current) {
+            updateIntervalID.current = setInterval(() => {
+                syncElapsedTime();
+            }, 1000);
         }
 
         return () => {
@@ -55,7 +46,7 @@ export const Playback: FC<{ isMobile?: boolean }> = (props) => {
                 updateIntervalID.current = 0;
             }
         };
-    }, [playback.isPlaying]);
+    }, []);
 
     const togglePlayback = async () => {
         handLoader.open();

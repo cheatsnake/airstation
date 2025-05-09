@@ -32,7 +32,7 @@ export const usePlaybackStore = create<PlaybackStore>()((set) => ({
 
     syncElapsedTime() {
         set((state) => {
-            if (!state.playback.currentTrack) return state;
+            if (!state.playback.currentTrack || !state.playback.isPlaying) return state;
 
             const currentTime = getUnixTime();
             const diff = currentTime - state.playback.updatedAt;
