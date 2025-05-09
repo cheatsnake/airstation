@@ -60,17 +60,16 @@ func TestNewSegment(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			result := NewSegment(c.duration, c.path, c.isFirst)
+			got := NewSegment(c.duration, c.path, c.isFirst)
 
-			// Validate the fields of the returned Segment
-			if result.Duration != c.expected.Duration {
-				t.Errorf("Duration = %f; want %f", result.Duration, c.expected.Duration)
+			if got.Duration != c.expected.Duration {
+				t.Errorf("Duration = %f; want %f", got.Duration, c.expected.Duration)
 			}
-			if result.Path != c.expected.Path {
-				t.Errorf("Path = %q; want %q", result.Path, c.expected.Path)
+			if got.Path != c.expected.Path {
+				t.Errorf("Path = %q; want %q", got.Path, c.expected.Path)
 			}
-			if result.IsFirst != c.expected.IsFirst {
-				t.Errorf("IsFirst = %v; want %v", result.IsFirst, c.expected.IsFirst)
+			if got.IsFirst != c.expected.IsFirst {
+				t.Errorf("IsFirst = %v; want %v", got.IsFirst, c.expected.IsFirst)
 			}
 		})
 	}
@@ -142,21 +141,21 @@ func TestGenerateSegments(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			result := GenerateSegments(c.trackDuration, c.segmentDuration, c.trackID, c.outDir)
+			got := GenerateSegments(c.trackDuration, c.segmentDuration, c.trackID, c.outDir)
 
-			if len(result) != len(c.expectedSegments) {
-				t.Fatalf("Expected %d segments, got %d", len(c.expectedSegments), len(result))
+			if len(got) != len(c.expectedSegments) {
+				t.Fatalf("Expected %d segments, got %d", len(c.expectedSegments), len(got))
 			}
 
-			for i, seg := range result {
-				if seg.Duration != c.expectedSegments[i].Duration {
-					t.Errorf("Segment %d: expected duration %f, got %f", i, c.expectedSegments[i].Duration, seg.Duration)
+			for i, gotSegment := range got {
+				if gotSegment.Duration != c.expectedSegments[i].Duration {
+					t.Errorf("Segment %d: expected duration %f, got %f", i, c.expectedSegments[i].Duration, gotSegment.Duration)
 				}
-				if seg.Path != c.expectedSegments[i].Path {
-					t.Errorf("Segment %d: expected path %q, got %q", i, c.expectedSegments[i].Path, seg.Path)
+				if gotSegment.Path != c.expectedSegments[i].Path {
+					t.Errorf("Segment %d: expected path %q, got %q", i, c.expectedSegments[i].Path, gotSegment.Path)
 				}
-				if seg.IsFirst != c.expectedSegments[i].IsFirst {
-					t.Errorf("Segment %d: expected IsFirst %v, got %v", i, c.expectedSegments[i].IsFirst, seg.IsFirst)
+				if gotSegment.IsFirst != c.expectedSegments[i].IsFirst {
+					t.Errorf("Segment %d: expected IsFirst %v, got %v", i, c.expectedSegments[i].IsFirst, gotSegment.IsFirst)
 				}
 			}
 		})

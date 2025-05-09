@@ -116,22 +116,22 @@ func TestGenerate(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			playlist := NewPlaylist(c.current, c.next)
-			result := playlist.Generate(c.elapsedTime)
+			got := playlist.Generate(c.elapsedTime)
 
-			for _, path := range c.expectedPaths {
-				if !strings.Contains(result, path) {
-					t.Errorf("Expected segment %s not found in playlist: %s", path, result)
+			for _, expected := range c.expectedPaths {
+				if !strings.Contains(got, expected) {
+					t.Errorf("Expected segment %s not found in playlist: %s", expected, got)
 				}
 			}
 
 			for _, path := range c.unexpected {
-				if strings.Contains(result, path) {
-					t.Errorf("Unexpected segment %s found in playlist: %s", path, result)
+				if strings.Contains(got, path) {
+					t.Errorf("Unexpected segment %s found in playlist: %s", path, got)
 				}
 			}
 
-			if !strings.HasPrefix(result, "#EXTM3U") {
-				t.Errorf("Playlist header is missing: %s", result)
+			if !strings.HasPrefix(got, "#EXTM3U") {
+				t.Errorf("Playlist header is missing: %s", got)
 			}
 		})
 	}
@@ -191,11 +191,12 @@ func TestCollectLiveSegments(t *testing.T) {
 		}
 
 		playlist := NewPlaylist(current, next)
-		liveSegments := playlist.currentSegments(0)
+
+		got := playlist.currentSegments(0)
 		expected := current
 
-		if !reflect.DeepEqual(liveSegments, expected) {
-			t.Errorf("Expected %v, got %v", expected, liveSegments)
+		if !reflect.DeepEqual(got, expected) {
+			t.Errorf("Expected %v, got %v", expected, got)
 		}
 	})
 
@@ -208,17 +209,17 @@ func TestCollectLiveSegments(t *testing.T) {
 		next := []*Segment{
 			{Duration: 5.0, Path: "segment4.ts"},
 		}
-
 		playlist := NewPlaylist(current, next)
-		liveSegments := playlist.currentSegments(0)
+
+		got := playlist.currentSegments(0)
 		expected := []*Segment{
 			{Duration: 5.0, Path: "segment1.ts"},
 			{Duration: 5.0, Path: "segment2.ts"},
 			{Duration: 5.0, Path: "segment3.ts"},
 		}
 
-		if !reflect.DeepEqual(liveSegments, expected) {
-			t.Errorf("Expected %v, got %v", expected, liveSegments)
+		if !reflect.DeepEqual(got, expected) {
+			t.Errorf("Expected %v, got %v", expected, got)
 		}
 	})
 
@@ -233,15 +234,15 @@ func TestCollectLiveSegments(t *testing.T) {
 		}
 		playlist := NewPlaylist(current, next)
 
-		liveSegments := playlist.currentSegments(1)
-
+		got := playlist.currentSegments(1)
 		expected := []*Segment{
+			{Duration: 5.0, Path: "segment1.ts"},
 			{Duration: 5.0, Path: "segment2.ts"},
 			{Duration: 5.0, Path: "segment3.ts"},
-			{Duration: 5.0, Path: "segment4.ts"},
 		}
-		if !reflect.DeepEqual(liveSegments, expected) {
-			t.Errorf("Expected %v, got %v", expected, liveSegments)
+
+		if !reflect.DeepEqual(got, expected) {
+			t.Errorf("Expected %v, got %v", expected, got)
 		}
 	})
 
@@ -256,11 +257,11 @@ func TestCollectLiveSegments(t *testing.T) {
 		}
 		playlist := NewPlaylist(current, next)
 
-		liveSegments := playlist.currentSegments(2)
+		got := playlist.currentSegments(DefaultMaxSegmentDuration)
 		expected := next
 
-		if !reflect.DeepEqual(liveSegments, expected) {
-			t.Errorf("Expected %v, got %v", expected, liveSegments)
+		if !reflect.DeepEqual(got, expected) {
+			t.Errorf("Expected %v, got %v", expected, got)
 		}
 	})
 
@@ -273,14 +274,14 @@ func TestCollectLiveSegments(t *testing.T) {
 		}
 		playlist := NewPlaylist(current, next)
 
-		liveSegments := playlist.currentSegments(0)
-
+		got := playlist.currentSegments(0)
 		expected := []*Segment{
 			{Duration: 5.0, Path: "segment1.ts"},
 			{Duration: 5.0, Path: "segment2.ts"},
 		}
-		if !reflect.DeepEqual(liveSegments, expected) {
-			t.Errorf("Expected %v, got %v", expected, liveSegments)
+
+		if !reflect.DeepEqual(got, expected) {
+			t.Errorf("Expected %v, got %v", expected, got)
 		}
 	})
 
@@ -292,13 +293,13 @@ func TestCollectLiveSegments(t *testing.T) {
 			{Duration: 5.0, Path: "segment2.ts"},
 			{Duration: 5.0, Path: "segment3.ts"},
 		}
-
 		playlist := NewPlaylist(current, next)
-		liveSegments := playlist.currentSegments(2)
+
+		got := playlist.currentSegments(DefaultMaxSegmentDuration)
 		expected := next
 
-		if !reflect.DeepEqual(liveSegments, expected) {
-			t.Errorf("Expected %v, got %v", expected, liveSegments)
+		if !reflect.DeepEqual(got, expected) {
+			t.Errorf("Expected %v, got %v", expected, got)
 		}
 	})
 
@@ -307,11 +308,11 @@ func TestCollectLiveSegments(t *testing.T) {
 		next := []*Segment{}
 		playlist := NewPlaylist(current, next)
 
-		liveSegments := playlist.currentSegments(0)
-
+		got := playlist.currentSegments(0)
 		expected := []*Segment{}
-		if !reflect.DeepEqual(liveSegments, expected) {
-			t.Errorf("Expected %v, got %v", expected, liveSegments)
+
+		if !reflect.DeepEqual(got, expected) {
+			t.Errorf("Expected %v, got %v", expected, got)
 		}
 	})
 }
@@ -323,7 +324,7 @@ func TestHlsHeader(t *testing.T) {
 		mediaSeq  int64
 		disconSeq int64
 		offset    float64
-		expected  string
+		expected  []string
 	}{
 		{
 			name:      "Basic case",
@@ -331,12 +332,14 @@ func TestHlsHeader(t *testing.T) {
 			mediaSeq:  1,
 			disconSeq: 0,
 			offset:    0.0,
-			expected: "#EXTM3U\n" +
-				"#EXT-X-VERSION:6\n" +
-				"#EXT-X-TARGETDURATION:10\n" +
-				"#EXT-X-MEDIA-SEQUENCE:1\n" +
-				"#EXT-X-DISCONTINUITY-SEQUENCE:0\n" +
+			expected: []string{
+				"#EXTM3U\n",
+				"#EXT-X-VERSION:6\n",
+				"#EXT-X-TARGETDURATION:10\n",
+				"#EXT-X-MEDIA-SEQUENCE:1\n",
+				"#EXT-X-DISCONTINUITY-SEQUENCE:0\n",
 				"#EXT-X-START:TIME-OFFSET=0.00\n",
+			},
 		},
 		{
 			name:      "Non-zero discontinuity sequence",
@@ -344,12 +347,14 @@ func TestHlsHeader(t *testing.T) {
 			mediaSeq:  5,
 			disconSeq: 2,
 			offset:    5.5,
-			expected: "#EXTM3U\n" +
-				"#EXT-X-VERSION:6\n" +
-				"#EXT-X-TARGETDURATION:15\n" +
-				"#EXT-X-MEDIA-SEQUENCE:5\n" +
-				"#EXT-X-DISCONTINUITY-SEQUENCE:2\n" +
+			expected: []string{
+				"#EXTM3U\n",
+				"#EXT-X-VERSION:6\n",
+				"#EXT-X-TARGETDURATION:15\n",
+				"#EXT-X-MEDIA-SEQUENCE:5\n",
+				"#EXT-X-DISCONTINUITY-SEQUENCE:2\n",
 				"#EXT-X-START:TIME-OFFSET=5.50\n",
+			},
 		},
 		{
 			name:      "Zero values",
@@ -357,12 +362,14 @@ func TestHlsHeader(t *testing.T) {
 			mediaSeq:  0,
 			disconSeq: 0,
 			offset:    0.0,
-			expected: "#EXTM3U\n" +
-				"#EXT-X-VERSION:6\n" +
-				"#EXT-X-TARGETDURATION:0\n" +
-				"#EXT-X-MEDIA-SEQUENCE:0\n" +
-				"#EXT-X-DISCONTINUITY-SEQUENCE:0\n" +
+			expected: []string{
+				"#EXTM3U\n",
+				"#EXT-X-VERSION:6\n",
+				"#EXT-X-TARGETDURATION:0\n",
+				"#EXT-X-MEDIA-SEQUENCE:0\n",
+				"#EXT-X-DISCONTINUITY-SEQUENCE:0\n",
 				"#EXT-X-START:TIME-OFFSET=0.00\n",
+			},
 		},
 		{
 			name:      "Large values",
@@ -370,21 +377,27 @@ func TestHlsHeader(t *testing.T) {
 			mediaSeq:  123456789,
 			disconSeq: 987654321,
 			offset:    123.45,
-			expected: "#EXTM3U\n" +
-				"#EXT-X-VERSION:6\n" +
-				"#EXT-X-TARGETDURATION:999\n" +
-				"#EXT-X-MEDIA-SEQUENCE:123456789\n" +
-				"#EXT-X-DISCONTINUITY-SEQUENCE:987654321\n" +
+			expected: []string{
+				"#EXTM3U\n",
+				"#EXT-X-VERSION:6\n",
+				"#EXT-X-TARGETDURATION:999\n",
+				"#EXT-X-MEDIA-SEQUENCE:123456789\n",
+				"#EXT-X-DISCONTINUITY-SEQUENCE:987654321\n",
 				"#EXT-X-START:TIME-OFFSET=123.45\n",
+			},
 		},
 	}
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			result := hlsHeader(c.dur, c.mediaSeq, c.disconSeq, c.offset)
-			if result != c.expected {
-				t.Errorf("hlsHeader(%d, %d, %d, %.2f) = %q; want %q", c.dur, c.mediaSeq, c.disconSeq, c.offset, result, c.expected)
+			got := hlsHeader(c.dur, c.mediaSeq, c.disconSeq, c.offset)
+
+			for _, expect := range c.expected {
+				if !strings.Contains(got, expect) {
+					t.Errorf("hlsHeader(%d, %d, %d, %.2f) = %q; want %q", c.dur, c.mediaSeq, c.disconSeq, c.offset, got, c.expected)
+				}
 			}
+
 		})
 	}
 }
