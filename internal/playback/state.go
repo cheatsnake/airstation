@@ -237,5 +237,3 @@ func (s *State) makeHLSSegments(track *track.Track, dir string) ([]*hls.Segment,
 
 	return segments, nil
 }
-
-// func (s *State)
