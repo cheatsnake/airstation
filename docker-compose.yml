@@ -8,7 +8,6 @@ services:
     volumes:
       - database:/app/storage
       - ./static:/app/static
-      - ./.env:/app/.env 
     restart: unless-stopped
     
 volumes:
