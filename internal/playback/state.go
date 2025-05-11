@@ -1,3 +1,8 @@
+// Package playback manages audio playback state, track transitions, and HLS playlist generation.
+// It coordinates the timing and sequencing of audio tracks, maintaining synchronized state
+// for streaming playback, including current position, play/pause control, and playlist updates.
+// This package interacts with the track service to load tracks, generate segments, and handle
+// queue changes in a thread-safe manner.
 package playback
 
 import (
@@ -12,22 +17,24 @@ import (
 	trackservice "github.com/cheatsnake/airstation/internal/track/service"
 )
 
+// State represents the current playback state of the application, including the currently playing track,
+// elapsed playback time, playlist management, and synchronization tools for safe concurrent access.
 type State struct {
 	CurrentTrack        *track.Track `json:"currentTrack"`        // The currently playing track
-	CurrentTrackElapsed float64      `json:"currentTrackElapsed"` // Seconds elapsed since the track started playing
-	IsPlaying           bool         `json:"isPlaying"`           // Whether the track is currently playing
-	UpdatedAt           int64        `json:"updatedAt"`           // Unix timestamp of last state update
+	CurrentTrackElapsed float64      `json:"currentTrackElapsed"` // Seconds elapsed since the current track started playing
+	IsPlaying           bool         `json:"isPlaying"`           // Whether a track is currently playing
+	UpdatedAt           int64        `json:"updatedAt"`           // Unix timestamp of the last state update
 
-	NewTrackNotify chan string `json:"-"`
-	PlayNotify     chan bool   `json:"-"`
-	PauseNotify    chan bool   `json:"-"`
+	NewTrackNotify chan string `json:"-"` // Channel to notify when a new track starts playing
+	PlayNotify     chan bool   `json:"-"` // Channel to notify when playback starts
+	PauseNotify    chan bool   `json:"-"` // Channel to notify when playback is paused
 
-	PlaylistStr string        `json:"-"` // String representation of HLS playlist
-	playlist    *hls.Playlist // HLS playlist for streaming
-	playlistDir string        // Directory for temporary playlist data
+	PlaylistStr string        `json:"-"` // Current HLS playlist as a string
+	playlist    *hls.Playlist // Internal representation of the HLS playlist
+	playlistDir string        // Directory where HLS playlist segments are stored
 
-	refreshCount    int64   // Total number of state refreshes
-	refreshInterval float64 // Interval in seconds between state refreshes
+	refreshCount    int64   // Number of state refresh cycles completed
+	refreshInterval float64 // Time interval (in seconds) between state updates
 
 	trackService *trackservice.Service
 
@@ -35,6 +42,7 @@ type State struct {
 	mutex sync.Mutex
 }
 
+// NewState creates and initializes a new playback State instance.
 func NewState(ts *trackservice.Service, tmpDir string, log *slog.Logger) *State {
 	return &State{
 		CurrentTrack:        nil,
@@ -56,6 +64,7 @@ func NewState(ts *trackservice.Service, tmpDir string, log *slog.Logger) *State 
 	}
 }
 
+// Run starts the state update loop which refreshes playback progress and switches tracks when needed.
 func (s *State) Run() {
 	ticker := time.NewTicker(time.Duration(s.refreshInterval) * time.Second)
 	defer ticker.Stop()
@@ -66,11 +75,9 @@ func (s *State) Run() {
 		}
 
 		s.mutex.Lock()
-
 		s.CurrentTrackElapsed += s.refreshInterval
 		s.refreshCount++
 
-		// Load next track
 		if s.CurrentTrackElapsed >= s.CurrentTrack.Duration {
 			err := s.loadNextTrack()
 			if err != nil {
@@ -83,11 +90,11 @@ func (s *State) Run() {
 
 		s.PlaylistStr = s.playlist.Generate(s.CurrentTrackElapsed)
 		s.UpdatedAt = time.Now().Unix()
-
 		s.mutex.Unlock()
 	}
 }
 
+// Play starts playback by loading the current and next tracks into the HLS playlist.
 func (s *State) Play() error {
 	current, next, err := s.trackService.CurrentAndNextTrack()
 	if err != nil {
@@ -109,6 +116,7 @@ func (s *State) Play() error {
 	return nil
 }
 
+// Pause stops playback, clears current playback state and playlist.
 func (s *State) Pause() {
 	s.mutex.Lock()
 	s.CurrentTrack = nil
@@ -122,6 +130,7 @@ func (s *State) Pause() {
 	s.PauseNotify <- false
 }
 
+// Load initializes the playback state and playlist for the current and next track.
 func (s *State) Load(current, next *track.Track) error {
 	if current == nil {
 		return errors.New("no tracks for playing")
@@ -141,7 +150,7 @@ func (s *State) Load(current, next *track.Track) error {
 	return nil
 }
 
-// Reload state for queue changes
+// Reload refreshes the current playlist based on updated queue state, used after queue changes.
 func (s *State) Reload() error {
 	if !s.IsPlaying {
 		return nil
@@ -176,6 +185,7 @@ func (s *State) Reload() error {
 	return nil
 }
 
+// initHLSPlaylist prepares HLS segments for the current and next tracks, initializing a new playlist.
 func (s *State) initHLSPlaylist(current, next *track.Track) error {
 	currentSeg, err := s.makeHLSSegments(current, s.playlistDir)
 	if err != nil {
@@ -195,6 +205,7 @@ func (s *State) initHLSPlaylist(current, next *track.Track) error {
 	return nil
 }
 
+// loadNextTrack advances the queue, resets elapsed time, and updates playlist with next segments.
 func (s *State) loadNextTrack() error {
 	s.CurrentTrackElapsed = 0
 	err := s.trackService.SpinQueue()
@@ -218,6 +229,7 @@ func (s *State) loadNextTrack() error {
 	return nil
 }
 
+// makeHLSSegments generates HLS segments for a given track.
 func (s *State) makeHLSSegments(track *track.Track, dir string) ([]*hls.Segment, error) {
 	if track == nil {
 		return []*hls.Segment{}, nil
