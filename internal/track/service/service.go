@@ -80,9 +80,17 @@ func (s *Service) AddTrack(name, path string) (*track.Track, error) {
 	return newTrack, nil
 }
 
+// PrepareTrack converts the audio file at filePath to AAC format with a fixed bitrate,
+// saving the output to a new file with an .m4a extension.
+//
+// Parameters:
+//   - filePath: The full path of the original audio file.
+//
+// Returns:
+//   - The path to the converted .m4a file, or an error if the conversion fails.
 func (s *Service) PrepareTrack(filePath string) (string, error) {
-	newPath := replaceExtension(filePath, ".m4a")
-	err := s.ffmpegCLI.ConvertAudioToAAC(filePath, newPath, 192)
+	newPath := replaceExtension(filePath, m4aExtension)
+	err := s.ffmpegCLI.ConvertAudioToAAC(filePath, newPath, defaultAudioBitRate)
 	if err != nil {
 		return "", err
 	}
@@ -90,6 +98,17 @@ func (s *Service) PrepareTrack(filePath string) (string, error) {
 	return newPath, nil
 }
 
+// Tracks retrieves a paginated list of tracks from the store, applying optional search, sort, and order.
+//
+// Parameters:
+//   - page: The page number of results.
+//   - limit: The number of results per page.
+//   - search: A string to filter track names.
+//   - sortBy: The field to sort by (id, name, or duration).
+//   - sortOrder: The order of sorting (asc or desc).
+//
+// Returns:
+//   - A TracksPage object with paginated track data, or an error.
 func (s *Service) Tracks(page, limit int, search, sortBy, sortOrder string) (*TracksPage, error) {
 	if sortBy != "id" && sortBy != "name" && sortBy != "duration" {
 		sortBy = "id"
@@ -112,6 +131,13 @@ func (s *Service) Tracks(page, limit int, search, sortBy, sortOrder string) (*Tr
 	}, nil
 }
 
+// DeleteTracks deletes tracks from the database and also removes their files from disk.
+//
+// Parameters:
+//   - ids: A TrackIDs object containing the IDs of tracks to be deleted.
+//
+// Returns:
+//   - An error if deletion fails.
 func (s *Service) DeleteTracks(ids *TrackIDs) error {
 	tracks, err := s.store.TracksByIDs(ids.IDs)
 	if err != nil {
@@ -133,46 +159,103 @@ func (s *Service) DeleteTracks(ids *TrackIDs) error {
 	return err
 }
 
+// FindTracks fetches track records by their IDs.
+//
+// Parameters:
+//   - ids: A TrackIDs object containing the track IDs.
+//
+// Returns:
+//   - A slice of Track pointers or an error.
 func (s *Service) FindTracks(ids *TrackIDs) ([]*track.Track, error) {
 	tracks, err := s.store.TracksByIDs(ids.IDs)
 	return tracks, err
 }
 
+// Queue retrieves the current playback queue.
+//
+// Returns:
+//   - A slice of Track pointers or an error.
 func (s *Service) Queue() ([]*track.Track, error) {
 	q, err := s.store.Queue()
 	return q, err
 }
 
+// AddToQueue adds one or more tracks to the playback queue.
+//
+// Parameters:
+//   - tracks: A slice of Track pointers to add.
+//
+// Returns:
+//   - An error if the operation fails.
 func (s *Service) AddToQueue(tracks []*track.Track) error {
 	err := s.store.AddToQueue(tracks)
 	return err
 }
 
+// ReorderQueue updates the order of tracks in the playback queue.
+//
+// Parameters:
+//   - ids: A TrackIDs object containing the new order of track IDs.
+//
+// Returns:
+//   - An error if reordering fails.
 func (s *Service) ReorderQueue(ids *TrackIDs) error {
 	err := s.store.ReorderQueue(ids.IDs)
 	return err
 }
 
+// RemoveFromQueue removes specific tracks from the playback queue.
+//
+// Parameters:
+//   - ids: A TrackIDs object containing the IDs of tracks to remove.
+//
+// Returns:
+//   - An error if removal fails.
 func (s *Service) RemoveFromQueue(ids *TrackIDs) error {
 	err := s.store.RemoveFromQueue(ids.IDs)
 	return err
 }
 
+// SpinQueue rotates the playback queue, moving the current track to the end.
+//
+// Returns:
+//   - An error if the operation fails.
 func (s *Service) SpinQueue() error {
 	err := s.store.SpinQueue()
 	return err
 }
 
+// CurrentAndNextTrack retrieves the currently playing track and the next track in the queue.
+//
+// Returns:
+//   - Pointers to the current and next tracks, and an error if retrieval fails.
 func (s *Service) CurrentAndNextTrack() (*track.Track, *track.Track, error) {
 	current, next, err := s.store.CurrentAndNextTrack()
 	return current, next, err
 }
 
+// MakeHLSPlaylist generates an HLS playlist for streaming using FFmpeg.
+//
+// Parameters:
+//   - trackPath: The path of the audio track to segment.
+//   - outDir: Output directory for the HLS segments and playlist.
+//   - segName: Prefix for the segment files.
+//   - segDuration: Duration of each HLS segment in seconds.
+//
+// Returns:
+//   - An error if playlist generation fails.
 func (s *Service) MakeHLSPlaylist(trackPath string, outDir string, segName string, segDuration int) error {
 	err := s.ffmpegCLI.MakeHLSPlaylist(trackPath, outDir, segName, segDuration)
 	return err
 }
 
+// CleanupHLSPlaylists removes old HLS playlist files that are no longer needed.
+//
+// Parameters:
+//   - dirPath: Directory containing the HLS playlist files.
+//
+// Returns:
+//   - An error if file cleanup fails.
 func (s *Service) CleanupHLSPlaylists(dirPath string) error {
 	// waiting for all the listeners to listen to the last segments of ended track
 	time.Sleep(hls.DefaultMaxSegmentDuration * 2 * time.Second)
@@ -203,15 +286,23 @@ func (s *Service) CleanupHLSPlaylists(dirPath string) error {
 	return nil
 }
 
+// LoadTracksFromDisk scans a directory for audio files, converts them if needed,
+// adds them to the store, and deletes the original copies.
+//
+// Parameters:
+//   - tracksDir: Directory path to load tracks from.
+//
+// Returns:
+//   - A slice of loaded Track pointers, or an error.
 func (s *Service) LoadTracksFromDisk(tracksDir string) ([]*track.Track, error) {
 	tracks := make([]*track.Track, 0)
 
-	mp3Filenames, err := fs.ListFilesFromDir(tracksDir, "mp3")
+	mp3Filenames, err := fs.ListFilesFromDir(tracksDir, mp3Extension)
 	if err != nil {
 		return tracks, err
 	}
 
-	aacFilenames, err := fs.ListFilesFromDir(tracksDir, "aac")
+	aacFilenames, err := fs.ListFilesFromDir(tracksDir, aacExtension)
 	if err != nil {
 		return tracks, err
 	}
@@ -250,6 +341,10 @@ func (s *Service) LoadTracksFromDisk(tracksDir string) ([]*track.Track, error) {
 	return tracks, nil
 }
 
+// AddPlaybackHistory logs a playback event for a given track.
+//
+// Parameters:
+//   - trackName: The name of the track that was played.
 func (s *Service) AddPlaybackHistory(trackName string) {
 	err := s.store.AddPlaybackHistory(time.Now().Unix(), trackName)
 	if err != nil {
@@ -257,11 +352,19 @@ func (s *Service) AddPlaybackHistory(trackName string) {
 	}
 }
 
+// RecentPlaybackHistory retrieves the most recent playback history records.
+//
+// Parameters:
+//   - limit: The maximum number of history entries to retrieve.
+//
+// Returns:
+//   - A slice of PlaybackHistory pointers, or an error.
 func (s *Service) RecentPlaybackHistory(limit int) ([]*track.PlaybackHistory, error) {
 	history, err := s.store.RecentPlaybackHistory(limit)
 	return history, err
 }
 
+// DeleteOldPlaybackHistory removes outdated playback history entries from the store.
 func (s *Service) DeleteOldPlaybackHistory() {
 	_, err := s.store.DeleteOldPlaybackHistory()
 	if err != nil {
