@@ -10,10 +10,10 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
-	"strings"
 	"time"
 
 	"github.com/cheatsnake/airstation/internal/events"
+	"github.com/cheatsnake/airstation/internal/tools/network"
 	trackservice "github.com/cheatsnake/airstation/internal/track/service"
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -85,7 +85,7 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	secureCookie := true
-	if strings.HasPrefix(r.Host, "localhost:") {
+	if network.IsLocalhost(r.Host) {
 		secureCookie = false // Allow insecure cookies for local development
 	}
 
