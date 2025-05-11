@@ -9,6 +9,8 @@ services:
       - database:/app/storage
       - ./static:/app/static
     restart: unless-stopped
+    env_file:
+      - .env
     
 volumes:
   database:

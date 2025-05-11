@@ -26,6 +26,5 @@ RUN apk add --no-cache ffmpeg
 COPY --from=server /app/bin/main .
 COPY --from=player /app/dist ./player
 COPY --from=studio /app/dist ./studio
-COPY .env .
 EXPOSE 7331
 ENTRYPOINT ["./main"]
