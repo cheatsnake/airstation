@@ -22,10 +22,7 @@ type Config struct {
 }
 
 func Load() *Config {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Parsing .env file failed: " + err.Error())
-	}
+	_ = godotenv.Load() // For development
 
 	return &Config{
 		DBFile:    getEnv("AIRSTATION_DB_FILE", filepath.Join("storage", "storage.db")),
