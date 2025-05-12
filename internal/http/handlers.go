@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/cheatsnake/airstation/internal/events"
-	"github.com/cheatsnake/airstation/internal/tools/network"
 	trackservice "github.com/cheatsnake/airstation/internal/track/service"
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -84,20 +83,17 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	secureCookie := true
-	if network.IsLocalhost(r.Host) {
-		secureCookie = false // Allow insecure cookies for local development
-	}
-
 	http.SetCookie(w, &http.Cookie{
 		Name:     "jwt",
 		Value:    tokenString,
 		Expires:  expirationTime,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   secureCookie,
+		Secure:   s.config.SecureCookie,
 		SameSite: http.SameSiteStrictMode,
 	})
+
+	s.logger.Info(fmt.Sprintf("New login succeed from %s with secureCookie=%v", r.Host, s.config.SecureCookie))
 
 	jsonOK(w, "Login succeed.")
 }
