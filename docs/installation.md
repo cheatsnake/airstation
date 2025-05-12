@@ -4,6 +4,8 @@ To run Airstation on your machine, there are two ways: using [Docker](https://do
 
 ## Docker
 
+> You can get pre-built image on [Docker Hub](https://hub.docker.com/r/cheatsnake/airstation/tags)
+
 1.  Clone Airstation repository
 
     ```sh
