@@ -8,7 +8,11 @@ export default defineConfig({
         VitePWA({
             scope: "/",
             registerType: "autoUpdate",
-            workbox: { cleanupOutdatedCaches: true },
+            workbox: {
+                cleanupOutdatedCaches: true,
+                navigateFallback: "/index.html",
+                navigateFallbackDenylist: [/^\/studio\//],
+            },
             devOptions: {
                 enabled: true,
             },
