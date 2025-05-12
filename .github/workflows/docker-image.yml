@@ -2,8 +2,8 @@ name: Build and Push Docker Image
 
 on:
     push:
-        branches:
-            - master
+        tags:
+            - "*"
 
 jobs:
     build:
@@ -28,4 +28,6 @@ jobs:
                   context: .
                   push: true
                   platforms: linux/amd64,linux/arm64
-                  tags: cheatsnake/airstation:latest
+                  tags: |
+                      cheatsnake/airstation:${{ github.ref_name }}
+                      cheatsnake/airstation:latest
