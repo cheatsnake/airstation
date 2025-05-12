@@ -14,6 +14,7 @@ export const AuthGuard: FC<{ children: JSX.Element }> = (props) => {
         try {
             handLoader.open();
             await airstationAPI.login(secret);
+            await airstationAPI.getQueue(); // Need to check is cookie setted correctly
             setIsAuth(true);
         } catch (error) {
             errNotify(error);
