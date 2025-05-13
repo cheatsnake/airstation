@@ -10,7 +10,7 @@
 <p align="center">
 🔍 <a href="./docs/overview.md">Overview</a>
 &nbsp; ⚙️ <a href="./docs/installation.md">Installation</a>
-&nbsp; 🗺️ <a href="https://github.com/cheatsnake/airstation/issues/new">Roadmap</a>
+&nbsp; 🗺️ <a href="./docs/roadmap.md">Roadmap</a>
 &nbsp; 🚨 <a href="https://github.com/cheatsnake/airstation/issues/new">Bug report</a>
 </p>
 <br />
@@ -23,4 +23,4 @@ Airstation is a self-hosted web app for streaming music over the Internet. It fe
 
 <p></p>
 <div align="center">Made for fun</div>
-<div align="center"><a href="https://github.com/cheatsnake/airstation/blob/master/LICENSE">LICENSE</a> 2025 - Present</div
+<div align="center"><a href="./LICENSE">LICENSE</a> 2025 - Present</div
