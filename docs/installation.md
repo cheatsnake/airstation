@@ -57,7 +57,17 @@ docker compose down
 
 1. Follow steps 1 and 2 from the previous section
 
-2. Build web clients
+2. Install dependencies
+
+ ```sh
+ npm ci --prefix ./web/player
+ ```
+
+ ```sh
+ npm ci --prefix ./web/studio
+ ```
+
+3. Build web clients
  
  ```sh
  npm run build --prefix ./web/player
