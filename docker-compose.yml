@@ -3,6 +3,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        - AIRSTATION_PLAYER_TITLE=${AIRSTATION_PLAYER_TITLE}
     ports:
       - "7331:7331"
     volumes:

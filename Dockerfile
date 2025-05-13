@@ -3,6 +3,8 @@ WORKDIR /app
 COPY ./web/player/package*.json ./
 RUN npm install
 COPY ./web/player .
+ARG AIRSTATION_PLAYER_TITLE
+ENV AIRSTATION_PLAYER_TITLE=$AIRSTATION_PLAYER_TITLE
 RUN npm run build
 
 FROM node:22-alpine AS studio
