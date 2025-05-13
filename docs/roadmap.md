@@ -12,6 +12,7 @@ Here you can find a list of future updates.
 
 - [ ] Tags for tracks (as a grouping mechanism)
 - [ ] Ability to send voice messages recorded through the microphone
+- [ ] Scheduling mechanism for tracks/playlists (by [hjdx2009](https://github.com/cheatsnake/airstation/issues/7#issue-3059402373))
 - [ ] Settings window for Player
 - [ ] Settings window for Studio
 
