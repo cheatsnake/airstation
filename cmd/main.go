@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
+	"path"
 	"syscall"
 
 	"github.com/cheatsnake/airstation/internal/config"
@@ -29,7 +30,7 @@ func main() {
 	signal.Notify(stopSignal, os.Interrupt, syscall.SIGTERM)
 
 	log := logger.New()
-	store, err := sqlite.Open(conf.DBFile, log.WithGroup("storage"))
+	store, err := sqlite.Open(path.Join(conf.DBDir, conf.DBFile), log.WithGroup("storage"))
 	if err != nil {
 		log.Error("Failed connect to database: " + err.Error())
 		os.Exit(1)
