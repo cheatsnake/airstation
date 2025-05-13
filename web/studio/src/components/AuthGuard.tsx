@@ -52,6 +52,7 @@ export const AuthGuard: FC<{ children: JSX.Element }> = (props) => {
     );
 };
 
+const MIN_SECRET_LENGTH = 10;
 const LoginForm: FC<{ handleLogin: (s: string) => Promise<void> }> = (props) => {
     const [secret, setSecret] = useState("");
 
@@ -59,17 +60,21 @@ const LoginForm: FC<{ handleLogin: (s: string) => Promise<void> }> = (props) => 
         <Flex h="100%" justify="center" align="center">
             <Paper mb="sm" w={250} bg="transparent">
                 <TextInput
+                    autoFocus
                     type="password"
                     className={styles.search_input}
                     variant="unstyled"
                     required
+                    onKeyDown={(event) => {
+                        if (event.key === "Enter" && secret.length >= MIN_SECRET_LENGTH) props.handleLogin(secret);
+                    }}
                     value={secret}
                     onChange={(event) => setSecret(event.currentTarget.value)}
                     placeholder="Enter secret"
                 />
                 <Group mt="sm" justify="center">
                     <Button
-                        disabled={secret.length < 10}
+                        disabled={secret.length < MIN_SECRET_LENGTH}
                         fullWidth
                         variant="light"
                         onClick={() => props.handleLogin(secret)}
