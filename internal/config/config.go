@@ -12,6 +12,7 @@ import (
 const minSecretLength = 10
 
 type Config struct {
+	DBDir        string
 	DBFile       string
 	TracksDir    string
 	TmpDir       string
@@ -27,6 +28,7 @@ func Load() *Config {
 	_ = godotenv.Load() // For development
 
 	return &Config{
+		DBDir:        getEnv("AIRSTATION_DB_DIR", filepath.Join("storage")),
 		DBFile:       getEnv("AIRSTATION_DB_FILE", filepath.Join("storage", "storage.db")),
 		TracksDir:    getEnv("AIRSTATION_TRACKS_DIR", filepath.Join("static", "tracks")),
 		TmpDir:       getEnv("AIRSTATION_TMP_DIR", filepath.Join("static", "tmp")),
