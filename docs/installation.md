@@ -59,31 +59,31 @@ docker compose down
 
 2. Install dependencies
 
- ```sh
- npm ci --prefix ./web/player
- ```
+```sh
+npm ci --prefix ./web/player
+```
 
- ```sh
- npm ci --prefix ./web/studio
- ```
+```sh
+npm ci --prefix ./web/studio
+```
 
 3. Build web clients
- 
- ```sh
- npm run build --prefix ./web/player
- ```
 
- ```sh
- npm run build --prefix ./web/studio
- ```
+```sh
+npm run build --prefix ./web/player
+```
 
-3. Build server
+```sh
+npm run build --prefix ./web/studio
+```
+
+4. Build server
 
 ```sh
 go build ./cmd/main.go
 ```
 
-4. Run app
+5. Run app
 
 ```sh
 ./main
