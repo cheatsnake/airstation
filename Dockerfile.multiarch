@@ -26,7 +26,7 @@ FROM alpine:latest
 WORKDIR /app
 RUN apk add --no-cache ffmpeg
 COPY --from=server /app/bin/main .
-COPY --from=player /app/dist ./player
-COPY --from=studio /app/dist ./studio
+COPY --from=player /app/dist ./web/player/dist
+COPY --from=studio /app/dist ./web/studio/dist
 EXPOSE 7331
 ENTRYPOINT ["./main"]
