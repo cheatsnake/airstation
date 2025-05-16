@@ -101,12 +101,19 @@ func (s *State) Play() error {
 		return err
 	}
 
-	err = s.Load(current, next)
+	if current == nil {
+		return errors.New("playback queue is empty")
+	}
+
+	err = s.initHLSPlaylist(current, next)
 	if err != nil {
 		return err
 	}
 
 	s.mutex.Lock()
+	s.CurrentTrack = current
+	s.PlaylistStr = s.playlist.Generate(s.CurrentTrackElapsed)
+	s.UpdatedAt = time.Now().Unix()
 	s.IsPlaying = true
 	s.mutex.Unlock()
 
@@ -128,26 +135,6 @@ func (s *State) Pause() {
 	s.mutex.Unlock()
 
 	s.PauseNotify <- false
-}
-
-// Load initializes the playback state and playlist for the current and next track.
-func (s *State) Load(current, next *track.Track) error {
-	if current == nil {
-		return errors.New("no tracks for playing")
-	}
-
-	err := s.initHLSPlaylist(current, next)
-	if err != nil {
-		return err
-	}
-
-	s.mutex.Lock()
-	s.CurrentTrack = current
-	s.PlaylistStr = s.playlist.Generate(s.CurrentTrackElapsed)
-	s.UpdatedAt = time.Now().Unix()
-	s.mutex.Unlock()
-
-	return nil
 }
 
 // Reload refreshes the current playlist based on updated queue state, used after queue changes.
