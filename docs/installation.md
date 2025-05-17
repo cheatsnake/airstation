@@ -4,8 +4,6 @@ To run Airstation on your machine, there are two ways: using [Docker](https://do
 
 ## Docker
 
-> You can get pre-built image on [Docker Hub](https://hub.docker.com/r/cheatsnake/airstation/tags)
-
 1.  Clone Airstation repository
 
     ```sh
@@ -24,15 +22,14 @@ To run Airstation on your machine, there are two ways: using [Docker](https://do
     touch .env
     ```
 
-    Inside this file you must define 2 variables: 
+    Inside this file you must define 2 variables:
 
     ```
     AIRSTATION_SECRET_KEY=
     AIRSTATION_JWT_SIGN=
     ```
 
-    > `AIRSTATION_SECRET_KEY` - the secret key you need to log in to the station control panel <br>
-    > `AIRSTATION_JWT_SIGN` - the key to sign the JWT session
+    > `AIRSTATION_SECRET_KEY` - the secret key you need to log in to the station control panel <br> `AIRSTATION_JWT_SIGN` - the key to sign the JWT session
 
     > Use [random string generator](https://it-tools.tech/token-generator?length=20) with a length of at least 10 characters for these variables!
 
@@ -42,7 +39,7 @@ To run Airstation on your machine, there are two ways: using [Docker](https://do
     docker compose up -d
     ```
 
-And finally you can see: 
+And finally you can see:
 
 - Control panel on [http://localhost:7331/studio/](http://localhost:7331/studio/) (extra slash matters!)
 - Radio player on [http://localhost:7331](http://localhost:7331)
@@ -52,6 +49,37 @@ To stop the container, just type:
 ```sh
 docker compose down
 ```
+
+### Docker Compose
+
+You can get pre-built image from [Docker Hub](https://hub.docker.com/r/cheatsnake/airstation) and run it quickly with custom `docker-compose.yml` file as shown bellow:
+
+```yml
+# docker-compose.yml
+services:
+  airstation:
+    image: cheatsnake/airstation:latest
+    ports:
+      - "7331:7331"
+    volumes:
+      - airstation-data:/app/storage
+      - ./static:/app/static
+    restart: unless-stopped
+    environment:
+      AIRSTATION_SECRET_KEY: ${AIRSTATION_SECRET_KEY:-PASTE_YOUR_OWN_KEY}
+      AIRSTATION_JWT_SIGN: ${AIRSTATION_JWT_SIGN:-PASTE_RANDOM_STRING}
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:7331/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  airstation-data:
+```
+
+> Don't forget to modify environment variables inside this file or via your own `.env` file in the same directory as the `docker-compose.yml`
 
 ## Build from source
 
