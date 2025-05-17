@@ -19,8 +19,8 @@ import (
 
 // Service provides audio processing functionalities by interacting with a database and the FFmpeg CLI.
 type Service struct {
-	store     storage.TrackStore // An instance of TrackStore for managing audio file storage.
-	ffmpegCLI *ffmpeg.CLI        // A pointer to the FFmpeg CLI wrapper for executing media processing commands.
+	store     storage.Storage // An instance of Storage for managing audio file storage.
+	ffmpegCLI *ffmpeg.CLI     // A pointer to the FFmpeg CLI wrapper for executing media processing commands.
 	log       *slog.Logger
 
 	LoadedTracksNotify chan int // Notification of the number of loaded tracks
@@ -34,7 +34,7 @@ type Service struct {
 //
 // Returns:
 //   - A pointer to an initialized Service instance.
-func New(store storage.TrackStore, ffmpegCLI *ffmpeg.CLI, log *slog.Logger) *Service {
+func New(store storage.Storage, ffmpegCLI *ffmpeg.CLI, log *slog.Logger) *Service {
 	return &Service{
 		store:     store,
 		ffmpegCLI: ffmpegCLI,
