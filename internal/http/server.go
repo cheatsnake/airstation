@@ -9,29 +9,42 @@ import (
 
 	"github.com/cheatsnake/airstation/internal/config"
 	"github.com/cheatsnake/airstation/internal/events"
+	"github.com/cheatsnake/airstation/internal/ffmpeg"
 	"github.com/cheatsnake/airstation/internal/hls"
 	"github.com/cheatsnake/airstation/internal/playback"
-	trackservice "github.com/cheatsnake/airstation/internal/track/service"
+	"github.com/cheatsnake/airstation/internal/queue"
+	"github.com/cheatsnake/airstation/internal/storage"
+	"github.com/cheatsnake/airstation/internal/track"
 	"github.com/rs/cors"
 )
 
 type Server struct {
-	state         *playback.State
-	eventsEmitter *events.Emitter
-	trackService  *trackservice.Service
-	config        *config.Config
-	logger        *slog.Logger
-	router        *http.ServeMux
+	playbackState   *playback.State
+	eventsEmitter   *events.Emitter
+	trackService    *track.Service
+	queueService    *queue.Service
+	playbackService *playback.Service
+	config          *config.Config
+	logger          *slog.Logger
+	router          *http.ServeMux
 }
 
-func NewServer(state *playback.State, trackService *trackservice.Service, conf *config.Config, logger *slog.Logger) *Server {
+func NewServer(store storage.Storage, conf *config.Config, logger *slog.Logger) *Server {
+	ffmpegCLI := ffmpeg.NewCLI()
+	ts := track.NewService(store, ffmpegCLI, logger.WithGroup("trackservice"))
+	qs := queue.NewService(store)
+	ps := playback.NewService(store)
+	state := playback.NewState(ts, qs, ps, conf.TmpDir, logger.WithGroup("playback"))
+
 	return &Server{
-		state:         state,
-		eventsEmitter: events.NewEmitter(),
-		trackService:  trackService,
-		config:        conf,
-		logger:        logger,
-		router:        http.NewServeMux(),
+		playbackState:   state,
+		eventsEmitter:   events.NewEmitter(),
+		trackService:    ts,
+		queueService:    qs,
+		playbackService: ps,
+		config:          conf,
+		logger:          logger.WithGroup("http"),
+		router:          http.NewServeMux(),
 	}
 }
 
@@ -63,14 +76,14 @@ func (s *Server) Run() {
 
 	s.listenEvents()
 
-	err := s.state.Play()
+	err := s.playbackState.Play()
 	if err != nil {
 		s.logger.Warn("Auto start playing failed: " + err.Error())
 	}
 
-	go s.state.Run()
+	go s.playbackState.Run()
 	go s.trackService.LoadTracksFromDisk(s.config.TracksDir)
-	s.trackService.DeleteOldPlaybackHistory()
+	s.playbackService.DeleteOldPlaybackHistory()
 
 	s.logger.Info("Server starts on http://localhost:" + s.config.HTTPPort)
 	err = http.ListenAndServe(":"+s.config.HTTPPort, cors.Default().Handler(s.router))
@@ -101,11 +114,11 @@ func (s *Server) listenEvents() {
 	go func() {
 		for {
 			select {
-			case <-s.state.PlayNotify:
-				s.eventsEmitter.RegisterEvent(eventPlay, s.state.CurrentTrack.Name)
-			case <-s.state.PauseNotify:
+			case <-s.playbackState.PlayNotify:
+				s.eventsEmitter.RegisterEvent(eventPlay, s.playbackState.CurrentTrack.Name)
+			case <-s.playbackState.PauseNotify:
 				s.eventsEmitter.RegisterEvent(eventPause, " ")
-			case trackName := <-s.state.NewTrackNotify:
+			case trackName := <-s.playbackState.NewTrackNotify:
 				s.eventsEmitter.RegisterEvent(eventNewTrack, trackName)
 			case loadedTracks := <-s.trackService.LoadedTracksNotify:
 				s.eventsEmitter.RegisterEvent(eventLoadedTracks, strconv.Itoa(loadedTracks))

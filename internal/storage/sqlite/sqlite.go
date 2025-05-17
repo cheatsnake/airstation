@@ -12,7 +12,7 @@ import (
 type Instance struct {
 	TrackStore
 	QueueStore
-	PlaybackHistoryStore
+	PlaybackStore
 
 	db    *sql.DB
 	log   *slog.Logger
@@ -45,7 +45,7 @@ func New(dbPath string, log *slog.Logger) (*Instance, error) {
 
 	instance.TrackStore = NewTrackStore(db, &instance.mutex)
 	instance.QueueStore = NewQueueStore(db, &instance.mutex)
-	instance.PlaybackHistoryStore = NewPlaybackHistoryStore(db, &instance.mutex)
+	instance.PlaybackStore = NewPlaybackStore(db, &instance.mutex)
 
 	return instance, nil
 }

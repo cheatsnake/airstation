@@ -8,14 +8,11 @@ import (
 	"syscall"
 
 	"github.com/cheatsnake/airstation/internal/config"
-	"github.com/cheatsnake/airstation/internal/ffmpeg"
 	"github.com/cheatsnake/airstation/internal/http"
 	"github.com/cheatsnake/airstation/internal/logger"
-	"github.com/cheatsnake/airstation/internal/playback"
 	"github.com/cheatsnake/airstation/internal/storage"
 	"github.com/cheatsnake/airstation/internal/storage/sqlite"
 	"github.com/cheatsnake/airstation/internal/tools/fs"
-	trackservice "github.com/cheatsnake/airstation/internal/track/service"
 )
 
 func main() {
@@ -36,10 +33,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	ffmpegCLI := ffmpeg.NewCLI()
-	trackService := trackservice.New(store, ffmpegCLI, log.WithGroup("trackservice"))
-	playbackState := playback.NewState(trackService, conf.TmpDir, log.WithGroup("playback"))
-	httpServer := http.NewServer(playbackState, trackService, conf, log.WithGroup("http"))
+	httpServer := http.NewServer(store, conf, log)
 	go httpServer.Run()
 
 	<-stopSignal

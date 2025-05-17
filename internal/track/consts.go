@@ -1,4 +1,4 @@
-package trackservice
+package track
 
 import "github.com/cheatsnake/airstation/internal/hls"
 

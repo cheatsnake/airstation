@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/cheatsnake/airstation/internal/events"
-	trackservice "github.com/cheatsnake/airstation/internal/track/service"
+	"github.com/cheatsnake/airstation/internal/track"
 	"github.com/golang-jwt/jwt/v5"
 )
 
@@ -23,8 +23,8 @@ const copyBufferSize = 256 * 1024            // 256 KB
 func (s *Server) handleHLSPlaylist(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "audio/mpegurl")
 
-	if s.state.IsPlaying {
-		fmt.Fprint(w, s.state.PlaylistStr)
+	if s.playbackState.IsPlaying {
+		fmt.Fprint(w, s.playbackState.PlaylistStr)
 	}
 }
 
@@ -143,13 +143,13 @@ func (s *Server) handleTracksUpload(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleDeleteTracks(w http.ResponseWriter, r *http.Request) {
-	ids, err := parseJSONBody[trackservice.TrackIDs](r)
+	body, err := parseJSONBody[track.BodyWithIDs](r)
 	if err != nil {
 		jsonBadRequest(w, "Parsing request body failed: "+err.Error())
 		return
 	}
 
-	err = s.trackService.DeleteTracks(ids)
+	err = s.trackService.DeleteTracks(body.IDs)
 	if err != nil {
 		s.logger.Debug(err.Error())
 		jsonBadRequest(w, "Deleting tracks failed")
@@ -160,7 +160,7 @@ func (s *Server) handleDeleteTracks(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleQueue(w http.ResponseWriter, _ *http.Request) {
-	queue, err := s.trackService.Queue()
+	queue, err := s.queueService.Queue()
 	if err != nil {
 		s.logger.Debug(err.Error())
 		jsonBadRequest(w, "Queue retrieving failed")
@@ -171,25 +171,25 @@ func (s *Server) handleQueue(w http.ResponseWriter, _ *http.Request) {
 }
 
 func (s *Server) handleAddToQueue(w http.ResponseWriter, r *http.Request) {
-	ids, err := parseJSONBody[trackservice.TrackIDs](r)
+	body, err := parseJSONBody[track.BodyWithIDs](r)
 	if err != nil {
 		jsonBadRequest(w, "Parsing request body failed: "+err.Error())
 		return
 	}
 
-	tracks, err := s.trackService.FindTracks(ids)
+	tracks, err := s.trackService.FindTracks(body.IDs)
 	if err != nil {
 		jsonBadRequest(w, "Adding tracks to queue failed: "+err.Error())
 		return
 	}
 
-	err = s.trackService.AddToQueue(tracks)
+	err = s.queueService.AddToQueue(tracks)
 	if err != nil {
 		jsonBadRequest(w, "Adding tracks to queue failed: "+err.Error())
 		return
 	}
 
-	err = s.state.Reload()
+	err = s.playbackState.Reload()
 	if err != nil {
 		s.logger.Debug("Playback reload failed: " + err.Error())
 	}
@@ -198,19 +198,19 @@ func (s *Server) handleAddToQueue(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleReorderQueue(w http.ResponseWriter, r *http.Request) {
-	ids, err := parseJSONBody[trackservice.TrackIDs](r)
+	body, err := parseJSONBody[track.BodyWithIDs](r)
 	if err != nil {
 		jsonBadRequest(w, "Parsing request body failed: "+err.Error())
 		return
 	}
 
-	err = s.trackService.ReorderQueue(ids)
+	err = s.queueService.ReorderQueue(body.IDs)
 	if err != nil {
 		jsonBadRequest(w, "Queue reordering failed: "+err.Error())
 		return
 	}
 
-	err = s.state.Reload()
+	err = s.playbackState.Reload()
 	if err != nil {
 		s.logger.Debug("Playback reload failed: " + err.Error())
 	}
@@ -219,26 +219,26 @@ func (s *Server) handleReorderQueue(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleRemoveFromQueue(w http.ResponseWriter, r *http.Request) {
-	ids, err := parseJSONBody[trackservice.TrackIDs](r)
+	body, err := parseJSONBody[track.BodyWithIDs](r)
 	if err != nil {
 		jsonBadRequest(w, "Parsing request body failed: "+err.Error())
 		return
 	}
 
-	if s.state.CurrentTrack != nil {
-		hasCurrent := slices.Contains(ids.IDs, s.state.CurrentTrack.ID)
+	if s.playbackState.CurrentTrack != nil {
+		hasCurrent := slices.Contains(body.IDs, s.playbackState.CurrentTrack.ID)
 		if hasCurrent {
-			s.state.Pause()
+			s.playbackState.Pause()
 		}
 	}
 
-	err = s.trackService.RemoveFromQueue(ids)
+	err = s.queueService.RemoveFromQueue(body.IDs)
 	if err != nil {
 		jsonBadRequest(w, "Removing from queue failed: "+err.Error())
 		return
 	}
 
-	err = s.state.Reload()
+	err = s.playbackState.Reload()
 	if err != nil {
 		s.logger.Debug("Playback reload failed: " + err.Error())
 	}
@@ -247,28 +247,28 @@ func (s *Server) handleRemoveFromQueue(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handlePlaybackState(w http.ResponseWriter, _ *http.Request) {
-	jsonResponse(w, s.state)
+	jsonResponse(w, s.playbackState)
 }
 
 func (s *Server) handlePausePlayback(w http.ResponseWriter, _ *http.Request) {
-	s.state.Pause()
-	jsonResponse(w, s.state)
+	s.playbackState.Pause()
+	jsonResponse(w, s.playbackState)
 }
 
 func (s *Server) handlePlayPlayback(w http.ResponseWriter, _ *http.Request) {
-	err := s.state.Play()
+	err := s.playbackState.Play()
 	if err != nil {
 		jsonBadRequest(w, "Playback failed to start: "+err.Error())
 		return
 	}
 
-	jsonResponse(w, s.state)
+	jsonResponse(w, s.playbackState)
 }
 
 func (s *Server) handlePlaybackHistory(w http.ResponseWriter, r *http.Request) {
 	queries := r.URL.Query()
 	limit := parseIntQuery(queries, "limit", 50)
-	history, err := s.trackService.RecentPlaybackHistory(limit)
+	history, err := s.playbackService.RecentPlaybackHistory(limit)
 	if err != nil {
 		s.logger.Debug(err.Error())
 		jsonBadRequest(w, "Playback history retrieving failed")

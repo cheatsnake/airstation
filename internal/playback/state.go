@@ -13,8 +13,8 @@ import (
 	"time"
 
 	"github.com/cheatsnake/airstation/internal/hls"
+	"github.com/cheatsnake/airstation/internal/queue"
 	"github.com/cheatsnake/airstation/internal/track"
-	trackservice "github.com/cheatsnake/airstation/internal/track/service"
 )
 
 // State represents the current playback state of the application, including the currently playing track,
@@ -36,14 +36,16 @@ type State struct {
 	refreshCount    int64   // Number of state refresh cycles completed
 	refreshInterval float64 // Time interval (in seconds) between state updates
 
-	trackService *trackservice.Service
+	trackService    *track.Service
+	queueService    *queue.Service
+	playbackService *Service
 
 	log   *slog.Logger
 	mutex sync.Mutex
 }
 
 // NewState creates and initializes a new playback State instance.
-func NewState(ts *trackservice.Service, tmpDir string, log *slog.Logger) *State {
+func NewState(ts *track.Service, qs *queue.Service, ps *Service, tmpDir string, log *slog.Logger) *State {
 	return &State{
 		CurrentTrack:        nil,
 		CurrentTrackElapsed: 0,
@@ -54,7 +56,9 @@ func NewState(ts *trackservice.Service, tmpDir string, log *slog.Logger) *State 
 		PlayNotify:     make(chan bool),
 		PauseNotify:    make(chan bool),
 
-		trackService: ts,
+		trackService:    ts,
+		queueService:    qs,
+		playbackService: ps,
 
 		refreshCount:    0,
 		playlistDir:     tmpDir,
@@ -84,8 +88,8 @@ func (s *State) Run() {
 				s.log.Error(err.Error())
 			}
 
-			go s.trackService.CleanupHLSPlaylists(s.playlistDir)
-			go s.trackService.AddPlaybackHistory(s.CurrentTrack.Name)
+			go s.queueService.CleanupHLSPlaylists(s.playlistDir)
+			go s.playbackService.AddPlaybackHistory(s.CurrentTrack.Name)
 		}
 
 		s.PlaylistStr = s.playlist.Generate(s.CurrentTrackElapsed)
@@ -96,7 +100,7 @@ func (s *State) Run() {
 
 // Play starts playback by loading the current and next tracks into the HLS playlist.
 func (s *State) Play() error {
-	current, next, err := s.trackService.CurrentAndNextTrack()
+	current, next, err := s.queueService.CurrentAndNextTrack()
 	if err != nil {
 		return err
 	}
@@ -118,7 +122,7 @@ func (s *State) Play() error {
 	s.mutex.Unlock()
 
 	s.PlayNotify <- true
-	go s.trackService.AddPlaybackHistory(current.Name)
+	go s.playbackService.AddPlaybackHistory(current.Name)
 
 	return nil
 }
@@ -143,7 +147,7 @@ func (s *State) Reload() error {
 		return nil
 	}
 
-	current, next, err := s.trackService.CurrentAndNextTrack()
+	current, next, err := s.queueService.CurrentAndNextTrack()
 	if err != nil {
 		return err
 	}
@@ -195,12 +199,12 @@ func (s *State) initHLSPlaylist(current, next *track.Track) error {
 // loadNextTrack advances the queue, resets elapsed time, and updates playlist with next segments.
 func (s *State) loadNextTrack() error {
 	s.CurrentTrackElapsed = 0
-	err := s.trackService.SpinQueue()
+	err := s.queueService.SpinQueue()
 	if err != nil {
 		return err
 	}
 
-	current, next, err := s.trackService.CurrentAndNextTrack()
+	current, next, err := s.queueService.CurrentAndNextTrack()
 	if err != nil {
 		return err
 	}

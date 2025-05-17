@@ -5,22 +5,22 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/cheatsnake/airstation/internal/track"
+	"github.com/cheatsnake/airstation/internal/playback"
 )
 
-type PlaybackHistoryStore struct {
+type PlaybackStore struct {
 	db    *sql.DB
 	mutex *sync.Mutex
 }
 
-func NewPlaybackHistoryStore(db *sql.DB, mutex *sync.Mutex) PlaybackHistoryStore {
-	return PlaybackHistoryStore{
+func NewPlaybackStore(db *sql.DB, mutex *sync.Mutex) PlaybackStore {
+	return PlaybackStore{
 		db:    db,
 		mutex: mutex,
 	}
 }
 
-func (ts *PlaybackHistoryStore) AddPlaybackHistory(playedAt int64, trackName string) error {
+func (ts *PlaybackStore) AddPlaybackHistory(playedAt int64, trackName string) error {
 	ts.mutex.Lock()
 	defer ts.mutex.Unlock()
 
@@ -34,7 +34,7 @@ func (ts *PlaybackHistoryStore) AddPlaybackHistory(playedAt int64, trackName str
 	return nil
 }
 
-func (ts *PlaybackHistoryStore) RecentPlaybackHistory(limit int) ([]*track.PlaybackHistory, error) {
+func (ts *PlaybackStore) RecentPlaybackHistory(limit int) ([]*playback.History, error) {
 	ts.mutex.Lock()
 	defer ts.mutex.Unlock()
 
@@ -51,9 +51,9 @@ func (ts *PlaybackHistoryStore) RecentPlaybackHistory(limit int) ([]*track.Playb
 	}
 	defer rows.Close()
 
-	var history []*track.PlaybackHistory
+	var history []*playback.History
 	for rows.Next() {
-		var item track.PlaybackHistory
+		var item playback.History
 		if err := rows.Scan(&item.ID, &item.PlayedAt, &item.TrackName); err != nil {
 			return nil, err
 		}
@@ -62,7 +62,7 @@ func (ts *PlaybackHistoryStore) RecentPlaybackHistory(limit int) ([]*track.Playb
 	return history, nil
 }
 
-func (ts *PlaybackHistoryStore) DeleteOldPlaybackHistory() (int64, error) {
+func (ts *PlaybackStore) DeleteOldPlaybackHistory() (int64, error) {
 	ts.mutex.Lock()
 	defer ts.mutex.Unlock()
 
