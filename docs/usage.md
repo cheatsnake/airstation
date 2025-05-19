@@ -43,6 +43,6 @@ With your Airstation broadcasting, anyone (including yourself) can tune in using
 1.  Open the Airstation Player URL in a web browser. This is usually the root URL of your Airstation instance (e.g., [http://localhost:7331/](http://localhost:7331/)).
 2.  In the player interface, click the `Play` button to start listening to your live stream.
 
-<img src="./images/playing.gif" alt="Airstation Player: Actively playing a track"/>
+<img src="./images/screenshot03.png" alt="Airstation Player: Actively playing a track"/>
 
 Enjoy your personalized internet radio experience!
