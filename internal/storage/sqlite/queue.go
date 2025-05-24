@@ -21,9 +21,9 @@ func NewQueueStore(db *sql.DB, mutex *sync.Mutex) QueueStore {
 	}
 }
 
-func (ts *QueueStore) Queue() ([]*track.Track, error) {
-	ts.mutex.Lock()
-	defer ts.mutex.Unlock()
+func (qs *QueueStore) Queue() ([]*track.Track, error) {
+	qs.mutex.Lock()
+	defer qs.mutex.Unlock()
 
 	tracks := make([]*track.Track, 0, 10)
 
@@ -32,7 +32,7 @@ func (ts *QueueStore) Queue() ([]*track.Track, error) {
 		FROM tracks t
 		JOIN queue q ON t.id = q.track_id
 		ORDER BY q.id ASC`
-	rows, err := ts.db.Query(query)
+	rows, err := qs.db.Query(query)
 	if err != nil {
 		return tracks, fmt.Errorf("failed to query tracks in queue: %w", err)
 	}
@@ -54,9 +54,9 @@ func (ts *QueueStore) Queue() ([]*track.Track, error) {
 	return tracks, nil
 }
 
-func (ts *QueueStore) AddToQueue(tracks []*track.Track) error {
-	ts.mutex.Lock()
-	defer ts.mutex.Unlock()
+func (qs *QueueStore) AddToQueue(tracks []*track.Track) error {
+	qs.mutex.Lock()
+	defer qs.mutex.Unlock()
 
 	query := `
 			INSERT INTO queue (track_id)
@@ -65,7 +65,7 @@ func (ts *QueueStore) AddToQueue(tracks []*track.Track) error {
 		`
 
 	for _, track := range tracks {
-		_, err := ts.db.Exec(query, track.ID)
+		_, err := qs.db.Exec(query, track.ID)
 		if err != nil {
 			return fmt.Errorf("failed to add track to queue: %w", err)
 		}
@@ -74,13 +74,13 @@ func (ts *QueueStore) AddToQueue(tracks []*track.Track) error {
 	return nil
 }
 
-func (ts *QueueStore) RemoveFromQueue(trackIDs []string) error {
-	ts.mutex.Lock()
-	defer ts.mutex.Unlock()
+func (qs *QueueStore) RemoveFromQueue(trackIDs []string) error {
+	qs.mutex.Lock()
+	defer qs.mutex.Unlock()
 
 	query := `DELETE FROM queue WHERE track_id = ?`
 	for _, id := range trackIDs {
-		_, err := ts.db.Exec(query, id)
+		_, err := qs.db.Exec(query, id)
 		if err != nil {
 			return fmt.Errorf("failed to remove track from queue: %w", err)
 		}
@@ -89,18 +89,18 @@ func (ts *QueueStore) RemoveFromQueue(trackIDs []string) error {
 	return nil
 }
 
-func (ts *QueueStore) ReorderQueue(trackIDs []string) error {
-	ts.mutex.Lock()
-	defer ts.mutex.Unlock()
+func (qs *QueueStore) ReorderQueue(trackIDs []string) error {
+	qs.mutex.Lock()
+	defer qs.mutex.Unlock()
 
-	_, err := ts.db.Exec(`DELETE FROM queue`)
+	_, err := qs.db.Exec(`DELETE FROM queue`)
 	if err != nil {
 		return fmt.Errorf("failed to clear queue: %w", err)
 	}
 
 	query := `INSERT INTO queue (track_id) VALUES (?)`
 	for _, id := range trackIDs {
-		_, err := ts.db.Exec(query, id)
+		_, err := qs.db.Exec(query, id)
 		if err != nil {
 			return fmt.Errorf("failed to reorder queue: %w", err)
 		}
@@ -109,9 +109,9 @@ func (ts *QueueStore) ReorderQueue(trackIDs []string) error {
 	return nil
 }
 
-func (ts *QueueStore) CurrentAndNextTrack() (*track.Track, *track.Track, error) {
-	ts.mutex.Lock()
-	defer ts.mutex.Unlock()
+func (qs *QueueStore) CurrentAndNextTrack() (*track.Track, *track.Track, error) {
+	qs.mutex.Lock()
+	defer qs.mutex.Unlock()
 
 	query := `
 	SELECT t.id, t.name, t.path, t.duration, t.bitRate
@@ -119,7 +119,7 @@ func (ts *QueueStore) CurrentAndNextTrack() (*track.Track, *track.Track, error) 
 	JOIN queue q ON t.id = q.track_id
 	ORDER BY q.id ASC
 	LIMIT 2`
-	rows, err := ts.db.Query(query)
+	rows, err := qs.db.Query(query)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to query first and second tracks: %w", err)
 	}
@@ -156,11 +156,11 @@ func (ts *QueueStore) CurrentAndNextTrack() (*track.Track, *track.Track, error) 
 	return &firstTrack, &secondTrack, nil
 }
 
-func (ts *QueueStore) SpinQueue() error {
-	ts.mutex.Lock()
-	defer ts.mutex.Unlock()
+func (qs *QueueStore) SpinQueue() error {
+	qs.mutex.Lock()
+	defer qs.mutex.Unlock()
 
-	tx, err := ts.db.Begin()
+	tx, err := qs.db.Begin()
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}

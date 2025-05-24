@@ -20,13 +20,13 @@ func NewPlaybackStore(db *sql.DB, mutex *sync.Mutex) PlaybackStore {
 	}
 }
 
-func (ts *PlaybackStore) AddPlaybackHistory(playedAt int64, trackName string) error {
-	ts.mutex.Lock()
-	defer ts.mutex.Unlock()
+func (ps *PlaybackStore) AddPlaybackHistory(playedAt int64, trackName string) error {
+	ps.mutex.Lock()
+	defer ps.mutex.Unlock()
 
 	query := `INSERT INTO playback_history (played_at, track_name) VALUES (?, ?)`
 
-	_, err := ts.db.Exec(query, playedAt, trackName)
+	_, err := ps.db.Exec(query, playedAt, trackName)
 	if err != nil {
 		return fmt.Errorf("failed to insert playback entry: %v", err)
 	}
@@ -34,9 +34,9 @@ func (ts *PlaybackStore) AddPlaybackHistory(playedAt int64, trackName string) er
 	return nil
 }
 
-func (ts *PlaybackStore) RecentPlaybackHistory(limit int) ([]*playback.History, error) {
-	ts.mutex.Lock()
-	defer ts.mutex.Unlock()
+func (ps *PlaybackStore) RecentPlaybackHistory(limit int) ([]*playback.History, error) {
+	ps.mutex.Lock()
+	defer ps.mutex.Unlock()
 
 	query := `
 		SELECT id, played_at, track_name 
@@ -45,7 +45,7 @@ func (ts *PlaybackStore) RecentPlaybackHistory(limit int) ([]*playback.History, 
 
 	query += fmt.Sprintf(" LIMIT %d", limit)
 
-	rows, err := ts.db.Query(query)
+	rows, err := ps.db.Query(query)
 	if err != nil {
 		return nil, err
 	}
@@ -62,15 +62,15 @@ func (ts *PlaybackStore) RecentPlaybackHistory(limit int) ([]*playback.History, 
 	return history, nil
 }
 
-func (ts *PlaybackStore) DeleteOldPlaybackHistory() (int64, error) {
-	ts.mutex.Lock()
-	defer ts.mutex.Unlock()
+func (ps *PlaybackStore) DeleteOldPlaybackHistory() (int64, error) {
+	ps.mutex.Lock()
+	defer ps.mutex.Unlock()
 
 	query := `
 		DELETE FROM playback_history 
 		WHERE played_at < (strftime('%s', 'now') - 30 * 24 * 60 * 60)`
 
-	result, err := ts.db.Exec(query)
+	result, err := ps.db.Exec(query)
 	if err != nil {
 		return 0, fmt.Errorf("failed to delete old entries: %v", err)
 	}
