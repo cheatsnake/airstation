@@ -13,6 +13,7 @@ type Instance struct {
 	TrackStore
 	QueueStore
 	PlaybackStore
+	PlaylistStore
 
 	db    *sql.DB
 	log   *slog.Logger
@@ -46,6 +47,7 @@ func New(dbPath string, log *slog.Logger) (*Instance, error) {
 	instance.TrackStore = NewTrackStore(db, &instance.mutex)
 	instance.QueueStore = NewQueueStore(db, &instance.mutex)
 	instance.PlaybackStore = NewPlaybackStore(db, &instance.mutex)
+	instance.PlaylistStore = NewPlaylistStore(db, &instance.mutex)
 
 	return instance, nil
 }
@@ -80,6 +82,22 @@ func createTables(db *sql.DB) error {
 			track_name TEXT NOT NULL
 		);`
 
+	playlistTable := `
+		CREATE TABLE IF NOT EXISTS playlist (
+			id TEXT PRIMARY KEY,
+			name TEXT NOT NULL,
+			description TEXT
+		);`
+
+	playlistTrackTable := `
+		CREATE TABLE IF NOT EXISTS playlist_track (
+			playlist_id TEXT NOT NULL,
+			track_id TEXT NOT NULL,
+			FOREIGN KEY (playlist_id) REFERENCES playlist (id),
+			FOREIGN KEY (track_id) REFERENCES tracks (id),
+			UNIQUE (playlist_id, track_id)
+		);`
+
 	_, err := db.Exec(tracksTable)
 	if err != nil {
 		return fmt.Errorf("failed to create tracks table: %w", err)
@@ -95,12 +113,23 @@ func createTables(db *sql.DB) error {
 		return fmt.Errorf("failed to create table for playback history: %w", err)
 	}
 
+	_, err = db.Exec(playlistTable)
+	if err != nil {
+		return fmt.Errorf("failed to create playlist table: %w", err)
+	}
+
+	_, err = db.Exec(playlistTrackTable)
+	if err != nil {
+		return fmt.Errorf("failed to create playlist track table: %w", err)
+	}
+
 	return nil
 }
 
 func createIndexes(db *sql.DB) error {
 	indexQuery := `CREATE INDEX IF NOT EXISTS idx_tracks_name ON tracks (name COLLATE NOCASE);`
 	playedAtIndexQuery := `CREATE INDEX IF NOT EXISTS idx_playback_history_played_at ON playback_history(played_at);`
+	playlistTrackIndexQuery := `CREATE INDEX IF NOT EXISTS idx_playlist_track_ids ON playlist_track (playlist_id, track_id);`
 
 	_, err := db.Exec(indexQuery)
 	if err != nil {
@@ -110,6 +139,11 @@ func createIndexes(db *sql.DB) error {
 	_, err = db.Exec(playedAtIndexQuery)
 	if err != nil {
 		return fmt.Errorf("failed to create index on playback_history.played_at: %w", err)
+	}
+
+	_, err = db.Exec(playlistTrackIndexQuery)
+	if err != nil {
+		return fmt.Errorf("failed to create index for playlist_track: %w", err)
 	}
 
 	return nil
