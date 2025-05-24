@@ -21,9 +21,10 @@ Here you can find a list of future updates.
 ## 🌟 Long-Term Goals
 
 - [ ] Crossfade effect between tracks (by [rursache](https://github.com/cheatsnake/airstation/issues/5#issuecomment-2873728112))
-- [ ] Integration with music services for downloading tracks directly to the library
+- [ ] Integration with online music services for downloading tracks directly to the library
 - [ ] Built-in tunneling feature (to share your local server with others over the Internet)
-
+- [ ] Built-in tunneling feature (to share your local server with others over the Internet)
+- [ ] Integration with other music programs to synchronize track playback (by [swishkin](https://github.com/cheatsnake/airstation/issues/8#issue-3069650457))
 ---
 
 ## 💡 Suggestions?
