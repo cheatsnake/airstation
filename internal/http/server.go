@@ -12,6 +12,7 @@ import (
 	"github.com/cheatsnake/airstation/internal/ffmpeg"
 	"github.com/cheatsnake/airstation/internal/hls"
 	"github.com/cheatsnake/airstation/internal/playback"
+	"github.com/cheatsnake/airstation/internal/playlist"
 	"github.com/cheatsnake/airstation/internal/queue"
 	"github.com/cheatsnake/airstation/internal/storage"
 	"github.com/cheatsnake/airstation/internal/track"
@@ -24,6 +25,7 @@ type Server struct {
 	trackService    *track.Service
 	queueService    *queue.Service
 	playbackService *playback.Service
+	playlistService *playlist.Service
 	config          *config.Config
 	logger          *slog.Logger
 	router          *http.ServeMux
@@ -34,6 +36,7 @@ func NewServer(store storage.Storage, conf *config.Config, logger *slog.Logger) 
 	ts := track.NewService(store, ffmpegCLI, logger.WithGroup("trackservice"))
 	qs := queue.NewService(store)
 	ps := playback.NewService(store)
+	pls := playlist.NewService(store)
 	state := playback.NewState(ts, qs, ps, conf.TmpDir, logger.WithGroup("playback"))
 
 	return &Server{
@@ -42,6 +45,7 @@ func NewServer(store storage.Storage, conf *config.Config, logger *slog.Logger) 
 		trackService:    ts,
 		queueService:    qs,
 		playbackService: ps,
+		playlistService: pls,
 		config:          conf,
 		logger:          logger.WithGroup("http"),
 		router:          http.NewServeMux(),
@@ -69,6 +73,11 @@ func (s *Server) Run() {
 	s.router.Handle("DELETE /api/v1/queue", s.jwtAuth(http.HandlerFunc(s.handleRemoveFromQueue)))
 	s.router.Handle("POST /api/v1/playback/pause", s.jwtAuth(http.HandlerFunc(s.handlePausePlayback)))
 	s.router.Handle("POST /api/v1/playback/play", s.jwtAuth(http.HandlerFunc(s.handlePlayPlayback)))
+	s.router.Handle("POST /api/v1/playlist", s.jwtAuth(http.HandlerFunc(s.handleAddPlaylist)))
+	s.router.Handle("GET /api/v1/playlists", s.jwtAuth(http.HandlerFunc(s.handlePlaylists)))
+	s.router.Handle("GET /api/v1/playlist/{id}/", s.jwtAuth(http.HandlerFunc(s.handlePlaylist)))
+	s.router.Handle("PUT /api/v1/playlist/{id}/", s.jwtAuth(http.HandlerFunc(s.handleEditPlaylist)))
+	s.router.Handle("DELETE /api/v1/playlist/{id}/", s.jwtAuth(http.HandlerFunc(s.handleDeletePlaylist)))
 	s.router.Handle("GET /static/tracks/", s.jwtAuth(s.handleStaticDir("/static/tracks", s.config.TracksDir)))
 
 	s.router.Handle("GET /studio/", s.handleStaticDir("/studio/", s.config.StudioDir))

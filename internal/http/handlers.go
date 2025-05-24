@@ -163,7 +163,7 @@ func (s *Server) handleQueue(w http.ResponseWriter, _ *http.Request) {
 	queue, err := s.queueService.Queue()
 	if err != nil {
 		s.logger.Debug(err.Error())
-		jsonBadRequest(w, "Queue retrieving failed")
+		jsonBadRequest(w, "Queue retrieving failed: "+err.Error())
 		return
 	}
 
@@ -276,6 +276,79 @@ func (s *Server) handlePlaybackHistory(w http.ResponseWriter, r *http.Request) {
 	}
 
 	jsonResponse(w, history)
+}
+
+func (s *Server) handleAddPlaylist(w http.ResponseWriter, r *http.Request) {
+	body, err := parseJSONBody[struct {
+		Name        string   `json:"name"`
+		Description string   `json:"description"`
+		TrackIDs    []string `json:"trackIDs"`
+	}](r)
+	if err != nil {
+		jsonBadRequest(w, "Parsing request body failed: "+err.Error())
+		return
+	}
+
+	pl, err := s.playlistService.AddPlaylist(body.Name, body.Description, body.TrackIDs)
+	if err != nil {
+		jsonBadRequest(w, "Playlist creation failed: "+err.Error())
+		return
+	}
+
+	jsonResponse(w, pl)
+}
+
+func (s *Server) handlePlaylists(w http.ResponseWriter, r *http.Request) {
+	pls, err := s.playlistService.Playlists()
+	if err != nil {
+		jsonBadRequest(w, "Playlists retrieving failed: "+err.Error())
+	}
+
+	jsonResponse(w, pls)
+}
+
+func (s *Server) handlePlaylist(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+
+	pl, err := s.playlistService.Playlist(id)
+	if err != nil {
+		jsonBadRequest(w, "Playlist retrieving failed: "+err.Error())
+	}
+
+	jsonResponse(w, pl)
+}
+
+func (s *Server) handleEditPlaylist(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+
+	body, err := parseJSONBody[struct {
+		Name        string   `json:"name"`
+		Description string   `json:"description"`
+		TrackIDs    []string `json:"trackIDs"`
+	}](r)
+	if err != nil {
+		jsonBadRequest(w, "Parsing request body failed: "+err.Error())
+		return
+	}
+
+	err = s.playlistService.EditPlaylist(id, body.Name, body.Description, body.TrackIDs)
+	if err != nil {
+		jsonBadRequest(w, "Playlist creation failed: "+err.Error())
+		return
+	}
+
+	jsonOK(w, "Playlist updated")
+}
+
+func (s *Server) handleDeletePlaylist(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+
+	err := s.playlistService.DeletePlaylist(id)
+	if err != nil {
+		jsonBadRequest(w, "Playlist deletion failed: "+err.Error())
+	}
+
+	jsonOK(w, "Playlist deleted")
 }
 
 func (s *Server) handleStaticDir(prefix string, path string) http.Handler {
