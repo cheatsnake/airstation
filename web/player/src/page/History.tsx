@@ -11,7 +11,12 @@ export const History = () => {
 
     return (
         <>
-            <div class={`${isOpen() ? "empty_icon" : styles.menu_icon}`} onClick={open}></div>
+            <div
+                tabIndex={0}
+                role="button"
+                class={`${isOpen() ? "empty_icon" : styles.menu_icon}`}
+                onClick={open}
+            ></div>
             <Menu isOpen={isOpen} close={close} />
         </>
     );
@@ -56,7 +61,7 @@ const Menu: Component<{ isOpen: Accessor<boolean>; close: () => void }> = ({ isO
         >
             <div class={styles.menu_header}>
                 <div class={styles.menu_title}></div>
-                <div class={styles.close_icon} onClick={close}></div>
+                <div tabIndex={0} role="button" class={styles.close_icon} onClick={close}></div>
             </div>
             <div class={styles.history}>
                 {history().map((h) => (
