@@ -179,18 +179,16 @@ const StreamToggler: FC<{ playback: PlaybackState; size: MantineSize }> = (props
         setIsPlaying(false);
     };
 
-    const togglePlayback = async () => {
+    const handlePause = () => {
+        videoRef.current?.pause();
+        destroyStream();
+    };
+
+    const handlePlay = async () => {
         try {
             initStream();
-
-            if (isPlaying) {
-                videoRef.current?.pause();
-                destroyStream();
-                setIsPlaying(false);
-            } else {
-                await videoRef.current?.play();
-                setIsPlaying(true);
-            }
+            await videoRef.current?.play();
+            setIsPlaying(true);
         } catch (error) {
             console.log("Failed to play: ", error);
         }
@@ -204,11 +202,17 @@ const StreamToggler: FC<{ playback: PlaybackState; size: MantineSize }> = (props
 
     return (
         <>
-            <audio style={{ display: "none" }} id="stream" ref={videoRef}></audio>
+            <audio
+                style={{ display: "none" }}
+                onPause={handlePause}
+                onPlay={handlePlay}
+                id="stream"
+                ref={videoRef}
+            ></audio>
             <Tooltip openDelay={500} label={`${isPlaying ? "Mute" : "Unmute"} the stream just for me`}>
                 <ActionIcon
-                    onClick={togglePlayback}
                     variant="subtle"
+                    onClick={isPlaying ? () => videoRef.current?.pause() : () => videoRef.current?.play()}
                     color={useThemeBlackColor()}
                     size={props.size}
                     aria-label="Settings"

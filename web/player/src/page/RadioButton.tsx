@@ -21,31 +21,20 @@ export const RadioButton = () => {
     };
 
     const handlePlay = () => {
+        initStream();
         if (!trackStore.trackName) return;
         setTrackStore("isPlay", true);
-        videoRef?.play();
     };
 
     const handlePause = () => {
         setTrackStore("isPlay", false);
-        videoRef?.pause();
         hls?.destroy();
-    };
-
-    const togglePlayback = () => {
-        initStream();
-
-        if (trackStore.isPlay) {
-            handlePause();
-        } else {
-            handlePlay();
-        }
     };
 
     onMount(() => {
         addEventListener(EVENTS.pause, (_e: MessageEvent<string>) => {
             setTrackStore("trackName", "");
-            handlePause();
+            (() => videoRef?.pause())();
         });
 
         addEventListener(EVENTS.play, (e: MessageEvent<string>) => {
@@ -53,20 +42,26 @@ export const RadioButton = () => {
             setTrackStore("trackName", e.data);
             addHistory({ id: unixTime, playedAt: unixTime, trackName: e.data });
 
-            if (trackStore.isPlay) handlePause();
-            initStream();
-            handlePlay();
+            if (trackStore.isPlay) (() => videoRef?.pause())();
+            (() => videoRef?.play())();
+        });
+
+        document.body.addEventListener("keydown", (event) => {
+            if (event.key === " ") {
+                event.preventDefault();
+                trackStore.isPlay ? videoRef?.pause() : videoRef?.play();
+            }
         });
     });
 
     return (
         <div class={styles.container}>
-            <audio id="video" ref={videoRef}></audio>
+            <audio id="video" ref={videoRef} onPause={handlePause} onPlay={handlePlay}></audio>
             <div class={styles.box}>
                 {trackStore.isPlay ? (
-                    <AnimatedPauseButton toggle={togglePlayback} media={videoRef} />
+                    <AnimatedPauseButton pause={() => videoRef?.pause()} media={videoRef} />
                 ) : (
-                    <div class={styles.play_icon} onClick={togglePlayback}></div>
+                    <div class={styles.play_icon} tabIndex={0} role="button" onClick={() => videoRef?.play()}></div>
                 )}
             </div>
         </div>
@@ -76,7 +71,7 @@ export const RadioButton = () => {
 let audioSource: MediaElementAudioSourceNode | null = null;
 let audioContext: AudioContext | null = null;
 
-const AnimatedPauseButton: Component<{ toggle: () => void; media?: HTMLAudioElement }> = (props) => {
+const AnimatedPauseButton: Component<{ pause: () => void; media?: HTMLAudioElement }> = (props) => {
     let pauseIconRef: HTMLDivElement | undefined;
     let analyser: AnalyserNode | null = null;
     let dataArray: Uint8Array | null = null;
@@ -175,5 +170,5 @@ const AnimatedPauseButton: Component<{ toggle: () => void; media?: HTMLAudioElem
         pauseIconRef.style.boxShadow = `0 0 ${glowIntensity}px ${color}`;
     };
 
-    return <div ref={pauseIconRef} class={styles.pause_icon} onClick={props.toggle}></div>;
+    return <div ref={pauseIconRef} tabIndex={0} role="button" class={styles.pause_icon} onClick={props.pause}></div>;
 };
