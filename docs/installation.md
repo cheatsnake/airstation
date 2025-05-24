@@ -1,6 +1,6 @@
 # Installation
 
-To run Airstation on your machine, there are two ways: using [Docker](https://docs.docker.com/) (recommended) or building it yourself using the [Go](https://go.dev/) compiler for server and [Node.js](https://nodejs.org/) with [npm](https://www.npmjs.com/) for web clients.
+To run Airstation on your machine, there are two ways: using [Docker](https://docs.docker.com/) (recommended) or building it yourself using the [Go](https://go.dev/) compiler for server, [Node.js](https://nodejs.org/) with [npm](https://www.npmjs.com/) for web clients and also have [FFmpeg](https://ffmpeg.org/) installed on your system.
 
 ## Docker
 
@@ -116,6 +116,8 @@ go build ./cmd/main.go
 ```sh
 ./main
 ```
+
+> Make sure you have [FFmpeg](https://ffmpeg.org/) installed on your system.
 
 See the result on [http://localhost:7331](http://localhost:7331) and [http://localhost:7331/studio/](http://localhost:7331/studio/) (extra slash matters!)
 
