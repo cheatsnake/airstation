@@ -27,3 +27,11 @@ export interface ResponseErr {
 export interface ResponseOK {
     message: string;
 }
+
+export interface Playlist {
+    id: string;
+    name: string;
+    description?: string;
+    tracks: Track[];
+    trackCount: number;
+}

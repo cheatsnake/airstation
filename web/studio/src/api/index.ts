@@ -1,4 +1,4 @@
-import { PlaybackState, ResponseErr, ResponseOK, Track, TracksPage } from "./types";
+import { PlaybackState, Playlist, ResponseErr, ResponseOK, Track, TracksPage } from "./types";
 import { jsonRequestParams, queryParams } from "./utils";
 
 export const API_HOST = "";
@@ -83,6 +83,31 @@ class AirstationAPI {
     async removeFromQueue(trackIDs: string[]) {
         const url = `${this.url()}/queue`;
         return await this.makeRequest<ResponseOK>(url, jsonRequestParams("DELETE", { ids: trackIDs }));
+    }
+
+    async addPlaylist(name: string, description: string, trackIDs: string[]) {
+        const url = `${this.url()}/playlist`;
+        return await this.makeRequest<Playlist>(url, jsonRequestParams("POST", { name, description, trackIDs }));
+    }
+
+    async getPlaylists() {
+        const url = `${this.url()}/playlists`;
+        return await this.makeRequest<Playlist[]>(url);
+    }
+
+    async getPlaylist(id: string) {
+        const url = `${this.url()}/playlist/` + id;
+        return await this.makeRequest<Playlist>(url);
+    }
+
+    async editPlaylist(id: string, name: string, description: string, trackIDs: string[]) {
+        const url = `${this.url()}/playlist/` + id;
+        return await this.makeRequest<ResponseOK>(url, jsonRequestParams("PUT", { name, description, trackIDs }));
+    }
+
+    async deletePlaylist(id: string) {
+        const url = `${this.url()}/playlist/` + id;
+        return await this.makeRequest<ResponseOK>(url, jsonRequestParams("DELETE", {}));
     }
 
     private async makeRequest<T>(url: string, params: RequestInit = {}): Promise<T> {
