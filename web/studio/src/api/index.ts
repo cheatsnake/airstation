@@ -85,7 +85,7 @@ class AirstationAPI {
         return await this.makeRequest<ResponseOK>(url, jsonRequestParams("DELETE", { ids: trackIDs }));
     }
 
-    async addPlaylist(name: string, description: string, trackIDs: string[]) {
+    async addPlaylist(name: string, trackIDs: string[], description?: string) {
         const url = `${this.url()}/playlist`;
         return await this.makeRequest<Playlist>(url, jsonRequestParams("POST", { name, description, trackIDs }));
     }
@@ -100,7 +100,7 @@ class AirstationAPI {
         return await this.makeRequest<Playlist>(url);
     }
 
-    async editPlaylist(id: string, name: string, description: string, trackIDs: string[]) {
+    async editPlaylist(id: string, name: string, trackIDs: string[], description?: string) {
         const url = `${this.url()}/playlist/` + id;
         return await this.makeRequest<ResponseOK>(url, jsonRequestParams("PUT", { name, description, trackIDs }));
     }
