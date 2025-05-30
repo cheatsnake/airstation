@@ -116,6 +116,23 @@ func (ps *PlaylistStore) Playlist(id string) (*playlist.Playlist, error) {
 	return &p, nil
 }
 
+// IsPlaylistExists checks if playlist with provided name exists
+func (ps *PlaylistStore) IsPlaylistExists(name string) (bool, error) {
+	var exists bool
+
+	err := ps.db.QueryRow(`
+        SELECT EXISTS(
+            SELECT 1 FROM playlist WHERE name = ?
+        )
+    `, name).Scan(&exists)
+
+	if err != nil {
+		return false, err
+	}
+
+	return exists, nil
+}
+
 // EditPlaylist updates playlist and its tracks
 func (ps *PlaylistStore) EditPlaylist(id, name, description string, trackIDs []string) error {
 	tx, err := ps.db.Begin()

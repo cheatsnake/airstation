@@ -31,6 +31,14 @@ func (s *Service) AddPlaylist(name, description string, trackIDs []string) (*Pla
 		return nil, err
 	}
 
+	isExists, err := s.store.IsPlaylistExists(name)
+	if err != nil {
+		return nil, err
+	}
+	if isExists {
+		return nil, fmt.Errorf("playlist with this name already exists")
+	}
+
 	pl, err := s.store.AddPlaylist(name, description, trackIDs)
 	return pl, err
 }

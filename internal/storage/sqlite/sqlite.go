@@ -85,7 +85,7 @@ func createTables(db *sql.DB) error {
 	playlistTable := `
 		CREATE TABLE IF NOT EXISTS playlist (
 			id TEXT PRIMARY KEY,
-			name TEXT NOT NULL,
+			name TEXT NOT NULL UNIQUE,
 			description TEXT
 		);`
 
