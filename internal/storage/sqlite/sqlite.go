@@ -93,8 +93,10 @@ func createTables(db *sql.DB) error {
 		CREATE TABLE IF NOT EXISTS playlist_track (
 			playlist_id TEXT NOT NULL,
 			track_id TEXT NOT NULL,
-			FOREIGN KEY (playlist_id) REFERENCES playlist (id),
+			position INTEGER NOT NULL,
+			FOREIGN KEY (playlist_id) REFERENCES playlist (id) ON DELETE CASCADE,
 			FOREIGN KEY (track_id) REFERENCES tracks (id),
+			PRIMARY KEY (playlist_id, position),
 			UNIQUE (playlist_id, track_id)
 		);`
 

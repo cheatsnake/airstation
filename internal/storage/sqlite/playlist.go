@@ -2,6 +2,7 @@ package sqlite
 
 import (
 	"database/sql"
+	"fmt"
 	"sync"
 
 	"github.com/cheatsnake/airstation/internal/playlist"
@@ -66,7 +67,7 @@ func (ps *PlaylistStore) Playlists() ([]*playlist.Playlist, error) {
 	}
 	defer rows.Close()
 
-	var playlists []*playlist.Playlist
+	playlists := make([]*playlist.Playlist, 0)
 
 	for rows.Next() {
 		var p playlist.Playlist
@@ -83,7 +84,7 @@ func (ps *PlaylistStore) Playlists() ([]*playlist.Playlist, error) {
 
 // Playlist returns a playlist with all its tracks
 func (ps *PlaylistStore) Playlist(id string) (*playlist.Playlist, error) {
-	var p playlist.Playlist
+	p := playlist.Playlist{Tracks: make([]*track.Track, 0)}
 
 	err := ps.db.QueryRow(`SELECT id, name, description FROM playlist WHERE id = ?`, id).
 		Scan(&p.ID, &p.Name, &p.Description)
@@ -96,17 +97,18 @@ func (ps *PlaylistStore) Playlist(id string) (*playlist.Playlist, error) {
 		FROM playlist_track pt
 		JOIN tracks t ON pt.track_id = t.id
 		WHERE pt.playlist_id = ?
+		ORDER BY pt.position
 	`, id)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to query playlist tracks: %w", err)
 	}
 
 	defer rows.Close()
 
 	for rows.Next() {
 		var t track.Track
-		if err := rows.Scan(&t.ID, &t.Name, &t.Path, &t.BitRate, t.Duration); err != nil {
-			return nil, err
+		if err := rows.Scan(&t.ID, &t.Name, &t.Path, &t.BitRate, &t.Duration); err != nil {
+			return nil, fmt.Errorf("failed to scan track: %w", err)
 		}
 		p.Tracks = append(p.Tracks, &t)
 	}
@@ -152,8 +154,11 @@ func (ps *PlaylistStore) EditPlaylist(id, name, description string, trackIDs []s
 		return err
 	}
 
-	for _, trackID := range trackIDs {
-		_, err = tx.Exec(`INSERT OR IGNORE INTO playlist_track (playlist_id, track_id) VALUES (?, ?)`, id, trackID)
+	for position, trackID := range trackIDs {
+		_, err = tx.Exec(
+			`INSERT OR IGNORE INTO playlist_track (playlist_id, track_id, position) VALUES (?, ?, ?)`,
+			id, trackID, position,
+		)
 		if err != nil {
 			return err
 		}
