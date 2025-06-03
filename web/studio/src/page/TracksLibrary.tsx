@@ -247,7 +247,7 @@ const TrackUploader: FC<{ handLoader: DisclosureHandler }> = (props) => {
 
     return (
         <>
-            <FileButton multiple onChange={handleUpload} accept="audio/mpeg,audio/aac">
+            <FileButton multiple onChange={handleUpload} accept="audio/mpeg,audio/aac,audio/wav">
                 {(props) => (
                     <Button {...props} variant="light" color="green">
                         Add

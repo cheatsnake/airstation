@@ -12,4 +12,5 @@ const (
 	m4aExtension = "m4a"
 	mp3Extension = "mp3"
 	aacExtension = "aac"
+	wavExtension = "wav"
 )
