@@ -8,7 +8,7 @@ interface PlaylistStore {
     setPlaylists(playlists: Playlist[]): void;
     addPlaylist(name: string, trackIDs: string[], description?: string): Promise<Playlist>;
     fetchPlaylists(): Promise<void>;
-    editPlaylist(modified: Playlist): Promise<ResponseOK>;
+    editPlaylist(id: string, name: string, trackIDs: string[], description?: string): Promise<ResponseOK>;
     deletePlaylist(id: string): Promise<ResponseOK>;
 }
 
@@ -30,19 +30,28 @@ export const usePlaylistStore = create<PlaylistStore>()((set, get) => ({
         return p;
     },
 
-    async editPlaylist(modified) {
-        const resp = await airstationAPI.editPlaylist(
-            modified.id,
-            modified.name,
-            modified.tracks.map(({ id }) => id),
-            modified.description,
-        );
+    async editPlaylist(id: string, name: string, trackIDs: string[], description?: string) {
+        const resp = await airstationAPI.editPlaylist(id, name, trackIDs, description);
+        set({
+            playlists: get().playlists.map((p) =>
+                p.id === id
+                    ? {
+                          id,
+                          name,
+                          tracks: [],
+                          trackCount: trackIDs.length,
+                          description,
+                      }
+                    : p,
+            ),
+        });
 
         return resp;
     },
 
     async deletePlaylist(id) {
         const resp = await airstationAPI.deletePlaylist(id);
+        set({ playlists: get().playlists.filter((p) => p.id !== id) });
         return resp;
     },
 }));

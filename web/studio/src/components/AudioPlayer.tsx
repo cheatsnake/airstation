@@ -11,20 +11,12 @@ import styles from "./AudioPlayer.module.css";
 interface AudioPlayerProps {
     track: Track;
     isPlaying: boolean;
-    isTrackInQueue: boolean;
     selected: Set<string>;
     setSelected: React.Dispatch<React.SetStateAction<Set<string>>>;
     togglePlaying: () => void;
 }
 
-export const AudioPlayer: React.FC<AudioPlayerProps> = ({
-    track,
-    isPlaying,
-    isTrackInQueue,
-    selected,
-    setSelected,
-    togglePlaying,
-}) => {
+export const AudioPlayer: React.FC<AudioPlayerProps> = ({ track, isPlaying, selected, setSelected, togglePlaying }) => {
     const audioRef = useRef<HTMLAudioElement>(null);
     const [progress, setProgress] = useThrottledState(0, 500);
     const [cursorPos, setCursorPos] = useThrottledState(0, 100);
@@ -109,7 +101,6 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
 
                 <Flex>
                     <Checkbox
-                        disabled={isTrackInQueue}
                         checked={selected.has(track.id)}
                         onChange={() => {
                             setSelected((prevSelected) => {

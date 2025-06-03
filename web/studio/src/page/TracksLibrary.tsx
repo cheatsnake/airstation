@@ -7,6 +7,7 @@ import {
     Flex,
     Group,
     LoadingOverlay,
+    Menu,
     Paper,
     Select,
     Space,
@@ -25,8 +26,9 @@ import { DisclosureHandler } from "../types";
 import { Track } from "../api/types";
 import { modals } from "@mantine/modals";
 import { EVENTS, useEventSourceStore } from "../store/events";
-import { IconReload, IconSortAscending, IconSortDescending } from "../icons";
+import { IconQueue, IconReload, IconSortAscending, IconSortDescending, IconTrash } from "../icons";
 import styles from "./styles.module.css";
+import { AddToPalylistModal } from "./Playlists";
 
 const PAGE_LIMIT = 20;
 
@@ -114,7 +116,7 @@ export const TrackLibrary: FC<{ isMobile?: boolean }> = (props) => {
                         }`}</Text>
                     </Flex>
 
-                    <Flex align="center" gap="xs">
+                    <Flex align="center" gap={5}>
                         <Tooltip openDelay={500} label="Reload list">
                             <ActionIcon onClick={loadTracks} variant="transparent" size="md">
                                 <IconReload size={18} color="gray" />
@@ -154,7 +156,7 @@ export const TrackLibrary: FC<{ isMobile?: boolean }> = (props) => {
                 <Flex gap="xs">
                     <TextInput
                         style={{ flexGrow: 1 }}
-                        className={styles.search_input}
+                        className={styles.input}
                         variant="unstyled"
                         placeholder="Search"
                         value={search}
@@ -189,7 +191,6 @@ export const TrackLibrary: FC<{ isMobile?: boolean }> = (props) => {
                                         <AudioPlayer
                                             track={track}
                                             isPlaying={playingTrackID === track.id}
-                                            isTrackInQueue={isTrackInQueue(track.id)}
                                             selected={selectedTrackIDs}
                                             setSelected={setSelectedTrackIDs}
                                             togglePlaying={() => toggleTrackPlaying(track.id)}
@@ -215,8 +216,8 @@ export const TrackLibrary: FC<{ isMobile?: boolean }> = (props) => {
                         handLoader={handLoader}
                         selected={selectedTrackIDs}
                         setSelected={setSelectedTrackIDs}
-                        availableTracks={tracks.filter((t) => !isTrackInQueue(t.id))}
-                        disabled={!selectedTrackIDs.size}
+                        freeTrackIDs={new Set(tracks.filter((t) => !isTrackInQueue(t.id)).map((t) => t.id))}
+                        tracks={tracks}
                     />
                 </Group>
             </Flex>
@@ -261,8 +262,8 @@ const TrackActions: FC<{
     handLoader: DisclosureHandler;
     selected: Set<string>;
     setSelected: React.Dispatch<React.SetStateAction<Set<string>>>;
-    availableTracks: Track[];
-    disabled?: boolean;
+    freeTrackIDs: Set<string>;
+    tracks: Track[];
 }> = (props) => {
     const addToQueue = useTrackQueueStore((s) => s.addToQueue);
     const deleteTracks = useTracksStore((s) => s.deleteTracks);
@@ -273,7 +274,7 @@ const TrackActions: FC<{
             return;
         }
 
-        props.setSelected(new Set(props.availableTracks.map((t) => t.id)));
+        props.setSelected(new Set(props.tracks.map((t) => t.id)));
     };
 
     const handleDelete = async () => {
@@ -313,13 +314,31 @@ const TrackActions: FC<{
     };
 
     return (
-        <Flex align="center" gap="xs">
-            <Button disabled={props.disabled} onClick={confirmDelete} variant="light" color="red">
-                Delete
-            </Button>
-            <Button disabled={props.disabled} onClick={handleAddToQueue} variant="light">
-                Queue
-            </Button>
+        <Flex align="center" gap="md">
+            <Menu position="left" offset={0} keepMounted>
+                <Menu.Target>
+                    <Button variant="light" px="md" disabled={!props.selected.size}>
+                        Action
+                    </Button>
+                </Menu.Target>
+
+                <Menu.Dropdown>
+                    <Menu.Item leftSection={<IconQueue size={14} />} color="blue" onClick={handleAddToQueue}>
+                        Move to queue
+                    </Menu.Item>
+                    <Menu.Divider />
+                    <AddToPalylistModal trackIDs={[...props.selected]} />
+                    <Menu.Divider />
+                    <Menu.Item
+                        leftSection={<IconTrash size={14} />}
+                        color="red"
+                        disabled={![...props.selected].every((id) => props.freeTrackIDs.has(id))}
+                        onClick={confirmDelete}
+                    >
+                        Delete
+                    </Menu.Item>
+                </Menu.Dropdown>
+            </Menu>
             <Checkbox size="md" color="dimmed" readOnly checked={props.selected.size > 0} onClick={toggleSelection} />
         </Flex>
     );

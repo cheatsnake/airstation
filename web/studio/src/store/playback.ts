@@ -7,6 +7,8 @@ import { getUnixTime } from "../utils/time";
 interface PlaybackStore {
     playback: PlaybackState;
     setPlayback: (pb: PlaybackState) => void;
+    play: () => Promise<PlaybackState>;
+    pause: () => Promise<PlaybackState>;
     fetchPlayback: () => Promise<void>;
     syncElapsedTime: () => void;
 }
@@ -28,6 +30,18 @@ export const usePlaybackStore = create<PlaybackStore>()((set) => ({
         } catch (error) {
             errNotify(error);
         }
+    },
+
+    async play() {
+        const playback = await airstationAPI.playPlayback();
+        set({ playback });
+        return playback;
+    },
+
+    async pause() {
+        const playback = await airstationAPI.pausePlayback();
+        set({ playback });
+        return playback;
     },
 
     syncElapsedTime() {

@@ -11,7 +11,6 @@ import {
     Text,
     Tooltip,
 } from "@mantine/core";
-import { DragDropContext, Draggable, Droppable } from "@hello-pangea/dnd";
 import { FC, useEffect, useState } from "react";
 import { usePlaybackStore } from "../store/playback";
 import { useTrackQueueStore } from "../store/track-queue";
@@ -23,6 +22,11 @@ import { Track } from "../api/types";
 import { modals } from "@mantine/modals";
 import styles from "./styles.module.css";
 import { IconReload } from "../icons";
+import { PlaylistsModal } from "./Playlists";
+import { DndContext, DragEndEvent } from "@dnd-kit/core";
+import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
+import { SortableContext, useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 export const TrackQueue: FC<{ isMobile?: boolean }> = (props) => {
     const [loader, handLoader] = useDisclosure(false);
@@ -100,18 +104,23 @@ export const TrackQueue: FC<{ isMobile?: boolean }> = (props) => {
         });
     };
 
-    const tracklist = queue.map((track, index) => {
-        if (track.id === playback?.currentTrack?.id && playback.isPlaying) return null;
+    const handleDragEvent = async (event: DragEndEvent) => {
+        const { active, over } = event;
+        if (over && active.id !== over.id) {
+            const fromIndex = queue.findIndex((t) => t.id === active.id);
+            const toIndex = queue.findIndex((t) => t.id === over.id);
+            setHovered(false);
+            try {
+                await updateQueue(moveArrayItem(queue, fromIndex, toIndex));
+            } catch (error) {
+                errNotify(error);
+            }
+        }
+    };
 
-        return (
-            <Draggable key={track.id} index={index} draggableId={track.id}>
-                {(provided) => (
-                    <div {...provided.draggableProps} {...provided.dragHandleProps} ref={provided.innerRef}>
-                        <QueueItem track={track} handleRemove={handleRemove} />
-                    </div>
-                )}
-            </Draggable>
-        );
+    const tracklist = queue.map((track) => {
+        if (track.id === playback?.currentTrack?.id && playback.isPlaying) return null;
+        return <QueueItem key={track.id} track={track} handleRemove={handleRemove} />;
     });
 
     useEffect(() => {
@@ -135,11 +144,14 @@ export const TrackQueue: FC<{ isMobile?: boolean }> = (props) => {
                         </Text>
                         <Text c="dimmed">{queue.length > 1 ? queue.length - (playback.isPlaying ? 1 : 0) : ""}</Text>
                     </Flex>
-                    <Tooltip openDelay={500} label="Reload list">
-                        <ActionIcon onClick={loadQueue} variant="transparent" size="md">
-                            <IconReload size={18} color="gray" />
-                        </ActionIcon>
-                    </Tooltip>
+                    <Flex>
+                        <PlaylistsModal />
+                        <Tooltip openDelay={500} label="Reload list">
+                            <ActionIcon onClick={loadQueue} variant="transparent" size="md">
+                                <IconReload size={18} color="gray" />
+                            </ActionIcon>
+                        </Tooltip>
+                    </Flex>
                 </Flex>
 
                 <Space h={12} />
@@ -154,24 +166,9 @@ export const TrackQueue: FC<{ isMobile?: boolean }> = (props) => {
                         scrollbarGutter: "stable",
                     }}
                 >
-                    <DragDropContext
-                        onDragEnd={async ({ destination, source }) => {
-                            try {
-                                await updateQueue(moveArrayItem(queue, source.index, destination?.index || 0));
-                            } catch (error) {
-                                errNotify(error);
-                            }
-                        }}
-                    >
-                        <Droppable droppableId="dnd-list" direction="vertical">
-                            {(provided) => (
-                                <Flex direction="column" {...provided.droppableProps} ref={provided.innerRef}>
-                                    {tracklist}
-                                    {provided.placeholder}
-                                </Flex>
-                            )}
-                        </Droppable>
-                    </DragDropContext>
+                    <DndContext modifiers={[restrictToVerticalAxis]} onDragEnd={handleDragEvent}>
+                        <SortableContext items={queue}>{tracklist}</SortableContext>
+                    </DndContext>
                     {!queue.length || (queue.length === 1 && playback.isPlaying) ? (
                         <EmptyLabel label={"Queue is empty"} />
                     ) : null}
@@ -194,19 +191,26 @@ export const TrackQueue: FC<{ isMobile?: boolean }> = (props) => {
 
 const QueueItem: FC<{ track: Track; handleRemove: (ids: string[]) => Promise<void> }> = ({ track, handleRemove }) => {
     const [hovered, setHovered] = useState(false);
+    const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: track.id });
+    const style = { transform: CSS.Transform.toString(transform), transition };
 
     return (
         <Paper
+            ref={setNodeRef}
             p="0.3rem"
             key={track.id}
             bg="transparent"
+            style={style}
             onMouseEnter={() => setHovered(true)}
             onMouseLeave={() => setHovered(false)}
         >
-            <Flex justify="space-between" align="center">
+            <Flex align="center" gap={5}>
                 <Text
+                    {...attributes}
+                    {...listeners}
+                    w="100%"
                     c={hovered ? "main" : undefined}
-                    style={{ whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}
+                    style={{ whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden", cursor: "grab" }}
                 >
                     {track.name}
                 </Text>
