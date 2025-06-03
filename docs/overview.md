@@ -24,6 +24,7 @@ In fact, only the most necessary functionality has been implemented at the curre
 - Possibility to temporarily stop the radio station
 - Playback history
 - Listener counter
+- Playlists mechanism
 
 ## Deep under the hood
 
