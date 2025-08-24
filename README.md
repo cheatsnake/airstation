@@ -9,6 +9,7 @@
 <p align="center">Your own online radio station</p>
 <p align="center">
 🔍 <a href="./docs/overview.md">Overview</a>
+&nbsp; 💻 <a href="https://radio.yurace.pro/">Demo</a>
 &nbsp; ⚙️ <a href="./docs/installation.md">Installation</a>
 &nbsp; 🗺️ <a href="./docs/roadmap.md">Roadmap</a>
 &nbsp; 🚨 <a href="https://github.com/cheatsnake/airstation/issues/new">Bug report</a>
