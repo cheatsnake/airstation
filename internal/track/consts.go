@@ -13,4 +13,5 @@ const (
 	mp3Extension = "mp3"
 	aacExtension = "aac"
 	wavExtension = "wav"
+	flacExtension = "flac"
 )

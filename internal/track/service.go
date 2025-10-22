@@ -208,10 +208,16 @@ func (s *Service) LoadTracksFromDisk(tracksDir string) ([]*Track, error) {
 		return tracks, err
 	}
 
-	trackFilenames := make([]string, 0, len(mp3Filenames)+len(aacFilenames)+len(wavFilenames))
+	flacFilenames, err := fs.ListFilesFromDir(tracksDir, flacExtension)
+	if err != nil {
+		return tracks, err
+	}
+
+	trackFilenames := make([]string, 0, len(mp3Filenames)+len(aacFilenames)+len(wavFilenames)+len(flacFilenames))
 	trackFilenames = append(trackFilenames, mp3Filenames...)
 	trackFilenames = append(trackFilenames, aacFilenames...)
 	trackFilenames = append(trackFilenames, wavFilenames...)
+	trackFilenames = append(trackFilenames, flacFilenames...)
 
 	for _, trackFilename := range trackFilenames {
 		trackPath := filepath.Join(tracksDir, trackFilename)
@@ -277,6 +283,7 @@ func defineTrackName(fileName, metaName string) string {
 	name := strings.ReplaceAll(fileName, ".mp3", "")
 	name = strings.ReplaceAll(name, ".aac", "")
 	name = strings.ReplaceAll(name, ".wav", "")
+	name = strings.ReplaceAll(name, ".flac", "")
 	name = strings.ReplaceAll(name, "_", " ")
 
 	return name
