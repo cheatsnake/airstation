@@ -64,7 +64,7 @@ func (s *Service) AddTrack(name, path string) (*Track, error) {
 	}
 
 	if modDuration > maxAllowedTrackDuration {
-		return nil, fmt.Errorf("%s is too large for streaming", name)
+		return nil, fmt.Errorf("%s is too long for streaming", name)
 	}
 
 	trackName := defineTrackName(name, metadata.Name)
