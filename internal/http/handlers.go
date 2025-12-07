@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/cheatsnake/airstation/internal/pkg/sse"
+	"github.com/cheatsnake/airstation/internal/station"
 	"github.com/cheatsnake/airstation/internal/track"
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -362,6 +363,32 @@ func (s *Server) handleStaticDirWithoutCache(prefix string, path string) http.Ha
 		w.Header().Set("Cache-Control", "no-cache")
 		fileHandler.ServeHTTP(w, r)
 	})
+}
+
+func (s *Server) handleStationInfo(w http.ResponseWriter, _ *http.Request) {
+	info, err := s.stationService.Info()
+	if err != nil {
+		jsonBadRequest(w, "Failed to get station info: "+err.Error())
+		return
+	}
+
+	jsonResponse(w, info)
+}
+
+func (s *Server) handleEditStationInfo(w http.ResponseWriter, r *http.Request) {
+	body, err := parseJSONBody[station.Info](r)
+	if err != nil {
+		jsonBadRequest(w, "Parsing request body failed: "+err.Error())
+		return
+	}
+
+	info, err := s.stationService.EditInfo(body)
+	if err != nil {
+		jsonBadRequest(w, "Station info editing failed: "+err.Error())
+		return
+	}
+
+	jsonResponse(w, info)
 }
 
 func (s *Server) saveFile(fileHeader *multipart.FileHeader) (string, error) {

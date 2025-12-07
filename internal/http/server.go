@@ -14,6 +14,7 @@ import (
 	"github.com/cheatsnake/airstation/internal/playback"
 	"github.com/cheatsnake/airstation/internal/playlist"
 	"github.com/cheatsnake/airstation/internal/queue"
+	"github.com/cheatsnake/airstation/internal/station"
 	"github.com/cheatsnake/airstation/internal/storage"
 	"github.com/cheatsnake/airstation/internal/track"
 	"github.com/rs/cors"
@@ -26,6 +27,7 @@ type Server struct {
 	queueService    *queue.Service
 	playbackService *playback.Service
 	playlistService *playlist.Service
+	stationService  *station.Service
 	config          *config.Config
 	logger          *slog.Logger
 	router          *http.ServeMux
@@ -37,6 +39,7 @@ func NewServer(store storage.Storage, conf *config.Config, logger *slog.Logger) 
 	qs := queue.NewService(store)
 	ps := playback.NewService(store)
 	pls := playlist.NewService(store)
+	ss := station.NewService(store)
 	state := playback.NewState(ts, qs, ps, conf.TmpDir, logger.WithGroup("playback"))
 
 	return &Server{
@@ -46,6 +49,7 @@ func NewServer(store storage.Storage, conf *config.Config, logger *slog.Logger) 
 		queueService:    qs,
 		playbackService: ps,
 		playlistService: pls,
+		stationService:  ss,
 		config:          conf,
 		logger:          logger.WithGroup("http"),
 		router:          http.NewServeMux(),
@@ -58,6 +62,7 @@ func (s *Server) Run() {
 	// Public handlers
 	s.router.HandleFunc("GET /stream", s.handleHLSPlaylist)
 	s.router.HandleFunc("GET /api/v1/events", s.handleEvents)
+	s.router.HandleFunc("GET /api/v1/station/info", s.handleStationInfo)
 	s.router.HandleFunc("POST /api/v1/login", s.handleLogin)
 	s.router.Handle("GET /static/tmp/", s.handleStaticDirWithoutCache("/static/tmp", s.config.TmpDir))
 	s.router.Handle("GET /api/v1/playback", http.HandlerFunc(s.handlePlaybackState))
@@ -79,6 +84,7 @@ func (s *Server) Run() {
 	s.router.Handle("PUT /api/v1/playlist/{id}/", s.jwtAuth(http.HandlerFunc(s.handleEditPlaylist)))
 	s.router.Handle("DELETE /api/v1/playlist/{id}/", s.jwtAuth(http.HandlerFunc(s.handleDeletePlaylist)))
 	s.router.Handle("GET /static/tracks/", s.jwtAuth(s.handleStaticDir("/static/tracks", s.config.TracksDir)))
+	s.router.Handle("PUT /api/v1/station/info", s.jwtAuth(http.HandlerFunc(s.handleEditStationInfo)))
 
 	s.router.Handle("GET /studio/", s.handleStaticDir("/studio/", s.config.StudioDir))
 	s.router.Handle("GET /", s.handleStaticDir("/", s.config.PlayerDir))
