@@ -1,6 +1,6 @@
 // Package events provides a lightweight structure and utilities for creating
 // and formatting Server-Sent Events (SSE) to be sent over HTTP connections.
-package events
+package sse
 
 import (
 	"fmt"

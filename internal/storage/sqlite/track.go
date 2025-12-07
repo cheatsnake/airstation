@@ -7,8 +7,8 @@ import (
 	"strings"
 	"sync"
 
-	sqltool "github.com/cheatsnake/airstation/internal/tools/sql"
-	"github.com/cheatsnake/airstation/internal/tools/ulid"
+	sqltool "github.com/cheatsnake/airstation/internal/pkg/sql"
+	"github.com/cheatsnake/airstation/internal/pkg/ulid"
 	"github.com/cheatsnake/airstation/internal/track"
 )
 

@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/cheatsnake/airstation/internal/hls"
+	"github.com/cheatsnake/airstation/internal/pkg/hls"
 	"github.com/cheatsnake/airstation/internal/queue"
 	"github.com/cheatsnake/airstation/internal/track"
 )

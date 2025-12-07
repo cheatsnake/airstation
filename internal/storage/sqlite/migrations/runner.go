@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 
-	sqltool "github.com/cheatsnake/airstation/internal/tools/sql"
+	sqltool "github.com/cheatsnake/airstation/internal/pkg/sql"
 )
 
 func RunMigrations(db *sql.DB, log *slog.Logger) error {

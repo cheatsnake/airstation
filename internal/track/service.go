@@ -8,9 +8,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/cheatsnake/airstation/internal/ffmpeg"
-	"github.com/cheatsnake/airstation/internal/hls"
-	"github.com/cheatsnake/airstation/internal/tools/fs"
+	"github.com/cheatsnake/airstation/internal/pkg/ffmpeg"
+	"github.com/cheatsnake/airstation/internal/pkg/fs"
+	"github.com/cheatsnake/airstation/internal/pkg/hls"
 )
 
 // Service provides audio processing functionalities by interacting with a database and the FFmpeg CLI.

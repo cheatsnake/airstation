@@ -10,8 +10,8 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"github.com/cheatsnake/airstation/internal/tools/fs"
-	"github.com/cheatsnake/airstation/internal/tools/ulid"
+	"github.com/cheatsnake/airstation/internal/pkg/fs"
+	"github.com/cheatsnake/airstation/internal/pkg/ulid"
 )
 
 // CLI represents a command-line interface for interacting with FFmpeg and FFprobe.

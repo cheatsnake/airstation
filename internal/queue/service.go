@@ -5,8 +5,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/cheatsnake/airstation/internal/hls"
-	"github.com/cheatsnake/airstation/internal/tools/fs"
+	"github.com/cheatsnake/airstation/internal/pkg/fs"
+	"github.com/cheatsnake/airstation/internal/pkg/hls"
 	"github.com/cheatsnake/airstation/internal/track"
 )
 

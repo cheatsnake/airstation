@@ -12,7 +12,7 @@ import (
 	"slices"
 	"time"
 
-	"github.com/cheatsnake/airstation/internal/events"
+	"github.com/cheatsnake/airstation/internal/pkg/sse"
 	"github.com/cheatsnake/airstation/internal/track"
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -33,7 +33,7 @@ func (s *Server) handleEvents(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
 
-	eventChan := make(chan *events.Event)
+	eventChan := make(chan *sse.Event)
 	s.eventsEmitter.Subscribe(eventChan)
 
 	closeNotify := r.Context().Done()

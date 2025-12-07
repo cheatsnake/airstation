@@ -8,9 +8,9 @@ import (
 	"time"
 
 	"github.com/cheatsnake/airstation/internal/config"
-	"github.com/cheatsnake/airstation/internal/events"
-	"github.com/cheatsnake/airstation/internal/ffmpeg"
-	"github.com/cheatsnake/airstation/internal/hls"
+	"github.com/cheatsnake/airstation/internal/pkg/ffmpeg"
+	"github.com/cheatsnake/airstation/internal/pkg/hls"
+	"github.com/cheatsnake/airstation/internal/pkg/sse"
 	"github.com/cheatsnake/airstation/internal/playback"
 	"github.com/cheatsnake/airstation/internal/playlist"
 	"github.com/cheatsnake/airstation/internal/queue"
@@ -21,7 +21,7 @@ import (
 
 type Server struct {
 	playbackState   *playback.State
-	eventsEmitter   *events.Emitter
+	eventsEmitter   *sse.Emitter
 	trackService    *track.Service
 	queueService    *queue.Service
 	playbackService *playback.Service
@@ -41,7 +41,7 @@ func NewServer(store storage.Storage, conf *config.Config, logger *slog.Logger) 
 
 	return &Server{
 		playbackState:   state,
-		eventsEmitter:   events.NewEmitter(),
+		eventsEmitter:   sse.NewEmitter(),
 		trackService:    ts,
 		queueService:    qs,
 		playbackService: ps,

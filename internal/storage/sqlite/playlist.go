@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/cheatsnake/airstation/internal/pkg/ulid"
 	"github.com/cheatsnake/airstation/internal/playlist"
-	"github.com/cheatsnake/airstation/internal/tools/ulid"
 	"github.com/cheatsnake/airstation/internal/track"
 )
 

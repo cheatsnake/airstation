@@ -10,9 +10,9 @@ import (
 	"github.com/cheatsnake/airstation/internal/config"
 	"github.com/cheatsnake/airstation/internal/http"
 	"github.com/cheatsnake/airstation/internal/logger"
+	"github.com/cheatsnake/airstation/internal/pkg/fs"
 	"github.com/cheatsnake/airstation/internal/storage"
 	"github.com/cheatsnake/airstation/internal/storage/sqlite"
-	"github.com/cheatsnake/airstation/internal/tools/fs"
 )
 
 func main() {
