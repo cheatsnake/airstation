@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"sync"
 
+	"github.com/cheatsnake/airstation/internal/storage/sqlite/migrations"
 	_ "modernc.org/sqlite"
 )
 
@@ -26,17 +27,20 @@ func New(dbPath string, log *slog.Logger) (*Instance, error) {
 		return nil, fmt.Errorf("failed to open database: %w", err)
 	}
 
-	db.SetMaxOpenConns(1)
-	log.Info("Sqlite database connected.")
-
-	err = createTables(db)
+	_, err = db.Exec("PRAGMA foreign_keys = ON")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to enable foreign keys: %w", err)
 	}
 
-	err = createIndexes(db)
+	db.SetMaxOpenConns(1)
+	_, _ = db.Exec("PRAGMA journal_mode = WAL")
+	_, _ = db.Exec("PRAGMA synchronous = NORMAL")
+
+	log.Info("Sqlite database connected")
+
+	err = migrations.RunMigrations(db, log)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to run migrations: %w", err)
 	}
 
 	instance := &Instance{
@@ -54,99 +58,14 @@ func New(dbPath string, log *slog.Logger) (*Instance, error) {
 
 func (ins *Instance) Close() error {
 	ins.mutex.Lock()
-	defer ins.mutex.Unlock()
-	return ins.db.Close()
-}
 
-func createTables(db *sql.DB) error {
-	tracksTable := `
-		CREATE TABLE IF NOT EXISTS tracks (
-			id TEXT PRIMARY KEY,
-			name TEXT NOT NULL UNIQUE,
-			path TEXT NOT NULL,
-			duration REAL NOT NULL,
-			bitRate INTEGER NOT NULL
-		);`
-
-	queueTable := `
-		CREATE TABLE IF NOT EXISTS queue (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			track_id TEXT NOT NULL UNIQUE,
-			FOREIGN KEY (track_id) REFERENCES tracks (id)
-		);`
-
-	playbackHistoryTable := `
-		CREATE TABLE IF NOT EXISTS playback_history (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			played_at INTEGER NOT NULL,
-			track_name TEXT NOT NULL
-		);`
-
-	playlistTable := `
-		CREATE TABLE IF NOT EXISTS playlist (
-			id TEXT PRIMARY KEY,
-			name TEXT NOT NULL UNIQUE,
-			description TEXT
-		);`
-
-	playlistTrackTable := `
-		CREATE TABLE IF NOT EXISTS playlist_track (
-			playlist_id TEXT NOT NULL,
-			track_id TEXT NOT NULL,
-			position INTEGER NOT NULL,
-			FOREIGN KEY (playlist_id) REFERENCES playlist (id) ON DELETE CASCADE,
-			FOREIGN KEY (track_id) REFERENCES tracks (id),
-			PRIMARY KEY (playlist_id, position),
-			UNIQUE (playlist_id, track_id)
-		);`
-
-	_, err := db.Exec(tracksTable)
-	if err != nil {
-		return fmt.Errorf("failed to create tracks table: %w", err)
+	if _, err := ins.db.Exec("PRAGMA wal_checkpoint(TRUNCATE)"); err != nil {
+		ins.mutex.Unlock()
+		return fmt.Errorf("failed to run wal checkpoint: %w", err)
 	}
 
-	_, err = db.Exec(queueTable)
-	if err != nil {
-		return fmt.Errorf("failed to create queue table: %w", err)
-	}
+	err := ins.db.Close()
+	ins.mutex.Unlock()
 
-	_, err = db.Exec(playbackHistoryTable)
-	if err != nil {
-		return fmt.Errorf("failed to create table for playback history: %w", err)
-	}
-
-	_, err = db.Exec(playlistTable)
-	if err != nil {
-		return fmt.Errorf("failed to create playlist table: %w", err)
-	}
-
-	_, err = db.Exec(playlistTrackTable)
-	if err != nil {
-		return fmt.Errorf("failed to create playlist track table: %w", err)
-	}
-
-	return nil
-}
-
-func createIndexes(db *sql.DB) error {
-	indexQuery := `CREATE INDEX IF NOT EXISTS idx_tracks_name ON tracks (name COLLATE NOCASE);`
-	playedAtIndexQuery := `CREATE INDEX IF NOT EXISTS idx_playback_history_played_at ON playback_history(played_at);`
-	playlistTrackIndexQuery := `CREATE INDEX IF NOT EXISTS idx_playlist_track_ids ON playlist_track (playlist_id, track_id);`
-
-	_, err := db.Exec(indexQuery)
-	if err != nil {
-		return fmt.Errorf("failed to create index on tracks.name: %w", err)
-	}
-
-	_, err = db.Exec(playedAtIndexQuery)
-	if err != nil {
-		return fmt.Errorf("failed to create index on playback_history.played_at: %w", err)
-	}
-
-	_, err = db.Exec(playlistTrackIndexQuery)
-	if err != nil {
-		return fmt.Errorf("failed to create index for playlist_track: %w", err)
-	}
-
-	return nil
+	return err
 }
