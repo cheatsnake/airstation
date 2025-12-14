@@ -35,3 +35,13 @@ export interface Playlist {
     tracks: Track[];
     trackCount: number;
 }
+
+export interface StationInfo {
+    name: string;
+    description: string;
+    faviconURL: string;
+    logoURL: string;
+    location: string;
+    timezone: string;
+    links: string;
+}

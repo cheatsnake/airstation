@@ -1,4 +1,4 @@
-import { PlaybackState, Playlist, ResponseErr, ResponseOK, Track, TracksPage } from "./types";
+import { PlaybackState, Playlist, ResponseErr, ResponseOK, StationInfo, Track, TracksPage } from "./types";
 import { jsonRequestParams, queryParams } from "./utils";
 
 export const API_HOST = "";
@@ -108,6 +108,16 @@ class AirstationAPI {
     async deletePlaylist(id: string) {
         const url = `${this.url()}/playlist/` + id;
         return await this.makeRequest<ResponseOK>(url, jsonRequestParams("DELETE", {}));
+    }
+
+    async getStationInfo() {
+        const url = `${this.url()}/station/info`;
+        return await this.makeRequest<StationInfo>(url);
+    }
+
+    async editStationInfo(info: StationInfo) {
+        const url = `${this.url()}/station/info`;
+        return await this.makeRequest<StationInfo>(url, jsonRequestParams("PUT", info));
     }
 
     private async makeRequest<T>(url: string, params: RequestInit = {}): Promise<T> {
