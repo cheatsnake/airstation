@@ -1,3 +1,4 @@
+import { FC, useCallback, useEffect, useRef, useState } from "react";
 import {
     ActionIcon,
     Box,
@@ -15,20 +16,19 @@ import {
     TextInput,
     Tooltip,
 } from "@mantine/core";
-import { FC, useCallback, useEffect, useRef, useState } from "react";
-import { useTrackQueueStore } from "../store/track-queue";
+import { modals } from "@mantine/modals";
+import { useDebouncedValue, useDisclosure } from "@mantine/hooks";
+import { AddToPalylistModal } from "./Playlists";
+import { Track } from "../api/types";
+import { DisclosureHandler } from "../types";
 import { useTracksStore } from "../store/tracks";
 import { EmptyLabel } from "../components/EmptyLabel";
-import { useDebouncedValue, useDisclosure } from "@mantine/hooks";
 import { AudioPlayer } from "../components/AudioPlayer";
-import { errNotify, infoNotify, okNotify, warnNotify } from "../notifications";
-import { DisclosureHandler } from "../types";
-import { Track } from "../api/types";
-import { modals } from "@mantine/modals";
+import { useTrackQueueStore } from "../store/track-queue";
 import { EVENTS, useEventSourceStore } from "../store/events";
+import { errNotify, infoNotify, okNotify, warnNotify } from "../notifications";
 import { IconQueue, IconReload, IconSortAscending, IconSortDescending, IconTrash } from "../icons";
 import styles from "./styles.module.css";
-import { AddToPalylistModal } from "./Playlists";
 
 const PAGE_LIMIT = 20;
 
@@ -104,7 +104,7 @@ export const TrackLibrary: FC<{ isMobile?: boolean }> = (props) => {
     return (
         <Paper radius="md" className={styles.transparent_paper}>
             <Flex p="xs" direction="column" h={props.isMobile ? "calc(100vh - 60px)" : "75vh"} mah={1200}>
-                <LoadingOverlay visible={loader} zIndex={300} overlayProps={{ radius: "md", opacity: 0.7 }} />
+                <LoadingOverlay visible={loader} overlayProps={{ radius: "md" }} />
 
                 <Flex justify="space-between" align="center">
                     <Flex align="center" gap="xs">
@@ -156,8 +156,6 @@ export const TrackLibrary: FC<{ isMobile?: boolean }> = (props) => {
                 <Flex gap="xs">
                     <TextInput
                         style={{ flexGrow: 1 }}
-                        className={styles.input}
-                        variant="unstyled"
                         placeholder="Search"
                         value={search}
                         onChange={(event) => setSearch(event.currentTarget.value)}
@@ -339,7 +337,7 @@ const TrackActions: FC<{
                     </Menu.Item>
                 </Menu.Dropdown>
             </Menu>
-            <Checkbox size="md" color="dimmed" readOnly checked={props.selected.size > 0} onClick={toggleSelection} />
+            <Checkbox size="md" readOnly checked={props.selected.size > 0} onClick={toggleSelection} />
         </Flex>
     );
 };

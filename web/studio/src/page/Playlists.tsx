@@ -16,21 +16,20 @@ import {
     Select,
 } from "@mantine/core";
 import { modals } from "@mantine/modals";
+import { CSS } from "@dnd-kit/utilities";
+import { DndContext, DragEndEvent } from "@dnd-kit/core";
+import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
+import { SortableContext, useSortable } from "@dnd-kit/sortable";
 import { airstationAPI } from "../api";
+import { formatTime } from "../utils/time";
 import { Playlist, Track } from "../api/types";
-import { errNotify, okNotify, warnNotify } from "../notifications";
-import { IconPlayerPlayFilled, IconPlaylist, IconTrash } from "../icons";
+import { moveArrayItem } from "../utils/array";
+import { usePlaybackStore } from "../store/playback";
 import { usePlaylistStore } from "../store/playlists";
 import { EmptyLabel } from "../components/EmptyLabel";
-import { formatTime } from "../utils/time";
-import styles from "./styles.module.css";
 import { useTrackQueueStore } from "../store/track-queue";
-import { usePlaybackStore } from "../store/playback";
-import { DndContext, DragEndEvent } from "@dnd-kit/core";
-import { SortableContext, useSortable } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
-import { moveArrayItem } from "../utils/array";
-import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
+import { errNotify, okNotify, warnNotify } from "../notifications";
+import { IconPlayerPlayFilled, IconPlaylist, IconTrash } from "../icons";
 
 const PlaylistItem: FC<{ data: Playlist; confirmDelete: (id: string) => void }> = ({ data, confirmDelete }) => {
     const [hovered, setHovered] = useState(false);
@@ -185,11 +184,9 @@ const PlaylistModal: FC<{
     return (
         <>
             <Modal size="lg" centered opened={opened} onClose={close} withCloseButton={false}>
-                <LoadingOverlay visible={isLoading} zIndex={300} overlayProps={{ radius: "md", opacity: 0.7 }} />
+                <LoadingOverlay visible={isLoading} overlayProps={{ radius: "md" }} />
                 <Box>
                     <TextInput
-                        className={styles.input}
-                        variant="unstyled"
                         required
                         minLength={3}
                         placeholder="Name*"
@@ -198,8 +195,6 @@ const PlaylistModal: FC<{
                     />
                     <Textarea
                         mt="sm"
-                        className={styles.input}
-                        variant="unstyled"
                         placeholder="Description"
                         maxLength={4096}
                         minRows={1}
@@ -280,16 +275,12 @@ const CreatePlaylistModal: FC<{}> = () => {
             <Modal centered opened={opened} onClose={close} title="New playlist">
                 <Flex direction="column" gap="md">
                     <TextInput
-                        className={styles.input}
-                        variant="unstyled"
                         required
                         placeholder="Name*"
                         value={name}
                         onChange={(event) => setName(event.currentTarget.value)}
                     />
                     <Textarea
-                        className={styles.input}
-                        variant="unstyled"
                         placeholder="Description"
                         maxLength={4096}
                         rows={4}
@@ -370,16 +361,10 @@ export const PlaylistsModal: FC<{}> = () => {
                             defaultValue={search}
                             onChange={(event) => setSearch(event.currentTarget.value)}
                             placeholder="Search..."
-                            variant="unstyled"
-                            className={styles.input}
                         />
                     ) : null}
                     <Box flex={1} mih={200} mah="90vh" style={{ overflowY: "auto" }}>
-                        <LoadingOverlay
-                            visible={isLoading}
-                            zIndex={300}
-                            overlayProps={{ radius: "md", opacity: 0.7 }}
-                        />
+                        <LoadingOverlay visible={isLoading} overlayProps={{ radius: "md", opacity: 0.7 }} />
                         {playlists
                             .filter((p) => p.name.toLowerCase().includes(search))
                             .map((p) => (
@@ -453,14 +438,12 @@ export const AddToPalylistModal: FC<{ trackIDs: string[] }> = ({ trackIDs }) => 
     return (
         <>
             <Modal size="sm" centered onClose={close} opened={opened} withCloseButton={false}>
-                <LoadingOverlay visible={isLoading} zIndex={300} overlayProps={{ radius: "md", opacity: 0.7 }} />
+                <LoadingOverlay visible={isLoading} overlayProps={{ radius: "md" }} />
                 <Select
                     searchable
                     placeholder="Select a playlist"
                     value={selected}
                     onChange={setSelected}
-                    variant="unstyled"
-                    className={styles.input}
                     data={[{ group: "", items: playlists.map((p) => ({ label: p.name, value: p.id })) }]}
                 />
                 <Flex mt="md" gap="sm" justify="end">

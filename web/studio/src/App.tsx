@@ -1,32 +1,14 @@
-import { createTheme, MantineProvider } from "@mantine/core";
-import { Page } from "./page";
-import { Notifications } from "@mantine/notifications";
+import { MantineProvider } from "@mantine/core";
 import { ModalsProvider } from "@mantine/modals";
+import { Notifications } from "@mantine/notifications";
 import { AuthGuard } from "./components/AuthGuard";
-
-const theme = createTheme({
-    fontFamily: '"Exo 2", serif',
-    colors: {
-        main: [
-            "#dffbff",
-            "#caf2ff",
-            "#99e2ff",
-            "#64d2ff",
-            "#3cc4fe",
-            "#23bcfe",
-            "#09b8ff",
-            "#00a1e4",
-            "#008fcd",
-            "#007cb6",
-        ],
-    },
-    primaryColor: "main",
-});
+import { theme } from "./theme";
+import { Page } from "./page";
 
 const App = () => {
     return (
         <MantineProvider defaultColorScheme="dark" theme={theme}>
-            <ModalsProvider>
+            <ModalsProvider modalProps={{ transitionProps: { duration: 100 } }}>
                 <Notifications position="bottom-right" autoClose={7000} />
                 <AuthGuard>
                     <Page />

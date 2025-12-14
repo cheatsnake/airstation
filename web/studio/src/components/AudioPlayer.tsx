@@ -1,12 +1,11 @@
-import { ActionIcon, Box, Checkbox, Flex, Group, Progress, Text, Tooltip, useMantineColorScheme } from "@mantine/core";
 import React, { useEffect, useRef } from "react";
+import { useThrottledState } from "@mantine/hooks";
+import { ActionIcon, Box, Checkbox, Flex, Group, Progress, Text, Tooltip, useMantineColorScheme } from "@mantine/core";
+import { API_HOST } from "../api";
+import { Track } from "../api/types";
+import { formatTime } from "../utils/time";
 import { IconPlayerPlayFilled } from "../icons";
 import { IconPlayerStopFilled } from "../icons";
-import { Track } from "../api/types";
-import { API_HOST } from "../api";
-import { formatTime } from "../utils/time";
-import { useThrottledState } from "@mantine/hooks";
-import styles from "./AudioPlayer.module.css";
 
 interface AudioPlayerProps {
     track: Track;
@@ -73,7 +72,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({ track, isPlaying, sele
                 onEnded={handleAudioEnd}
             />
 
-            <Text style={{ whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}>{track.name}</Text>
+            <Text style={{ whiteSpace: "wrap" }}>{track.name}</Text>
             <Flex gap="sm" align="center">
                 <ActionIcon onClick={togglePlaying} variant="subtle" color="white" size="sm" aria-label="Settings">
                     {isPlaying ? <IconPlayerStopFilled fill={btnColor} /> : <IconPlayerPlayFilled fill={btnColor} />}
@@ -82,7 +81,6 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({ track, isPlaying, sele
                 <Box w="100%" mt="xs" style={{ cursor: "pointer" }}>
                     <Tooltip.Floating label={formatTime(track.duration * cursorPos)} disabled={!isPlaying}>
                         <Progress
-                            className={styles.progress_bar}
                             onMouseMove={(e) => {
                                 const rect = e.currentTarget.getBoundingClientRect();
                                 setCursorPos(Math.abs((e.clientX - rect.left) / rect.width));

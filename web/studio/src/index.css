@@ -19,44 +19,7 @@
 }
 
 body {
-    background: #485563;
+    background: #29323c;
     background: -webkit-linear-gradient(to top, #29323c, #485563);
     background: linear-gradient(to top, #29323c, #485563);
-}
-
-.mantine-Checkbox-input {
-    background-color: rgba(255, 255, 255, 0.2);
-    border: none;
-}
-
-.mantine-Checkbox-input:disabled {
-    cursor: not-allowed;
-    background-color: rgba(255, 255, 255, 0.05);
-    border: none;
-}
-
-.mantine-Button-root:disabled {
-    cursor: not-allowed;
-    background-color: rgba(255, 255, 255, 0.05);
-    color: rgba(255, 255, 255, 0.4);
-}
-
-.mantine-LoadingOverlay-overlay {
-    background-color: rgba(0, 0, 0, 0.5);
-}
-
-.mantine-Notifications-notification,
-.mantine-Modal-content,
-.mantine-Modal-header,
-.mantine-Popover-dropdown,
-.mantine-Menu-dropdown {
-    background-color: #29323c;
-}
-
-.mantine-Select-option:hover {
-    background-color: #485563;
-}
-
-.mantine-Modal-inner {
-    padding-inline: 1vw;
 }

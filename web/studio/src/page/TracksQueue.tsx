@@ -1,3 +1,4 @@
+import { FC, useEffect, useState } from "react";
 import {
     ActionIcon,
     Box,
@@ -11,22 +12,21 @@ import {
     Text,
     Tooltip,
 } from "@mantine/core";
-import { FC, useEffect, useState } from "react";
-import { usePlaybackStore } from "../store/playback";
-import { useTrackQueueStore } from "../store/track-queue";
-import { EmptyLabel } from "../components/EmptyLabel";
-import { errNotify, okNotify } from "../notifications";
-import { useDisclosure } from "@mantine/hooks";
-import { moveArrayItem, shuffleArray } from "../utils/array";
-import { Track } from "../api/types";
 import { modals } from "@mantine/modals";
-import styles from "./styles.module.css";
-import { IconReload } from "../icons";
-import { PlaylistsModal } from "./Playlists";
+import { useDisclosure } from "@mantine/hooks";
+import { CSS } from "@dnd-kit/utilities";
 import { DndContext, DragEndEvent } from "@dnd-kit/core";
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import { SortableContext, useSortable } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
+import { PlaylistsModal } from "./Playlists";
+import { Track } from "../api/types";
+import { IconReload } from "../icons";
+import { usePlaybackStore } from "../store/playback";
+import { EmptyLabel } from "../components/EmptyLabel";
+import { errNotify, okNotify } from "../notifications";
+import { useTrackQueueStore } from "../store/track-queue";
+import { moveArrayItem, shuffleArray } from "../utils/array";
+import styles from "./styles.module.css";
 
 export const TrackQueue: FC<{ isMobile?: boolean }> = (props) => {
     const [loader, handLoader] = useDisclosure(false);
@@ -130,7 +130,7 @@ export const TrackQueue: FC<{ isMobile?: boolean }> = (props) => {
     return (
         <Paper radius="md" className={styles.transparent_paper}>
             <Flex p="sm" direction="column" h={props.isMobile ? "calc(100vh - 60px)" : "75vh"} mah={1200}>
-                <LoadingOverlay visible={loader} zIndex={300} overlayProps={{ radius: "md", opacity: 0.7 }} />
+                <LoadingOverlay visible={loader} overlayProps={{ radius: "md" }} />
                 <Flex justify="space-between" align="center">
                     <Flex align="center" justify="center" gap="xs">
                         <Box
@@ -209,7 +209,7 @@ const QueueItem: FC<{ track: Track; handleRemove: (ids: string[]) => Promise<voi
                     {...attributes}
                     {...listeners}
                     w="100%"
-                    c={hovered ? "main" : undefined}
+                    c={hovered ? "air" : undefined}
                     style={{ whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden", cursor: "grab" }}
                 >
                     {track.name}

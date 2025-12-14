@@ -1,10 +1,9 @@
 import { FC, JSX, useEffect, useState } from "react";
-import { airstationAPI } from "../api";
 import { useDisclosure } from "@mantine/hooks";
-import { errNotify } from "../notifications";
-import { handleErr } from "../utils/error";
 import { Box, Button, Flex, Group, LoadingOverlay, Paper, TextInput } from "@mantine/core";
-import styles from "./AuthGuard.module.css";
+import { airstationAPI } from "../api";
+import { handleErr } from "../utils/error";
+import { errNotify } from "../notifications";
 
 export const AuthGuard: FC<{ children: JSX.Element }> = (props) => {
     const [isAuth, setIsAuth] = useState(false);
@@ -62,8 +61,6 @@ const LoginForm: FC<{ handleLogin: (s: string) => Promise<void> }> = (props) => 
                 <TextInput
                     autoFocus
                     type="password"
-                    className={styles.search_input}
-                    variant="unstyled"
                     required
                     onKeyDown={(event) => {
                         if (event.key === "Enter" && secret.length >= MIN_SECRET_LENGTH) props.handleLogin(secret);

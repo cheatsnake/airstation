@@ -1,4 +1,15 @@
-import { ActionIcon, Box, Flex, MantineSize, Paper, Progress, Space, Text, Tooltip } from "@mantine/core";
+import {
+    ActionIcon,
+    Box,
+    Flex,
+    MantineSize,
+    Paper,
+    Progress,
+    Space,
+    Text,
+    Tooltip,
+    useMantineTheme,
+} from "@mantine/core";
 import { FC, useEffect, useRef, useState } from "react";
 import { airstationAPI, API_HOST } from "../api";
 import { usePlaybackStore } from "../store/playback";
@@ -8,8 +19,8 @@ import { IconHeadphones, IconPlayerPlayFilled, IconPlayerStopFilled, IconVolumeO
 import { useDisclosure } from "@mantine/hooks";
 import { errNotify } from "../notifications";
 import { EVENTS, useEventSourceStore } from "../store/events";
-import { useThemeBlackColor } from "../hooks/useThemeBlackColor";
 import { PlaybackState } from "../api/types";
+import { SettingsModal } from "./Settings";
 import Hls from "hls.js";
 import { modals } from "@mantine/modals";
 import styles from "./styles.module.css";
@@ -23,6 +34,7 @@ export const Playback: FC<{ isMobile?: boolean }> = (props) => {
     const syncElapsedTime = usePlaybackStore((s) => s.syncElapsedTime);
     const rotateQueue = useTrackQueueStore((s) => s.rotateQueue);
     const addEventHandler = useEventSourceStore((s) => s.addEventHandler);
+    const theme = useMantineTheme();
 
     useEffect(() => {
         (async () => {
@@ -97,15 +109,15 @@ export const Playback: FC<{ isMobile?: boolean }> = (props) => {
                         <ActionIcon
                             onClick={handlePlaybackAction}
                             disabled={loader}
+                            color="dark"
                             variant="subtle"
-                            color={useThemeBlackColor()}
                             size={props.isMobile ? 100 : "md"}
                             aria-label="Settings"
                         >
                             {playback?.isPlaying ? (
-                                <IconPlayerStopFilled fill={useThemeBlackColor()} />
+                                <IconPlayerStopFilled stroke="0" fill={theme.colors[theme.primaryColor][8]} />
                             ) : (
-                                <IconPlayerPlayFilled fill={useThemeBlackColor()} />
+                                <IconPlayerPlayFilled stroke="0" fill={theme.colors.dark[8]} />
                             )}
                         </ActionIcon>
                     </Tooltip>
@@ -118,19 +130,20 @@ export const Playback: FC<{ isMobile?: boolean }> = (props) => {
                         ) : (
                             <Text c="dimmed">Stream is stopped</Text>
                         )}
-                        <ListenerCounter />
+                        <SettingsModal />
                     </Flex>
                     <Space h={10} />
                     <Box>
                         <Progress
-                            className={styles.progress_bar}
                             radius="xl"
                             value={(playback.currentTrackElapsed / (playback?.currentTrack?.duration || 1)) * 100}
                         />
-                        <Text ta="end" mt={3} c="dimmed">
-                            {formatTime(playback?.currentTrackElapsed || 0)}/
-                            {formatTime(playback?.currentTrack?.duration || 0)}
-                        </Text>
+                        <Flex justify="space-between" align="center" mt={4}>
+                            <Text ta="end" mt={3} c="dimmed">
+                                {`${formatTime(playback?.currentTrackElapsed || 0)} / ${formatTime(playback?.currentTrack?.duration || 0)}`}
+                            </Text>
+                            <ListenerCounter />
+                        </Flex>
                     </Box>
                 </Flex>
             </Flex>
@@ -213,15 +226,11 @@ const StreamToggler: FC<{ playback: PlaybackState; size: MantineSize }> = (props
                 <ActionIcon
                     variant="subtle"
                     onClick={isPlaying ? () => videoRef.current?.pause() : () => videoRef.current?.play()}
-                    color={useThemeBlackColor()}
+                    color="gray"
                     size={props.size}
                     aria-label="Settings"
                 >
-                    {isPlaying ? (
-                        <IconVolumeOn fill={useThemeBlackColor()} />
-                    ) : (
-                        <IconVolumeOff fill={useThemeBlackColor()} />
-                    )}
+                    {isPlaying ? <IconVolumeOn size={20} /> : <IconVolumeOff size={20} />}
                 </ActionIcon>
             </Tooltip>
         </>
