@@ -1,10 +1,28 @@
-import { Accordion, ActionIcon, Button, Flex, Group, Modal, Textarea, TextInput, Tooltip } from "@mantine/core";
-import { useDisclosure } from "@mantine/hooks";
 import { FC } from "react";
+import { useDisclosure } from "@mantine/hooks";
+import {
+    Accordion,
+    ActionIcon,
+    Button,
+    Box,
+    Flex,
+    Group,
+    Modal,
+    Textarea,
+    TextInput,
+    Tooltip,
+    Text,
+    Slider,
+} from "@mantine/core";
 import { IconSettings } from "../icons";
+import { useSettingsStore } from "../store/settings";
+import { MAX_MOBILE_WIDTH, useIsMobile } from "../hooks/useIsMobile";
 
 export const SettingsModal: FC<{}> = () => {
     const [opened, { open, close }] = useDisclosure(false);
+    const { isMobile } = useIsMobile();
+    const interfaceWidth = useSettingsStore((s) => s.interfaceWidth);
+    const setInterfaceWidth = useSettingsStore((s) => s.setInterfaceWidth);
 
     return (
         <>
@@ -39,11 +57,40 @@ export const SettingsModal: FC<{}> = () => {
                                 <TextInput w="100%" label="Logo" placeholder="Enter URL" />
                             </Flex>
 
+                            <Textarea
+                                rows={4}
+                                maxRows={6}
+                                label="Links"
+                                placeholder={`Add some links to your socials in format [TITLE](URL)`}
+                                mt="sm"
+                            />
+
                             <Group mt="md" justify="flex-end">
                                 <Button>Save</Button>
                             </Group>
                         </Accordion.Panel>
                     </Accordion.Item>
+
+                    {!isMobile && (
+                        <Accordion.Item value="studio_interface">
+                            <Accordion.Control>Studio interface</Accordion.Control>
+                            <Accordion.Panel>
+                                <Box>
+                                    <Text size="sm">Message width in pixels</Text>
+                                    <Text size="xs" c="dimmed">
+                                        Determines how wide the chat area with messages will be.
+                                    </Text>
+                                    <Slider
+                                        value={interfaceWidth}
+                                        onChange={setInterfaceWidth}
+                                        min={MAX_MOBILE_WIDTH}
+                                        max={window.screen.width}
+                                        step={10}
+                                    />
+                                </Box>
+                            </Accordion.Panel>
+                        </Accordion.Item>
+                    )}
                 </Accordion>
             </Modal>
 

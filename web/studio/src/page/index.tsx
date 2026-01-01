@@ -1,17 +1,16 @@
-import { useViewportSize } from "@mantine/hooks";
 import { lazy, Suspense } from "react";
+import { useIsMobile } from "../hooks/useIsMobile";
 
 const DesktopPage = lazy(() => import("./DesktopPage"));
 const MobilePage = lazy(() => import("./MobilePage"));
-const MAX_MOBILE_WIDTH = 800;
 
 export const Page = () => {
-    const { width: windowWidth } = useViewportSize();
-    const PageComponent = windowWidth > MAX_MOBILE_WIDTH ? DesktopPage : MobilePage;
+    const { isMobile, width } = useIsMobile();
+    const PageComponent = isMobile ? MobilePage : DesktopPage;
 
     return (
         <Suspense fallback={null}>
-            <PageComponent windowWidth={windowWidth} />
+            <PageComponent windowWidth={width} />
         </Suspense>
     );
 };

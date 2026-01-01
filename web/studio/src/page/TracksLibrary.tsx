@@ -103,7 +103,7 @@ export const TrackLibrary: FC<{ isMobile?: boolean }> = (props) => {
 
     return (
         <Paper radius="md" className={styles.transparent_paper}>
-            <Flex p="xs" direction="column" h={props.isMobile ? "calc(100vh - 60px)" : "75vh"} mah={1200}>
+            <Flex p="xs" direction="column" h={props.isMobile ? "calc(100vh - 60px)" : "80vh"} mah={1200}>
                 <LoadingOverlay visible={loader} overlayProps={{ radius: "md" }} />
 
                 <Flex justify="space-between" align="center">
