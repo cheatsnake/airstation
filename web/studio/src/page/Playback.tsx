@@ -98,7 +98,7 @@ export const Playback: FC<{ isMobile?: boolean }> = (props) => {
                 p="sm"
                 gap="md"
                 w="100%"
-                h={props.isMobile ? "calc(100vh - 60px)" : "95"}
+                h={props.isMobile ? "calc(100vh - 60px)" : undefined}
                 direction={props.isMobile ? "column-reverse" : "row"}
                 justify={props.isMobile ? "space-between" : "cener"}
                 align="center"
@@ -230,7 +230,7 @@ const StreamToggler: FC<{ playback: PlaybackState; size: MantineSize }> = (props
                     size={props.size}
                     aria-label="Settings"
                 >
-                    {isPlaying ? <IconVolumeOn size={20} /> : <IconVolumeOff size={20} />}
+                    {isPlaying ? <IconVolumeOff size={20} /> : <IconVolumeOn size={20} />}
                 </ActionIcon>
             </Tooltip>
         </>

@@ -23,3 +23,7 @@ body {
     background: -webkit-linear-gradient(to top, #29323c, #485563);
     background: linear-gradient(to top, #29323c, #485563);
 }
+
+.mantine-Modal-inner {
+    padding-inline: 0.2rem;
+}
