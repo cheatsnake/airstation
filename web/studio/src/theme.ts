@@ -1,4 +1,4 @@
-import { createTheme, LoadingOverlay } from "@mantine/core";
+import { createTheme, LoadingOverlay, Overlay } from "@mantine/core";
 
 export const theme = createTheme({
     fontFamily: '"Exo 2", serif',
@@ -35,6 +35,11 @@ export const theme = createTheme({
         LoadingOverlay: LoadingOverlay.extend({
             defaultProps: {
                 overlayProps: {},
+            },
+        }),
+        Overlay: Overlay.extend({
+            defaultProps: {
+                bg: "rgba(0, 0, 0, 0.4)",
             },
         }),
     },
