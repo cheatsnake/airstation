@@ -136,7 +136,7 @@ const AnimatedPauseButton: Component<{ pause: () => void; media?: HTMLAudioEleme
         if (!pauseIconRef || !analyser || !dataArray) return;
 
         animationId = requestAnimationFrame(draw);
-        analyser.getByteFrequencyData(dataArray);
+        analyser.getByteFrequencyData(dataArray as Uint8Array<ArrayBuffer>);
 
         let bass = 0;
         let treble = 0;

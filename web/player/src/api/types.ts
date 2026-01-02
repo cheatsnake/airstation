@@ -18,6 +18,16 @@ export interface PlaybackHistory {
     trackName: string;
 }
 
+export interface StationInfo {
+    name: string;
+    description: string;
+    faviconURL: string;
+    logoURL: string;
+    location: string;
+    timezone: string;
+    links: string;
+}
+
 export interface ResponseErr {
     message: string;
 }

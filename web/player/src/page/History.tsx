@@ -1,8 +1,10 @@
 import { Accessor, Component, createSignal, onMount } from "solid-js";
-import { airstationAPI } from "../api";
 import styles from "./History.module.css";
+import pageStyles from "./Page.module.css";
+import { airstationAPI } from "../api";
 import { formatDateToTimeFirst } from "../utils/date";
 import { history, setHistory } from "../store/history";
+import { DESKTOP_WIDTH, MAX_HISTORY_LIMIT } from "../const";
 
 export const History = () => {
     const [isOpen, setIsOpen] = createSignal(false);
@@ -14,16 +16,13 @@ export const History = () => {
             <div
                 tabIndex={0}
                 role="button"
-                class={`${isOpen() ? "empty_icon" : styles.menu_icon}`}
+                class={`${isOpen() ? "empty_icon" : styles.history_icon}`}
                 onClick={open}
             ></div>
             <Menu isOpen={isOpen} close={close} />
         </>
     );
 };
-
-const DESKTOP_WIDTH = 1100;
-const MAX_HISTORY_LIMIT = 500;
 
 const Menu: Component<{ isOpen: Accessor<boolean>; close: () => void }> = ({ isOpen, close }) => {
     const [hideLoadMore, setHideLoadMore] = createSignal(false);
@@ -55,13 +54,12 @@ const Menu: Component<{ isOpen: Accessor<boolean>; close: () => void }> = ({ isO
 
     return (
         <div
-            class={`${styles.menu} ${isOpen() ? styles.open : ""} ${
-                window.screen.width > DESKTOP_WIDTH ? styles.menu_desktop : styles.menu_mobile
+            class={`${styles.history_menu} ${isOpen() ? styles.history_open : ""} ${
+                window.screen.width > DESKTOP_WIDTH ? pageStyles.menu_desktop : pageStyles.menu_mobile
             }`}
         >
-            <div class={styles.menu_header}>
-                <div class={styles.menu_title}></div>
-                <div tabIndex={0} role="button" class={styles.close_icon} onClick={close}></div>
+            <div class={pageStyles.menu_header}>
+                <div tabIndex={0} role="button" class={pageStyles.close_icon} onClick={close}></div>
             </div>
             <div class={styles.history}>
                 {history().map((h) => (
