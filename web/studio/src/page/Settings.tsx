@@ -20,7 +20,7 @@ import { MAX_MOBILE_WIDTH, useIsMobile } from "../hooks/useIsMobile";
 import { useForm } from "@mantine/form";
 import { StationInfo } from "../api/types";
 import { airstationAPI } from "../api";
-import { errNotify } from "../notifications";
+import { errNotify, okNotify } from "../notifications";
 
 export const SettingsModal: FC<{}> = () => {
     const [opened, { open, close }] = useDisclosure(false);
@@ -58,6 +58,7 @@ export const SettingsModal: FC<{}> = () => {
         try {
             const info = await airstationAPI.editStationInfo(stationInfo.values);
             stationInfo.setValues(info);
+            okNotify("Saved successfully");
         } catch (error) {
             errNotify(error);
         } finally {
