@@ -158,9 +158,9 @@ export const SettingsModal: FC<{}> = () => {
                             <Accordion.Control>Studio interface</Accordion.Control>
                             <Accordion.Panel>
                                 <Box>
-                                    <Text size="sm">Message width in pixels</Text>
+                                    <Text size="sm">Interface width in pixels</Text>
                                     <Text size="xs" c="dimmed">
-                                        Determines how wide the chat area with messages will be.
+                                        Determines how wide the interface will be.
                                     </Text>
                                     <Slider
                                         value={interfaceWidth}
