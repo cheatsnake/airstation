@@ -14,7 +14,7 @@ RUN npm install
 COPY ./web/studio .
 RUN npm run build
 
-FROM golang:1.24-alpine AS server
+FROM golang:1.25-alpine AS server
 WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
