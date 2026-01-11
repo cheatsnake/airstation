@@ -114,6 +114,11 @@ func (s *Server) registerMP2TMimeType() {
 	}
 }
 
+func (s *Server) countListeners() *sse.Event {
+	count := s.eventsEmitter.CountSubscribers()
+	return sse.NewEvent(eventCountListeners, strconv.Itoa(count))
+}
+
 func (s *Server) listenEvents() {
 	countConnectionTicker := time.Tick(5 * time.Second)
 
@@ -121,8 +126,8 @@ func (s *Server) listenEvents() {
 
 	go func() {
 		for range countConnectionTicker {
-			count := s.eventsEmitter.CountSubscribers()
-			s.eventsEmitter.RegisterEvent(eventCountListeners, strconv.Itoa(count))
+			event := s.countListeners()
+			s.eventsEmitter.RegisterEvent(event.Name, event.Data)
 		}
 	}()
 

@@ -44,6 +44,11 @@ func (s *Server) handleEvents(w http.ResponseWriter, r *http.Request) {
 		close(eventChan)
 	}()
 
+	// Send current number of listeners immediately
+	countEvent := s.countListeners()
+	fmt.Fprint(w, countEvent.Stringify())
+	w.(http.Flusher).Flush()
+
 	for {
 		event, isOpen := <-eventChan
 		if !isOpen {
