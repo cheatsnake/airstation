@@ -37,6 +37,9 @@ body {
     background: var(--bg-gradient-end);
     background: -webkit-linear-gradient(to top, var(--bg-gradient-start), var(--bg-gradient-end));
     background: linear-gradient(to top, var(--bg-gradient-start), var(--bg-gradient-end));
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
     overflow: hidden;
 }
 

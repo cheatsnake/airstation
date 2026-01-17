@@ -25,3 +25,7 @@ export function getHueFromHex(hex: string) {
 
     return Math.round(h * 60 < 0 ? h * 60 + 360 : h * 60);
 }
+
+export function isValidHexColor(hex: string) {
+    return /^#[0-9a-f]{6}$/.test(hex);
+}

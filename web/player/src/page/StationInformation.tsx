@@ -1,11 +1,12 @@
 import { Accessor, Component, createSignal, onMount } from "solid-js";
+import pageStyles from "./Page.module.css";
+import styles from "./StationInformation.module.css";
 import { airstationAPI } from "../api";
 import { DESKTOP_WIDTH } from "../const";
 import { StationInfo } from "../api/types";
-import pageStyles from "./Page.module.css";
-import styles from "./StationInformation.module.css";
 import { isValidURL } from "../utils/url";
-import { setFavicon, setPageTitle } from "../utils/document";
+import { isValidHexColor } from "../utils/color";
+import { setCssVariable, setFavicon, setPageTitle } from "../utils/document";
 
 export const StationInformation = () => {
     const [isOpen, setIsOpen] = createSignal(false);
@@ -28,6 +29,17 @@ const parseLinks = (rawLinks: string): { title: string; url: string }[] => {
     }));
 };
 
+const parseTheme = (rawTheme: string) => {
+    const [bgStart, bgEnd, bgIcon, text, accent, bgImage] = rawTheme.split(";");
+
+    if (bgStart && isValidHexColor(bgStart)) setCssVariable("--bg-gradient-start", bgStart);
+    if (bgEnd && isValidHexColor(bgEnd)) setCssVariable("--bg-gradient-end", bgEnd);
+    if (bgIcon && isValidHexColor(bgIcon)) setCssVariable("--bg-icon", bgIcon);
+    if (text && isValidHexColor(text)) setCssVariable("--text-color", text);
+    if (accent && isValidHexColor(accent)) setCssVariable("--accent-color", accent);
+    if (bgImage && isValidURL(bgImage)) document.body.style.backgroundImage = `url(${bgImage})`;
+};
+
 const Card: Component<{ isOpen: Accessor<boolean>; close: () => void }> = ({ isOpen, close }) => {
     const [info, setInfo] = createSignal<StationInfo | null>(null);
 
@@ -37,6 +49,7 @@ const Card: Component<{ isOpen: Accessor<boolean>; close: () => void }> = ({ isO
             setInfo(h);
             if (h.name) setPageTitle(h.name);
             if (isValidURL(h.faviconURL)) setFavicon(h.faviconURL);
+            if (h.theme) parseTheme(h.theme);
         } catch (error) {
             console.log(error);
         }

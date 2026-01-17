@@ -13,3 +13,7 @@ export const setPageTitle = (title: string) => {
 export const getCssVariable = (name: string): string => {
     return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 };
+
+export const setCssVariable = (name: string, value: string): void => {
+    document.documentElement.style.setProperty(name, value);
+};
