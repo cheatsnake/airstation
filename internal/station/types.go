@@ -8,6 +8,7 @@ type Info struct {
 	Location    string `json:"location"`
 	Timezone    string `json:"timezone"`
 	Links       string `json:"links"`
+	Theme       string `json:"theme"`
 }
 
 type Property struct {

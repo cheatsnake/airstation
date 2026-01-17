@@ -34,6 +34,8 @@ func (s *Service) Info() (*Info, error) {
 			info.Timezone = prop.Value
 		case propLinks:
 			info.Links = prop.Value
+		case propTheme:
+			info.Theme = prop.Value
 		}
 	}
 
@@ -84,6 +86,12 @@ func (s *Service) EditInfo(editedInfo *Info) (*Info, error) {
 
 	if currentInfo.Links != editedInfo.Links {
 		if _, err := s.store.UpsertStationProperty(propLinks, editedInfo.Links); err != nil {
+			return nil, err
+		}
+	}
+
+	if currentInfo.Theme != editedInfo.Theme {
+		if _, err := s.store.UpsertStationProperty(propTheme, editedInfo.Theme); err != nil {
 			return nil, err
 		}
 	}

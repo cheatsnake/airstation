@@ -8,4 +8,5 @@ const (
 	propLocation    = "location"
 	propTimezone    = "timezone"
 	propLinks       = "links"
+	propTheme       = "theme"
 )
