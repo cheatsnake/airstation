@@ -1,8 +1,20 @@
+:root {
+    --bg-gradient-start: #29323c;
+    --bg-gradient-end: #485563;
+    --bg-icon: #a8a8a8;
+    --text-color: #ffffff;
+
+    --text-dimmed-color: color-mix(in srgb, var(--text-color) 80%, black 20%);
+    --sidebar-color: color-mix(in srgb, var(--bg-gradient-start) 80%, black 20%);
+    --scrollbar-color: color-mix(in srgb, var(--bg-gradient-end) 70%, black 30%);
+}
+
 * {
     font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    color: var(--text-color);
 }
 
 ::-webkit-scrollbar {
@@ -10,21 +22,21 @@
 }
 
 ::-webkit-scrollbar-track {
-    background: #252c32;
+    background: color-mix(in srgb, var(--bg-gradient-start) 80%, black 20%);
 }
 
 ::-webkit-scrollbar-thumb {
-    background: #313942;
+    background: var(--scrollbar-color);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: #313942;
+    background: var(--scrollbar-color);
 }
 
 body {
-    background: #485563;
-    background: -webkit-linear-gradient(to top, #29323c, #485563);
-    background: linear-gradient(to top, #29323c, #485563);
+    background: var(--bg-gradient-end);
+    background: -webkit-linear-gradient(to top, var(--bg-gradient-start), var(--bg-gradient-end));
+    background: linear-gradient(to top, var(--bg-gradient-start), var(--bg-gradient-end));
     overflow: hidden;
 }
 

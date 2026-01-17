@@ -53,7 +53,7 @@ const Card: Component<{ isOpen: Accessor<boolean>; close: () => void }> = ({ isO
             }`}
         >
             <div class={styles.header}>
-                <div role="button" class={styles.close_icon} onClick={close}></div>
+                <div role="button" class={pageStyles.close_icon} onClick={close}></div>
             </div>
 
             {info()?.logoURL && <img src={info()?.logoURL} alt={info?.name} class={styles.logo} />}
