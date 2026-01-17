@@ -224,7 +224,7 @@ const predefinedThemes = {
     "Sandy beach": "#f7c59f;#efd9b4;#c8a77a;#4a3c2a;#e76f51;",
     "Fresh mint": "#134e5e;#71b280;#5d9170;#e9f5e9;#5af55a;",
     "Misty forest":
-        "#2f3f4d;#bcc1cd;#2f3f4d;#ffffff;;https://images.unsplash.com/photo-1487621167305-5d248087c724?q=80\u0026w=1932\u0026auto=format\u0026fit=crop\u0026ixlib=rb-4.1.0\u0026ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+        "#2f3f4d;#bcc1cd;#2f3f4d;#ffffff;;https://images.unsplash.com/photo-1487621167305-5d248087c724?q=80\u0026w=1932\u0026auto=format\u0026fit=crop\u0026ixlib=rb-4.1.0\u0026ixid=",
     Hackerman: "#000000;#000000;#04e600;#04e600;#04e600;",
     "Just dark": "#000000;#000000;#a8a8a8;#ffffff;;",
     "Just light": "#ffffff;#ffffff;#a8a8a8;#000000;;",
