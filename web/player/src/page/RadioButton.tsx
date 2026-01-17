@@ -13,7 +13,6 @@ const STREAM_SOURCE = "/stream";
 export const RadioButton = () => {
     let videoRef: HTMLAudioElement | undefined;
     let hls: HLS | undefined;
-    let accentHue: number | null = null;
 
     const initStream = () => {
         if (!trackStore.isPlay && HLS.isSupported()) {
@@ -55,9 +54,6 @@ export const RadioButton = () => {
                 trackStore.isPlay ? videoRef?.pause() : videoRef?.play();
             }
         });
-
-        const accentColor = getCssVariable("--accent-color");
-        if (accentColor) accentHue = getHueFromHex(accentColor);
     });
 
     return (
@@ -65,7 +61,7 @@ export const RadioButton = () => {
             <audio id="video" ref={videoRef} onPause={handlePause} onPlay={handlePlay}></audio>
             <div class={styles.box}>
                 {trackStore.isPlay ? (
-                    <AnimatedPauseButton pause={() => videoRef?.pause()} media={videoRef} accentHue={accentHue} />
+                    <AnimatedPauseButton pause={() => videoRef?.pause()} media={videoRef} />
                 ) : (
                     <div class={styles.play_icon} tabIndex={0} role="button" onClick={() => videoRef?.play()}></div>
                 )}
@@ -77,19 +73,28 @@ export const RadioButton = () => {
 let audioSource: MediaElementAudioSourceNode | null = null;
 let audioContext: AudioContext | null = null;
 
-const AnimatedPauseButton: Component<{ pause: () => void; accentHue: number | null; media?: HTMLAudioElement }> = (
-    props,
-) => {
+const AnimatedPauseButton: Component<{ pause: () => void; media?: HTMLAudioElement }> = (props) => {
     let pauseIconRef: HTMLDivElement | undefined;
     let analyser: AnalyserNode | null = null;
     let dataArray: Uint8Array | null = null;
     let animationId: number | null = null;
     let gainNode: GainNode | null = null;
-    let currentHue = props.accentHue || 0;
-    let currentSaturation = props.accentHue ? 100 : 50;
+    let accentHue: number | null = null;
+    let currentHue = 0;
+    let currentSaturation = 50;
     let currentLightness = 60;
 
+    const loadAccentColor = () => {
+        const accentColor = getCssVariable("--accent-color");
+        if (accentColor) accentHue = getHueFromHex(accentColor);
+        if (accentHue) {
+            currentHue = accentHue;
+            currentSaturation = 100;
+        }
+    };
+
     onMount(async () => {
+        loadAccentColor();
         if (!pauseIconRef || !props.media) return;
         await initAudio();
         draw();
@@ -169,7 +174,7 @@ const AnimatedPauseButton: Component<{ pause: () => void; accentHue: number | nu
         const bassImpact = bass / 255;
         const trebleImpact = treble / 255;
 
-        if (props.accentHue == null) {
+        if (accentHue == null) {
             currentHue += (Math.random() - 0.5) * bassImpact * 120;
             currentHue += trebleImpact * 2;
             currentHue = (currentHue + 360) % 360;
