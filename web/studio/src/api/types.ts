@@ -44,4 +44,5 @@ export interface StationInfo {
     location: string;
     timezone: string;
     links: string;
+    theme: string;
 }
