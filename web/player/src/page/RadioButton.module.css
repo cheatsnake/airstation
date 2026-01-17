@@ -19,8 +19,8 @@ video {
     width: 74px;
     height: 74px;
     box-sizing: border-box;
-    border-color: transparent transparent transparent rgb(255, 255, 255);
-    background-color: white;
+    border-color: transparent transparent transparent var(--text-color);
+    background-color: var(--text-color);
     border-radius: 0.2rem;
     transition:
         transform 0.05s ease-out,
@@ -38,7 +38,7 @@ video {
     box-sizing: border-box;
     border-style: solid;
     border-width: 36px 0px 36px 74px;
-    border-color: transparent transparent transparent rgb(255, 255, 255);
+    border-color: transparent transparent transparent var(--text-color);
     transition: all 200ms ease-in-out;
     border-radius: 0.2rem;
 }

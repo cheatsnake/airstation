@@ -9,3 +9,7 @@ export const setFavicon = (url: string) => {
 export const setPageTitle = (title: string) => {
     document.title = title;
 };
+
+export const getCssVariable = (name: string): string => {
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+};

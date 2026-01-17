@@ -4,9 +4,9 @@
     --bg-icon: #a8a8a8;
     --text-color: #ffffff;
 
-    --text-dimmed-color: color-mix(in srgb, var(--text-color) 80%, black 20%);
+    --text-dimmed-color: color-mix(in srgb, var(--text-color) 70%, transparent);
     --sidebar-color: color-mix(in srgb, var(--bg-gradient-start) 80%, black 20%);
-    --scrollbar-color: color-mix(in srgb, var(--bg-gradient-end) 70%, black 30%);
+    --scrollbar-color: color-mix(in srgb, var(--bg-gradient-end) 90%, black 10%);
 }
 
 * {

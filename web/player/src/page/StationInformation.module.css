@@ -75,12 +75,11 @@
 }
 
 .footer a {
-    color: #33b8ff;
+    color: var(--text-dimmed-color);
     text-decoration: none;
     transition: 0.2s all;
 }
 
 .footer a:hover {
-    color: #5ec7ff;
     text-decoration: underline;
 }
