@@ -6,4 +6,5 @@ const (
 	eventNewTrack       = "new_track"
 	eventLoadedTracks   = "loaded_tracks"
 	eventCountListeners = "count_listeners"
+	eventChangeTheme    = "change_theme"
 )

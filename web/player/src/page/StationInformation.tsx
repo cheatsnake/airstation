@@ -7,6 +7,7 @@ import { StationInfo } from "../api/types";
 import { isValidURL } from "../utils/url";
 import { isValidHexColor } from "../utils/color";
 import { setCssVariable, setFavicon, setPageTitle } from "../utils/document";
+import { addEventListener, EVENTS } from "../store/events";
 
 export const StationInformation = () => {
     const [isOpen, setIsOpen] = createSignal(false);
@@ -36,8 +37,18 @@ const parseTheme = (rawTheme: string) => {
     if (bgEnd && isValidHexColor(bgEnd)) setCssVariable("--bg-gradient-end", bgEnd);
     if (bgIcon && isValidHexColor(bgIcon)) setCssVariable("--bg-icon", bgIcon);
     if (text && isValidHexColor(text)) setCssVariable("--text-color", text);
-    if (accent && isValidHexColor(accent)) setCssVariable("--accent-color", accent);
-    if (bgImage && isValidURL(bgImage)) document.body.style.backgroundImage = `url(${bgImage})`;
+
+    if (accent && isValidHexColor(accent)) {
+        setCssVariable("--accent-color", accent);
+    } else {
+        setCssVariable("--accent-color", "");
+    }
+
+    if (bgImage && isValidURL(bgImage)) {
+        document.body.style.backgroundImage = `url(${bgImage})`;
+    } else {
+        document.body.style.backgroundImage = "";
+    }
 };
 
 const Card: Component<{ isOpen: Accessor<boolean>; close: () => void }> = ({ isOpen, close }) => {
@@ -57,6 +68,10 @@ const Card: Component<{ isOpen: Accessor<boolean>; close: () => void }> = ({ isO
 
     onMount(() => {
         loadInfo();
+
+        addEventListener(EVENTS.changeTheme, (_e: MessageEvent<string>) => {
+            loadInfo();
+        });
     });
 
     return (

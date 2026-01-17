@@ -393,6 +393,8 @@ func (s *Server) handleEditStationInfo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	s.eventsEmitter.RegisterEvent(eventChangeTheme, " ")
+
 	jsonResponse(w, info)
 }
 

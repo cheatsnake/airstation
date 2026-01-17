@@ -4,6 +4,7 @@ import { API_HOST, API_PREFIX } from "../api";
 export const EVENT_SOURCE_URL = API_HOST + API_PREFIX + "/events";
 export const EVENTS = {
     newTrack: "new_track",
+    changeTheme: "change_theme",
     countListeners: "count_listeners",
     pause: "pause",
     play: "play",

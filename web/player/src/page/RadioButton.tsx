@@ -86,15 +86,16 @@ const AnimatedPauseButton: Component<{ pause: () => void; media?: HTMLAudioEleme
 
     const loadAccentColor = () => {
         const accentColor = getCssVariable("--accent-color");
-        if (accentColor) accentHue = getHueFromHex(accentColor);
-        if (accentHue) {
-            currentHue = accentHue;
-            currentSaturation = 100;
-        }
+        accentHue = accentColor ? getHueFromHex(accentColor) : null;
+
+        currentHue = accentHue !== null ? accentHue : 0;
+        currentSaturation = accentHue !== null ? 100 : 50;
     };
 
     onMount(async () => {
         loadAccentColor();
+        setInterval(loadAccentColor, 1000); // Need for hot reload
+
         if (!pauseIconRef || !props.media) return;
         await initAudio();
         draw();
