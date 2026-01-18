@@ -4,8 +4,7 @@ Here you can find a list of future updates.
 
 ## 🚧 In Progress
 
-- [ ] Settings window for Player
-- [ ] Settings window for Studio
+- [ ] New music visualizers for player page
 
 ---
 
@@ -27,7 +26,9 @@ Here you can find a list of future updates.
 
 ## ✅ Done
 
-- [x] Saving playlists (ability to pre-create and select already created playlists for playback)
+- [x] Theming for player page (by [ptolemaea](https://github.com/cheatsnake/airstation/issues/21))
+- [x] Custom station info (name, description, logo, favicon, links)
+- [x] Playlists (ability to pre-create and select already created playlists for playback)
 
 ---
 
