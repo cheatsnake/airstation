@@ -10,8 +10,6 @@ The backend is organized simply. Track metadata and playback history are stored 
 
 ## Main features
 
-In fact, only the most necessary functionality has been implemented at the current stage:
-
 - Permanent storage of tracks in the library
 - Ability to listen to added tracks
 - Ability to delete tracks from the library
@@ -25,6 +23,7 @@ In fact, only the most necessary functionality has been implemented at the curre
 - Playback history
 - Listener counter
 - Playlists mechanism
+- Player page customization
 
 ## Deep under the hood
 
