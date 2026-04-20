@@ -24,6 +24,7 @@ import { SettingsModal } from "./Settings";
 import Hls from "hls.js";
 import { modals } from "@mantine/modals";
 import styles from "./styles.module.css";
+import { canPlayNativeHls } from "../utils/platform";
 
 export const Playback: FC<{ isMobile?: boolean }> = (props) => {
     const updateIntervalID = useRef(0);
@@ -176,42 +177,66 @@ const ListenerCounter = () => {
 const StreamToggler: FC<{ playback: PlaybackState; size: MantineSize }> = (props) => {
     const videoRef = useRef<HTMLAudioElement | null>(null);
     const streamRef = useRef<Hls | null>(null);
+    const primedRef = useRef(false);
     const [isPlaying, setIsPlaying] = useState(false);
 
-    const initStream = () => {
-        if (isPlaying) return;
+    const STREAM_URL = API_HOST + "/stream";
 
-        streamRef.current = new Hls();
-        streamRef.current.loadSource(API_HOST + "/stream");
-        streamRef.current.attachMedia(videoRef.current as unknown as HTMLMediaElement);
+    // Prefer native HLS on Safari (iOS/macOS). macOS Safari advertises MSE so
+    // Hls.isSupported() is true, but hls.js's attachMedia throws AbortError on WebKit.
+    const initStream = () => {
+        const el = videoRef.current;
+        if (!el || primedRef.current) return;
+
+        if (canPlayNativeHls(el)) {
+            el.src = STREAM_URL;
+        } else if (Hls.isSupported()) {
+            streamRef.current = new Hls();
+            streamRef.current.loadSource(STREAM_URL);
+            streamRef.current.attachMedia(el as unknown as HTMLMediaElement);
+        } else {
+            return;
+        }
+        primedRef.current = true;
     };
 
+    // Setting .src = "" does not actually detach media in Safari (getter returns
+    // the document URL). removeAttribute + load() is the canonical detach.
     const destroyStream = () => {
         streamRef.current?.destroy();
         streamRef.current = null;
+        const el = videoRef.current;
+        if (el) {
+            el.pause();
+            el.removeAttribute("src");
+            el.load();
+        }
+        primedRef.current = false;
         setIsPlaying(false);
     };
 
-    const handlePause = () => {
-        videoRef.current?.pause();
-        destroyStream();
-    };
+    const handlePause = () => setIsPlaying(false);
+    const handlePlay = () => setIsPlaying(true);
 
-    const handlePlay = async () => {
+    const toggle = async () => {
+        const el = videoRef.current;
+        if (!el) return;
+        if (isPlaying) {
+            el.pause();
+            return;
+        }
+        initStream();
         try {
-            initStream();
-            await videoRef.current?.play();
-            setIsPlaying(true);
+            await el.play();
         } catch (error) {
             console.log("Failed to play: ", error);
         }
     };
 
     useEffect(() => {
-        if (!props.playback.isPlaying && streamRef.current) {
-            destroyStream();
-        }
-    }, [props.playback]);
+        if (props.playback.isPlaying) initStream();
+        else destroyStream();
+    }, [props.playback.isPlaying]);
 
     return (
         <>
@@ -225,7 +250,7 @@ const StreamToggler: FC<{ playback: PlaybackState; size: MantineSize }> = (props
             <Tooltip openDelay={500} label={`${isPlaying ? "Mute" : "Unmute"} the stream just for me`}>
                 <ActionIcon
                     variant="subtle"
-                    onClick={isPlaying ? () => videoRef.current?.pause() : () => videoRef.current?.play()}
+                    onClick={toggle}
                     color="gray"
                     size={props.size}
                     aria-label="Settings"

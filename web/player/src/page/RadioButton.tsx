@@ -7,6 +7,7 @@ import { getUnixTime } from "../utils/date";
 import { addHistory } from "../store/history";
 import { getCssVariable } from "../utils/document";
 import { getHueFromHex } from "../utils/color";
+import { canPlayNativeHls } from "../utils/platform";
 
 const STREAM_SOURCE = "/stream";
 
@@ -15,7 +16,13 @@ export const RadioButton = () => {
     let hls: HLS | undefined;
 
     const initStream = () => {
-        if (!trackStore.isPlay && HLS.isSupported()) {
+        if (!videoRef || hls || videoRef.src) return;
+
+        // Prefer native HLS on Safari (iOS/macOS). macOS Safari advertises MSE so
+        // Hls.isSupported() is true, but hls.js's attachMedia throws AbortError on WebKit.
+        if (canPlayNativeHls(videoRef)) {
+            videoRef.src = STREAM_SOURCE;
+        } else if (HLS.isSupported()) {
             hls = new HLS();
             hls.loadSource(STREAM_SOURCE);
             hls.attachMedia(videoRef as unknown as HTMLMediaElement);
@@ -23,17 +30,17 @@ export const RadioButton = () => {
     };
 
     const handlePlay = () => {
-        initStream();
         if (!trackStore.trackName) return;
         setTrackStore("isPlay", true);
     };
 
     const handlePause = () => {
         setTrackStore("isPlay", false);
-        hls?.destroy();
     };
 
     onMount(() => {
+        initStream();
+
         addEventListener(EVENTS.pause, (_e: MessageEvent<string>) => {
             setTrackStore("trackName", "");
             (() => videoRef?.pause())();
@@ -45,6 +52,12 @@ export const RadioButton = () => {
             addHistory({ id: unixTime, playedAt: unixTime, trackName: e.data });
 
             if (trackStore.isPlay) (() => videoRef?.pause())();
+            // On the native-HLS path the first /stream fetch may have returned an empty
+            // playlist (server was idle). Force Safari to refetch now that a track is playing.
+            if (videoRef && canPlayNativeHls(videoRef)) {
+                videoRef.src = STREAM_SOURCE;
+                videoRef.load();
+            }
             (() => videoRef?.play())();
         });
 
