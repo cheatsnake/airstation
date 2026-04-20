@@ -36,6 +36,14 @@ export const RadioButton = () => {
 
     const handlePause = () => {
         setTrackStore("isPlay", false);
+        if (hls) {
+            hls.destroy();
+            hls = undefined;
+            if (videoRef) {
+                videoRef.removeAttribute("src");
+                videoRef.load();
+            }
+        }
     };
 
     onMount(() => {
@@ -52,6 +60,7 @@ export const RadioButton = () => {
             addHistory({ id: unixTime, playedAt: unixTime, trackName: e.data });
 
             if (trackStore.isPlay) (() => videoRef?.pause())();
+            initStream();
             // On the native-HLS path the first /stream fetch may have returned an empty
             // playlist (server was idle). Force Safari to refetch now that a track is playing.
             if (videoRef && canPlayNativeHls(videoRef)) {
@@ -64,7 +73,12 @@ export const RadioButton = () => {
         document.body.addEventListener("keydown", (event) => {
             if (event.key === " ") {
                 event.preventDefault();
-                trackStore.isPlay ? videoRef?.pause() : videoRef?.play();
+                if (trackStore.isPlay) {
+                    videoRef?.pause();
+                } else {
+                    initStream();
+                    videoRef?.play();
+                }
             }
         });
     });
@@ -76,7 +90,15 @@ export const RadioButton = () => {
                 {trackStore.isPlay ? (
                     <AnimatedPauseButton pause={() => videoRef?.pause()} media={videoRef} />
                 ) : (
-                    <div class={styles.play_icon} tabIndex={0} role="button" onClick={() => videoRef?.play()}></div>
+                    <div
+                        class={styles.play_icon}
+                        tabIndex={0}
+                        role="button"
+                        onClick={() => {
+                            initStream();
+                            videoRef?.play();
+                        }}
+                    ></div>
                 )}
             </div>
         </div>
