@@ -223,19 +223,19 @@ func (s *Service) LoadTracksFromDisk(tracksDir string) ([]*Track, error) {
 		trackPath := filepath.Join(tracksDir, trackFilename)
 		preparedTrackPath, err := s.PrepareTrack(trackPath)
 		if err != nil {
-			s.log.Warn("Failed to prepare a track for streaming: " + err.Error())
-			return tracks, err
+			s.log.Warn("Failed to prepare a track for streaming: "+err.Error(), "track", trackFilename)
+			continue
 		}
 
 		track, err := s.AddTrack(trackFilename, preparedTrackPath)
 		if err != nil {
-			s.log.Warn("Failed to save track to database: " + err.Error())
-			return tracks, err
+			s.log.Warn("Failed to save track to database: "+err.Error(), "track", trackFilename)
+			continue
 		}
 
 		err = fs.DeleteFile(trackPath)
 		if err != nil {
-			s.log.Warn("Failed to delete original copy of prepared track: " + err.Error())
+			s.log.Warn("Failed to delete original copy of prepared track: "+err.Error(), "track", trackFilename)
 		}
 
 		tracks = append(tracks, track)
