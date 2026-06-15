@@ -38,8 +38,8 @@ func (ps *PlaylistStore) AddPlaylist(name, description string, trackIDs []string
 		return nil, err
 	}
 
-	for _, trackID := range trackIDs {
-		_, err = tx.Exec(`INSERT OR IGNORE INTO playlist_track (playlist_id, track_id) VALUES (?, ?)`, id, trackID)
+	for position, trackID := range trackIDs {
+		_, err = tx.Exec(`INSERT OR IGNORE INTO playlist_track (playlist_id, track_id, position) VALUES (?, ?, ?)`, id, trackID, position)
 		if err != nil {
 			return nil, err
 		}

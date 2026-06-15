@@ -6,17 +6,32 @@ import (
 
 func TestPlaylistStore_AddAndGetPlaylist(t *testing.T) {
 	inst := setupTestDB(t)
+	a := addTestTrack(t, inst, "Track A", "/a.aac", 60.0, 128)
+	b := addTestTrack(t, inst, "Track B", "/b.aac", 120.0, 192)
 
-	t.Run("add playlist with no tracks", func(t *testing.T) {
-		pl, err := inst.PlaylistStore.AddPlaylist("Empty Playlist", "", []string{})
+	t.Run("add playlist with tracks", func(t *testing.T) {
+		pl, err := inst.PlaylistStore.AddPlaylist("My Playlist", "Description", []string{a.ID, b.ID})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 		if pl.ID == "" {
 			t.Error("expected non-empty ID")
 		}
-		if pl.Name != "Empty Playlist" {
-			t.Errorf("expected name %q, got %q", "Empty Playlist", pl.Name)
+		if pl.Name != "My Playlist" {
+			t.Errorf("expected name %q, got %q", "My Playlist", pl.Name)
+		}
+		if pl.TrackCount != 2 {
+			t.Errorf("expected 2 tracks, got %d", pl.TrackCount)
+		}
+		if len(pl.Tracks) != 2 {
+			t.Errorf("expected 2 track objects, got %d", len(pl.Tracks))
+		}
+	})
+
+	t.Run("add playlist with no tracks", func(t *testing.T) {
+		pl, err := inst.PlaylistStore.AddPlaylist("Empty Playlist", "", []string{})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
 		}
 		if pl.TrackCount != 0 {
 			t.Errorf("expected 0 tracks, got %d", pl.TrackCount)
@@ -36,9 +51,10 @@ func TestPlaylistStore_AddAndGetPlaylist(t *testing.T) {
 
 func TestPlaylistStore_Playlists(t *testing.T) {
 	inst := setupTestDB(t)
+	a := addTestTrack(t, inst, "Track A", "/a.aac", 60.0, 128)
 
-	pl1, _ := inst.PlaylistStore.AddPlaylist("Playlist 1", "", []string{})
-	pl2, _ := inst.PlaylistStore.AddPlaylist("Playlist 2", "", []string{})
+	inst.PlaylistStore.AddPlaylist("Playlist 1", "", []string{a.ID})
+	inst.PlaylistStore.AddPlaylist("Playlist 2", "", []string{})
 
 	pls, err := inst.PlaylistStore.Playlists()
 	if err != nil {
@@ -47,8 +63,11 @@ func TestPlaylistStore_Playlists(t *testing.T) {
 	if len(pls) != 2 {
 		t.Errorf("expected 2 playlists, got %d", len(pls))
 	}
-	if pls[0].ID != pl1.ID && pls[0].ID != pl2.ID {
-		t.Errorf("unexpected playlist in list: %s", pls[0].ID)
+	if pls[0].TrackCount != 1 {
+		t.Errorf("expected first playlist to have 1 track, got %d", pls[0].TrackCount)
+	}
+	if pls[1].TrackCount != 0 {
+		t.Errorf("expected second playlist to have 0 tracks, got %d", pls[1].TrackCount)
 	}
 }
 
@@ -56,8 +75,8 @@ func TestPlaylistStore_GetPlaylist(t *testing.T) {
 	inst := setupTestDB(t)
 	a := addTestTrack(t, inst, "Track A", "/a.aac", 60.0, 128)
 
-	t.Run("retrieve existing playlist", func(t *testing.T) {
-		added, _ := inst.PlaylistStore.AddPlaylist("My Playlist", "Desc", []string{})
+	t.Run("retrieve existing playlist with tracks", func(t *testing.T) {
+		added, _ := inst.PlaylistStore.AddPlaylist("My Playlist", "Desc", []string{a.ID})
 
 		pl, err := inst.PlaylistStore.Playlist(added.ID)
 		if err != nil {
@@ -65,16 +84,6 @@ func TestPlaylistStore_GetPlaylist(t *testing.T) {
 		}
 		if pl.ID != added.ID {
 			t.Errorf("expected ID %q, got %q", added.ID, pl.ID)
-		}
-	})
-
-	t.Run("retrieve playlist with tracks via EditPlaylist", func(t *testing.T) {
-		added, _ := inst.PlaylistStore.AddPlaylist("Tracked", "", []string{})
-		inst.PlaylistStore.EditPlaylist(added.ID, "Tracked", "", []string{a.ID})
-
-		pl, err := inst.PlaylistStore.Playlist(added.ID)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
 		}
 		if pl.TrackCount != 1 || len(pl.Tracks) != 1 {
 			t.Errorf("expected 1 track, got count=%d len=%d", pl.TrackCount, len(pl.Tracks))
@@ -122,7 +131,7 @@ func TestPlaylistStore_EditPlaylist(t *testing.T) {
 	a := addTestTrack(t, inst, "Track A", "/a.aac", 60.0, 128)
 	b := addTestTrack(t, inst, "Track B", "/b.aac", 120.0, 192)
 
-	pl, _ := inst.PlaylistStore.AddPlaylist("Original", "Old desc", []string{})
+	pl, _ := inst.PlaylistStore.AddPlaylist("Original", "Old desc", []string{a.ID})
 
 	err := inst.PlaylistStore.EditPlaylist(pl.ID, "Updated", "New desc", []string{a.ID, b.ID})
 	if err != nil {
@@ -146,8 +155,9 @@ func TestPlaylistStore_EditPlaylist(t *testing.T) {
 
 func TestPlaylistStore_DeletePlaylist(t *testing.T) {
 	inst := setupTestDB(t)
+	a := addTestTrack(t, inst, "Track A", "/a.aac", 60.0, 128)
 
-	pl, _ := inst.PlaylistStore.AddPlaylist("To Delete", "", []string{})
+	pl, _ := inst.PlaylistStore.AddPlaylist("To Delete", "", []string{a.ID})
 
 	err := inst.PlaylistStore.DeletePlaylist(pl.ID)
 	if err != nil {
