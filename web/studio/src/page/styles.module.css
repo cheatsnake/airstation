@@ -2,3 +2,26 @@
     position: relative;
     background-color: rgb(0 0 0 / 30%);
 }
+
+.onair_dot {
+    display: inline-block;
+    width: 11px;
+    height: 11px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background-color: #fa5252;
+    box-shadow: 0 0 0 0 rgb(250 82 82 / 70%);
+    animation: onair_pulse 1.6s ease-out infinite;
+}
+
+@keyframes onair_pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgb(250 82 82 / 70%);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgb(250 82 82 / 0%);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgb(250 82 82 / 0%);
+    }
+}

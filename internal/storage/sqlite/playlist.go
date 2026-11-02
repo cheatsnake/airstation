@@ -38,8 +38,11 @@ func (ps *PlaylistStore) AddPlaylist(name, description string, trackIDs []string
 		return nil, err
 	}
 
-	for _, trackID := range trackIDs {
-		_, err = tx.Exec(`INSERT OR IGNORE INTO playlist_track (playlist_id, track_id) VALUES (?, ?)`, id, trackID)
+	for position, trackID := range trackIDs {
+		_, err = tx.Exec(
+			`INSERT OR IGNORE INTO playlist_track (playlist_id, track_id, position) VALUES (?, ?, ?)`,
+			id, trackID, position,
+		)
 		if err != nil {
 			return nil, err
 		}
@@ -93,7 +96,7 @@ func (ps *PlaylistStore) Playlist(id string) (*playlist.Playlist, error) {
 	}
 
 	rows, err := ps.db.Query(`
-		SELECT t.id, t.name, t.path, t.bitRate, t.duration
+		SELECT `+trackColumnsAliased+`
 		FROM playlist_track pt
 		JOIN tracks t ON pt.track_id = t.id
 		WHERE pt.playlist_id = ?
@@ -106,11 +109,11 @@ func (ps *PlaylistStore) Playlist(id string) (*playlist.Playlist, error) {
 	defer rows.Close()
 
 	for rows.Next() {
-		var t track.Track
-		if err := rows.Scan(&t.ID, &t.Name, &t.Path, &t.BitRate, &t.Duration); err != nil {
+		t, err := scanTrack(rows)
+		if err != nil {
 			return nil, fmt.Errorf("failed to scan track: %w", err)
 		}
-		p.Tracks = append(p.Tracks, &t)
+		p.Tracks = append(p.Tracks, t)
 	}
 
 	p.TrackCount = len(p.Tracks)

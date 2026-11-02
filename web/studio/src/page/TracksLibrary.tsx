@@ -9,9 +9,11 @@ import {
     Group,
     LoadingOverlay,
     Menu,
+    Modal,
     Paper,
     Select,
     Space,
+    Stack,
     Text,
     TextInput,
     Tooltip,
@@ -19,7 +21,7 @@ import {
 import { modals } from "@mantine/modals";
 import { useDebouncedValue, useDisclosure } from "@mantine/hooks";
 import { AddToPalylistModal } from "./Playlists";
-import { Track } from "../api/types";
+import { TRACK_KINDS, Track, TrackKind } from "../api/types";
 import { DisclosureHandler } from "../types";
 import { useTracksStore } from "../store/tracks";
 import { EmptyLabel } from "../components/EmptyLabel";
@@ -27,21 +29,25 @@ import { AudioPlayer } from "../components/AudioPlayer";
 import { useTrackQueueStore } from "../store/track-queue";
 import { EVENTS, useEventSourceStore } from "../store/events";
 import { errNotify, infoNotify, okNotify, warnNotify } from "../notifications";
-import { IconQueue, IconReload, IconSortAscending, IconSortDescending, IconTrash } from "../icons";
+import { IconPlaylist, IconQueue, IconReload, IconSortAscending, IconSortDescending, IconTrash } from "../icons";
 import styles from "./styles.module.css";
 
 const PAGE_LIMIT = 20;
+
+const KIND_FILTERS = [{ value: "all", label: "All assets" }, ...TRACK_KINDS.map((k) => ({ value: k.value, label: k.label }))];
 
 export const TrackLibrary: FC<{ isMobile?: boolean }> = (props) => {
     const tracksContainerRef = useRef<HTMLDivElement>(null);
     const [page, setPage] = useState(1);
     const [search, setSearch] = useState("");
+    const [kind, setKind] = useState<TrackKind | "all">("all");
     const [debouncedSearch] = useDebouncedValue(search, 500);
     const [sortBy, setSortBy] = useState<keyof Track>("id");
     const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
     const [playingTrackID, setPlayingTrackID] = useState("");
     const [selectedTrackIDs, setSelectedTrackIDs] = useState<Set<string>>(new Set());
     const [loader, handLoader] = useDisclosure(false);
+    const [uploadOpened, upload] = useDisclosure(false);
     const addEventHandler = useEventSourceStore((s) => s.addEventHandler);
     const [hovered, setHovered] = useState(false);
 
@@ -53,13 +59,13 @@ export const TrackLibrary: FC<{ isMobile?: boolean }> = (props) => {
     const loadTracks = useCallback(async () => {
         handLoader.open();
         try {
-            await fetchTracks(page, PAGE_LIMIT, search, sortBy, sortOrder);
+            await fetchTracks(page, PAGE_LIMIT, search, sortBy, sortOrder, kind);
         } catch (error) {
             errNotify(error);
         } finally {
             handLoader.close();
         }
-    }, [page, search, sortBy, sortOrder]);
+    }, [page, search, sortBy, sortOrder, kind]);
 
     const toggleTrackPlaying = (id: string) => {
         // If the same track is clicked again, pause it
@@ -95,16 +101,17 @@ export const TrackLibrary: FC<{ isMobile?: boolean }> = (props) => {
 
     useEffect(() => {
         setPage(1);
-    }, [debouncedSearch, sortBy, sortOrder]);
+    }, [debouncedSearch, sortBy, sortOrder, kind]);
 
     useEffect(() => {
         loadTracks();
-    }, [page, debouncedSearch, sortBy, sortOrder]);
+    }, [page, debouncedSearch, sortBy, sortOrder, kind]);
 
     return (
-        <Paper radius="md" className={styles.transparent_paper}>
-            <Flex p="xs" direction="column" h={props.isMobile ? "calc(100vh - 60px)" : "80vh"} mah={1200}>
+        <Paper radius="md" className={styles.transparent_paper} h="100%">
+            <Flex p="xs" direction="column" h={props.isMobile ? "calc(100vh - 70px)" : "100%"} mah={1200}>
                 <LoadingOverlay visible={loader} overlayProps={{ radius: "md" }} />
+                <UploadModal opened={uploadOpened} close={upload.close} handLoader={handLoader} />
 
                 <Flex justify="space-between" align="center">
                     <Flex align="center" gap="xs">
@@ -153,14 +160,24 @@ export const TrackLibrary: FC<{ isMobile?: boolean }> = (props) => {
 
                 <Space h={12} />
 
-                <Flex gap="xs">
+                <Flex gap="xs" wrap="wrap">
                     <TextInput
-                        style={{ flexGrow: 1 }}
+                        style={{ flexGrow: 1, minWidth: 150 }}
                         placeholder="Search"
                         value={search}
                         onChange={(event) => setSearch(event.currentTarget.value)}
                     />
-                    <TrackUploader handLoader={handLoader} />
+                    <Select
+                        w={props.isMobile ? "100%" : 140}
+                        data={KIND_FILTERS}
+                        value={kind}
+                        onChange={(value) => setKind((value as TrackKind | "all") ?? "all")}
+                        allowDeselect={false}
+                        aria-label="Filter by asset kind"
+                    />
+                    <Button variant="light" color="green" onClick={upload.open}>
+                        Add
+                    </Button>
                 </Flex>
 
                 <Space h={16} />
@@ -214,7 +231,6 @@ export const TrackLibrary: FC<{ isMobile?: boolean }> = (props) => {
                         handLoader={handLoader}
                         selected={selectedTrackIDs}
                         setSelected={setSelectedTrackIDs}
-                        freeTrackIDs={new Set(tracks.filter((t) => !isTrackInQueue(t.id)).map((t) => t.id))}
                         tracks={tracks}
                     />
                 </Group>
@@ -223,8 +239,9 @@ export const TrackLibrary: FC<{ isMobile?: boolean }> = (props) => {
     );
 };
 
-const TrackUploader: FC<{ handLoader: DisclosureHandler }> = (props) => {
+const UploadModal: FC<{ opened: boolean; close: () => void; handLoader: DisclosureHandler }> = (props) => {
     const uploadTracks = useTracksStore((s) => s.uploadTracks);
+    const [kind, setKind] = useState<TrackKind>("music");
 
     const handleUpload = async (files: File[]) => {
         if (!files.length) {
@@ -234,8 +251,9 @@ const TrackUploader: FC<{ handLoader: DisclosureHandler }> = (props) => {
 
         props.handLoader.open();
         try {
-            const { message } = await uploadTracks(files);
+            const { message } = await uploadTracks(files, kind);
             okNotify(message);
+            props.close();
         } catch (error) {
             errNotify(error);
         } finally {
@@ -243,16 +261,35 @@ const TrackUploader: FC<{ handLoader: DisclosureHandler }> = (props) => {
         }
     };
 
+    const description =
+        kind === "music"
+            ? "Songs for rotation. Music tracks must be at least 15 seconds long."
+            : kind === "voice"
+              ? "Recorded RJ links. They get default fade in/out and ducking values that the console can override."
+              : "Short station assets. Jingles, ads and IDs can be as short as one second.";
+
     return (
-        <>
-            <FileButton multiple onChange={handleUpload} accept="audio/mpeg,audio/aac,audio/wav,audio/flac">
-                {(props) => (
-                    <Button {...props} variant="light" color="green">
-                        Add
-                    </Button>
-                )}
-            </FileButton>
-        </>
+        <Modal opened={props.opened} onClose={props.close} title="Upload assets" centered>
+            <Stack gap="sm">
+                <Select
+                    label="Asset kind"
+                    data={TRACK_KINDS.map((k) => ({ value: k.value, label: k.label }))}
+                    value={kind}
+                    onChange={(value) => setKind((value as TrackKind) ?? "music")}
+                    allowDeselect={false}
+                />
+                <Text size="xs" c="dimmed">
+                    {description}
+                </Text>
+                <FileButton multiple onChange={handleUpload} accept="audio/mpeg,audio/aac,audio/wav,audio/flac,audio/mp4">
+                    {(fileProps) => (
+                        <Button {...fileProps} variant="light" color="green">
+                            Choose files & upload
+                        </Button>
+                    )}
+                </FileButton>
+            </Stack>
+        </Modal>
     );
 };
 
@@ -260,11 +297,11 @@ const TrackActions: FC<{
     handLoader: DisclosureHandler;
     selected: Set<string>;
     setSelected: React.Dispatch<React.SetStateAction<Set<string>>>;
-    freeTrackIDs: Set<string>;
     tracks: Track[];
 }> = (props) => {
     const addToQueue = useTrackQueueStore((s) => s.addToQueue);
     const deleteTracks = useTracksStore((s) => s.deleteTracks);
+    const [playlistOpened, playlist] = useDisclosure(false);
 
     const toggleSelection = () => {
         if (props.selected.size) {
@@ -305,7 +342,12 @@ const TrackActions: FC<{
             title: "Confirm clear queue",
             cancelProps: { variant: "light", color: "gray" },
             centered: true,
-            children: <Text size="sm">Do you really want to delete selected tracks from the server?</Text>,
+            children: (
+                <Text size="sm">
+                    Do you really want to delete the selected tracks from the server? They will also be removed from
+                    the queue and any playlists.
+                </Text>
+            ),
             labels: { confirm: "Confirm", cancel: "Cancel" },
             onConfirm: () => handleDelete(),
         });
@@ -325,18 +367,16 @@ const TrackActions: FC<{
                         Move to queue
                     </Menu.Item>
                     <Menu.Divider />
-                    <AddToPalylistModal trackIDs={[...props.selected]} />
+                    <Menu.Item leftSection={<IconPlaylist size={14} />} onClick={playlist.open}>
+                        Add to playlist
+                    </Menu.Item>
                     <Menu.Divider />
-                    <Menu.Item
-                        leftSection={<IconTrash size={14} />}
-                        color="red"
-                        disabled={![...props.selected].every((id) => props.freeTrackIDs.has(id))}
-                        onClick={confirmDelete}
-                    >
+                    <Menu.Item leftSection={<IconTrash size={14} />} color="red" onClick={confirmDelete}>
                         Delete
                     </Menu.Item>
                 </Menu.Dropdown>
             </Menu>
+            <AddToPalylistModal trackIDs={[...props.selected]} opened={playlistOpened} onClose={playlist.close} />
             <Checkbox size="md" readOnly checked={props.selected.size > 0} onClick={toggleSelection} />
         </Flex>
     );

@@ -1,5 +1,10 @@
 package station
 
+import (
+	"fmt"
+	"strconv"
+)
+
 type Service struct {
 	store Store
 }
@@ -36,7 +41,15 @@ func (s *Service) Info() (*Info, error) {
 			info.Links = prop.Value
 		case propTheme:
 			info.Theme = prop.Value
+		case propAudioBitRate:
+			if v, err := strconv.Atoi(prop.Value); err == nil {
+				info.AudioBitRate = v
+			}
 		}
+	}
+
+	if info.AudioBitRate <= 0 {
+		info.AudioBitRate = 48
 	}
 
 	return info, nil
@@ -92,6 +105,15 @@ func (s *Service) EditInfo(editedInfo *Info) (*Info, error) {
 
 	if currentInfo.Theme != editedInfo.Theme {
 		if _, err := s.store.UpsertStationProperty(propTheme, editedInfo.Theme); err != nil {
+			return nil, err
+		}
+	}
+
+	if currentInfo.AudioBitRate != editedInfo.AudioBitRate && editedInfo.AudioBitRate > 0 {
+		if editedInfo.AudioBitRate < 24 || editedInfo.AudioBitRate > 256 {
+			return nil, fmt.Errorf("audio bitrate must be between 24 and 256 kbps")
+		}
+		if _, err := s.store.UpsertStationProperty(propAudioBitRate, strconv.Itoa(editedInfo.AudioBitRate)); err != nil {
 			return nil, err
 		}
 	}

@@ -20,8 +20,9 @@ func NewService(store Store) *Service {
 //
 // Parameters:
 //   - trackName: The name of the track that was played.
-func (s *Service) AddPlaybackHistory(trackName string) {
-	err := s.store.AddPlaybackHistory(time.Now().Unix(), trackName)
+//   - kind: The asset kind (music, jingle, ad, station_id or voice).
+func (s *Service) AddPlaybackHistory(trackName, kind string) {
+	err := s.store.AddPlaybackHistory(time.Now().Unix(), trackName, kind)
 	if err != nil {
 		s.log.Error("Failed to add playback history: " + err.Error())
 	}
@@ -37,6 +38,12 @@ func (s *Service) AddPlaybackHistory(trackName string) {
 func (s *Service) RecentPlaybackHistory(limit int) ([]*History, error) {
 	history, err := s.store.RecentPlaybackHistory(limit)
 	return history, err
+}
+
+// MusicPlayedSince returns how many music tracks have been played since ts.
+// The scheduler uses it to implement "every N songs" interlude rules.
+func (s *Service) MusicPlayedSince(ts int64) (int, error) {
+	return s.store.MusicPlayedSince(ts)
 }
 
 // DeleteOldPlaybackHistory removes outdated playback history entries from the store.

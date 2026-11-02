@@ -1,4 +1,17 @@
+.git
+.gitignore
+.env
 docs
 Makefile
 README.md
 Dockerfile.multiarch
+live-hls
+airstation-live-mode.zip
+static
+web/player/node_modules
+web/studio/node_modules
+web/player/dist
+web/studio/dist
+**/node_modules
+**/dist
+**/.DS_Store

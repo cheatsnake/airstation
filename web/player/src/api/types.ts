@@ -4,12 +4,24 @@ export interface Track {
     path: string;
     duration: number;
     bitRate: number;
+    kind?: string;
+}
+
+export interface VoiceOver {
+    id: string;
+    voiceName?: string;
+    target: "next" | "current";
+    status: string;
+    duckDb: number;
 }
 
 export interface PlaybackState {
     currentTrack: Track | null;
     currentTrackElapsed: number;
+    currentVoiceOver?: VoiceOver | null;
+    nextTrack?: Track | null;
     isPlaying: boolean;
+    mode?: string;
 }
 
 export interface PlaybackHistory {
@@ -27,6 +39,7 @@ export interface StationInfo {
     timezone: string;
     links: string;
     theme: string;
+    audioBitRate?: number;
 }
 
 export interface ResponseErr {

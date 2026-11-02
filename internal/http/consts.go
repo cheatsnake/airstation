@@ -7,4 +7,6 @@ const (
 	eventLoadedTracks   = "loaded_tracks"
 	eventCountListeners = "count_listeners"
 	eventChangeTheme    = "change_theme"
+	eventVoiceOver      = "voice_over"
+	eventInterlude      = "interlude_queued"
 )

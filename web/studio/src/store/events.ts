@@ -6,6 +6,8 @@ export const EVENTS = {
     newTrack: "new_track",
     loadedTracks: "loaded_tracks",
     countListeners: "count_listeners",
+    voiceOver: "voice_over",
+    interlude: "interlude_queued",
 };
 
 type EventHandler = (event: MessageEvent) => void;

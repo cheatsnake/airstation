@@ -14,7 +14,15 @@ interface PlaybackStore {
 }
 
 export const usePlaybackStore = create<PlaybackStore>()((set) => ({
-    playback: { currentTrack: null, currentTrackElapsed: 0, isPlaying: false, updatedAt: getUnixTime() },
+    playback: {
+        currentTrack: null,
+        currentTrackElapsed: 0,
+        currentVoiceOver: null,
+        nextTrack: null,
+        isPlaying: false,
+        mode: "automation",
+        updatedAt: getUnixTime(),
+    },
 
     setPlayback(pb) {
         if (pb.currentTrack) pb.currentTrack.duration = Math.ceil(pb.currentTrack.duration);

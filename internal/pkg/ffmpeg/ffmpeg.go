@@ -11,6 +11,7 @@ import (
 	"strconv"
 
 	"github.com/cheatsnake/airstation/internal/pkg/fs"
+	"github.com/cheatsnake/airstation/internal/pkg/mix"
 	"github.com/cheatsnake/airstation/internal/pkg/ulid"
 )
 
@@ -247,6 +248,50 @@ func (cli *CLI) ConvertAudioToAAC(inputPath, outputPath string, bitRate int) err
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("triming audio failed: %v\nOutput: %s", err, string(output))
+	}
+
+	return nil
+}
+
+// RenderVoiceOver mixes a voice clip into a music bed using the supplied
+// fade/duck settings and writes the result to outPath. The output keeps the
+// music bed's duration, so it can be segmented exactly like the original track.
+func (cli *CLI) RenderVoiceOver(basePath, voicePath, outPath string, opts mix.Options) error {
+	if err := fs.FileExists(basePath); err != nil {
+		return err
+	}
+	if err := fs.FileExists(voicePath); err != nil {
+		return err
+	}
+
+	filter, err := mix.BuildFilter(opts)
+	if err != nil {
+		return err
+	}
+
+	bitRate := opts.BitRate
+	if bitRate <= 0 {
+		bitRate = defaultMixBitRate
+	}
+
+	cmd := exec.Command(
+		ffmpegBin,
+		"-i", basePath,
+		"-i", voicePath,
+		"-filter_complex", filter,
+		"-map", "[out]",
+		"-c:a", "aac",
+		"-b:a", strconv.Itoa(bitRate)+"k",
+		"-ar", "44100",
+		"-ac", "2",
+		"-t", strconv.FormatFloat(opts.BaseDuration, 'f', 3, 64),
+		outPath,
+		"-y",
+	)
+
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("voice-over mix failed: %v\nOutput: %s", err, string(output))
 	}
 
 	return nil

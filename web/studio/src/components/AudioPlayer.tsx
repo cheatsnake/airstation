@@ -6,6 +6,7 @@ import { Track } from "../api/types";
 import { formatTime } from "../utils/time";
 import { IconPlayerPlayFilled } from "../icons";
 import { IconPlayerStopFilled } from "../icons";
+import { KindBadge } from "./KindBadge";
 
 interface AudioPlayerProps {
     track: Track;
@@ -72,7 +73,10 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({ track, isPlaying, sele
                 onEnded={handleAudioEnd}
             />
 
-            <Text style={{ whiteSpace: "wrap" }}>{track.name}</Text>
+            <Group gap="xs" wrap="nowrap" align="center">
+                <Text style={{ whiteSpace: "wrap" }}>{track.name}</Text>
+                <KindBadge kind={track.kind} />
+            </Group>
             <Flex gap="sm" align="center">
                 <ActionIcon onClick={togglePlaying} variant="subtle" color="white" size="sm" aria-label="Settings">
                     {isPlaying ? <IconPlayerStopFilled fill={btnColor} /> : <IconPlayerPlayFilled fill={btnColor} />}

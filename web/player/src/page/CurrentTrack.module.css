@@ -13,6 +13,41 @@
     padding: 1rem 0.5rem;
 }
 
+.now_line {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    padding: 1rem 0.5rem 0.25rem;
+}
+
+.now_line .label {
+    padding: 0;
+}
+
+.voice_badge {
+    font-size: 0.7rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+    background: color-mix(in srgb, #2f9e44 35%, transparent);
+    border: 1px solid color-mix(in srgb, #2f9e44 65%, transparent);
+    user-select: none;
+}
+
+.next_line {
+    max-width: 92vw;
+    margin: 0 auto;
+    padding-bottom: 1rem;
+    text-align: center;
+    font-size: 0.75rem;
+    color: var(--text-dimmed-color);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    user-select: none;
+}
+
 .offline_label {
     user-select: none;
     cursor: default;

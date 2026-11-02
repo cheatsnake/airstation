@@ -23,6 +23,7 @@ import { Track } from "../api/types";
 import { IconReload } from "../icons";
 import { usePlaybackStore } from "../store/playback";
 import { EmptyLabel } from "../components/EmptyLabel";
+import { KindBadge } from "../components/KindBadge";
 import { errNotify, okNotify } from "../notifications";
 import { useTrackQueueStore } from "../store/track-queue";
 import { moveArrayItem, shuffleArray } from "../utils/array";
@@ -128,8 +129,8 @@ export const TrackQueue: FC<{ isMobile?: boolean }> = (props) => {
     }, []);
 
     return (
-        <Paper radius="md" className={styles.transparent_paper}>
-            <Flex p="sm" direction="column" h={props.isMobile ? "calc(100vh - 60px)" : "80vh"} mah={1200}>
+        <Paper radius="md" className={styles.transparent_paper} h="100%">
+            <Flex p="sm" direction="column" h={props.isMobile ? "calc(100vh - 70px)" : "100%"} mah={1200}>
                 <LoadingOverlay visible={loader} overlayProps={{ radius: "md" }} />
                 <Flex justify="space-between" align="center">
                     <Flex align="center" justify="center" gap="xs">
@@ -214,6 +215,7 @@ const QueueItem: FC<{ track: Track; handleRemove: (ids: string[]) => Promise<voi
                 >
                     {track.name}
                 </Text>
+                <KindBadge kind={track.kind} />
                 <CloseButton
                     variant="transparent"
                     display={hovered ? undefined : "none"}

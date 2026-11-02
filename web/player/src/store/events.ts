@@ -15,16 +15,15 @@ const [eventSourceStore, setEventSourceStore] = createStore<{ eventSource: Event
 });
 
 export const initEventSource = () => {
-    if (eventSourceStore.eventSource) eventSourceStore.eventSource.close();
+    if (eventSourceStore.eventSource) return;
 
     const es = new EventSource(EVENT_SOURCE_URL);
     setEventSourceStore("eventSource", es);
 };
 
 export const addEventListener = (event: string, listener: (event: MessageEvent) => void) => {
-    if (eventSourceStore.eventSource) {
-        eventSourceStore.eventSource.addEventListener(event, listener);
-    }
+    if (!eventSourceStore.eventSource) initEventSource();
+    eventSourceStore.eventSource?.addEventListener(event, listener);
 };
 
 export const closeEventSource = () => {

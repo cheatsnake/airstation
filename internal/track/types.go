@@ -7,15 +7,23 @@ type Track struct {
 	Path     string  `json:"path"`     // The file path of the audio track.
 	Duration float64 `json:"duration"` // The duration of the audio track in seconds.
 	BitRate  int     `json:"bitRate"`  // The bit rate of the audio track in kilobits per second (kbps).
+	Kind     string  `json:"kind"`     // The type of asset: music, jingle, ad, station_id or voice.
+
+	// Fade settings are stored on voice assets so they can be used as sensible
+	// defaults when an operator creates a voice-over. They are ignored for music.
+	FadeIn  float64 `json:"fadeIn,omitempty"`
+	FadeOut float64 `json:"fadeOut,omitempty"`
+	DuckDB  float64 `json:"duckDb,omitempty"`
 }
 
 type Store interface {
-	Tracks(page, limit int, search, sortBy, sortOrder string) ([]*Track, int, error)
+	Tracks(page, limit int, search, sortBy, sortOrder, kind string) ([]*Track, int, error)
 	TrackByID(ID string) (*Track, error)
 	TracksByIDs(IDs []string) ([]*Track, error)
-	AddTrack(name, path string, duration float64, bitRate int) (*Track, error)
+	AddTrack(name, path string, duration float64, bitRate int, kind string, fadeIn, fadeOut, duckDB float64) (*Track, error)
 	DeleteTracks(IDs []string) error
 	EditTrack(track *Track) (*Track, error)
+	RandomByKind(kind string, excludeIDs []string) (*Track, error)
 }
 
 // Page represents a paginated response containing a list of audio tracks.

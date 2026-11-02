@@ -4,55 +4,66 @@ import (
 	"log/slog"
 	"mime"
 	"net/http"
+	"path/filepath"
 	"strconv"
 	"time"
 
 	"github.com/cheatsnake/airstation/internal/config"
+	"github.com/cheatsnake/airstation/internal/live"
 	"github.com/cheatsnake/airstation/internal/pkg/ffmpeg"
 	"github.com/cheatsnake/airstation/internal/pkg/hls"
 	"github.com/cheatsnake/airstation/internal/pkg/sse"
 	"github.com/cheatsnake/airstation/internal/playback"
 	"github.com/cheatsnake/airstation/internal/playlist"
 	"github.com/cheatsnake/airstation/internal/queue"
+	"github.com/cheatsnake/airstation/internal/schedule"
 	"github.com/cheatsnake/airstation/internal/station"
 	"github.com/cheatsnake/airstation/internal/storage"
 	"github.com/cheatsnake/airstation/internal/track"
+	"github.com/cheatsnake/airstation/internal/voiceover"
 	"github.com/rs/cors"
 )
 
 type Server struct {
-	playbackState   *playback.State
-	eventsEmitter   *sse.Emitter
-	trackService    *track.Service
-	queueService    *queue.Service
-	playbackService *playback.Service
-	playlistService *playlist.Service
-	stationService  *station.Service
-	config          *config.Config
-	logger          *slog.Logger
-	router          *http.ServeMux
+	playbackState    *playback.State
+	eventsEmitter    *sse.Emitter
+	trackService     *track.Service
+	queueService     *queue.Service
+	playbackService  *playback.Service
+	playlistService  *playlist.Service
+	stationService   *station.Service
+	voiceoverService *voiceover.Service
+	scheduleService  *schedule.Service
+	config           *config.Config
+	logger           *slog.Logger
+	router           *http.ServeMux
 }
 
 func NewServer(store storage.Storage, conf *config.Config, logger *slog.Logger) *Server {
 	ffmpegCLI := ffmpeg.NewCLI()
-	ts := track.NewService(store, ffmpegCLI, logger.WithGroup("trackservice"))
 	qs := queue.NewService(store)
 	ps := playback.NewService(store)
 	pls := playlist.NewService(store)
 	ss := station.NewService(store)
-	state := playback.NewState(ts, qs, ps, conf.TmpDir, logger.WithGroup("playback"))
+	ts := track.NewService(store, ss, ffmpegCLI, logger.WithGroup("trackservice"))
+	vos := voiceover.NewService(store, store, ss, ffmpegCLI, logger.WithGroup("voiceover"))
+	scs := schedule.NewService(store, store, store, logger.WithGroup("schedule"))
+	lm := live.NewManager(filepath.Join(conf.TmpDir, "live"), "/static/tmp/live", ss, logger.WithGroup("live"))
+	state := playback.NewState(ts, qs, ps, vos, lm, conf.TmpDir, logger.WithGroup("playback"))
 
 	return &Server{
-		playbackState:   state,
-		eventsEmitter:   sse.NewEmitter(),
-		trackService:    ts,
-		queueService:    qs,
-		playbackService: ps,
-		playlistService: pls,
-		stationService:  ss,
-		config:          conf,
-		logger:          logger.WithGroup("http"),
-		router:          http.NewServeMux(),
+		playbackState:    state,
+		eventsEmitter:    sse.NewEmitter(),
+		trackService:     ts,
+		queueService:     qs,
+		playbackService:  ps,
+		playlistService:  pls,
+		stationService:   ss,
+		voiceoverService: vos,
+		scheduleService:  scs,
+		config:           conf,
+		logger:           logger.WithGroup("http"),
+		router:           http.NewServeMux(),
 	}
 }
 
@@ -76,13 +87,29 @@ func (s *Server) Run() {
 	s.router.Handle("POST /api/v1/queue", s.jwtAuth(http.HandlerFunc(s.handleAddToQueue)))
 	s.router.Handle("PUT /api/v1/queue", s.jwtAuth(http.HandlerFunc(s.handleReorderQueue)))
 	s.router.Handle("DELETE /api/v1/queue", s.jwtAuth(http.HandlerFunc(s.handleRemoveFromQueue)))
+	s.router.Handle("GET /api/v1/carts", s.jwtAuth(http.HandlerFunc(s.handleCarts)))
+	s.router.Handle("POST /api/v1/carts/{id}/play", s.jwtAuth(http.HandlerFunc(s.handlePlayCart)))
+	s.router.Handle("GET /api/v1/voice-overs", s.jwtAuth(http.HandlerFunc(s.handleVoiceOvers)))
+	s.router.Handle("POST /api/v1/voice-overs", s.jwtAuth(http.HandlerFunc(s.handleCreateVoiceOver)))
+	s.router.Handle("DELETE /api/v1/voice-overs/{id}", s.jwtAuth(http.HandlerFunc(s.handleCancelVoiceOver)))
+	s.router.Handle("GET /api/v1/schedule", s.jwtAuth(http.HandlerFunc(s.handleScheduleRules)))
+	s.router.Handle("POST /api/v1/schedule", s.jwtAuth(http.HandlerFunc(s.handleCreateScheduleRule)))
+	s.router.Handle("PUT /api/v1/schedule/{id}", s.jwtAuth(http.HandlerFunc(s.handleEditScheduleRule)))
+	s.router.Handle("DELETE /api/v1/schedule/{id}", s.jwtAuth(http.HandlerFunc(s.handleDeleteScheduleRule)))
+	s.router.Handle("GET /api/v1/live", s.jwtAuth(http.HandlerFunc(s.handleLiveStatus)))
+	s.router.Handle("POST /api/v1/live/start", s.jwtAuth(http.HandlerFunc(s.handleLiveStart)))
+	s.router.Handle("POST /api/v1/live/stop", s.jwtAuth(http.HandlerFunc(s.handleLiveStop)))
+	// WebSocket upgrades are GET requests; plain streaming clients use POST.
+	liveIngest := s.jwtAuth(http.HandlerFunc(s.handleLiveIngest))
+	s.router.Handle("GET /api/v1/live/ingest", liveIngest)
+	s.router.Handle("POST /api/v1/live/ingest", liveIngest)
 	s.router.Handle("POST /api/v1/playback/pause", s.jwtAuth(http.HandlerFunc(s.handlePausePlayback)))
 	s.router.Handle("POST /api/v1/playback/play", s.jwtAuth(http.HandlerFunc(s.handlePlayPlayback)))
 	s.router.Handle("POST /api/v1/playlist", s.jwtAuth(http.HandlerFunc(s.handleAddPlaylist)))
 	s.router.Handle("GET /api/v1/playlists", s.jwtAuth(http.HandlerFunc(s.handlePlaylists)))
-	s.router.Handle("GET /api/v1/playlist/{id}/", s.jwtAuth(http.HandlerFunc(s.handlePlaylist)))
-	s.router.Handle("PUT /api/v1/playlist/{id}/", s.jwtAuth(http.HandlerFunc(s.handleEditPlaylist)))
-	s.router.Handle("DELETE /api/v1/playlist/{id}/", s.jwtAuth(http.HandlerFunc(s.handleDeletePlaylist)))
+	s.router.Handle("GET /api/v1/playlist/{id}", s.jwtAuth(http.HandlerFunc(s.handlePlaylist)))
+	s.router.Handle("PUT /api/v1/playlist/{id}", s.jwtAuth(http.HandlerFunc(s.handleEditPlaylist)))
+	s.router.Handle("DELETE /api/v1/playlist/{id}", s.jwtAuth(http.HandlerFunc(s.handleDeletePlaylist)))
 	s.router.Handle("GET /static/tracks/", s.jwtAuth(s.handleStaticDir("/static/tracks", s.config.TracksDir)))
 	s.router.Handle("PUT /api/v1/station/info", s.jwtAuth(http.HandlerFunc(s.handleEditStationInfo)))
 
@@ -135,7 +162,7 @@ func (s *Server) listenEvents() {
 		for {
 			select {
 			case <-s.playbackState.PlayNotify:
-				s.eventsEmitter.RegisterEvent(eventPlay, s.playbackState.CurrentTrack.Name)
+				s.eventsEmitter.RegisterEvent(eventPlay, s.playbackState.CurrentTrackName())
 			case <-s.playbackState.PauseNotify:
 				s.eventsEmitter.RegisterEvent(eventPause, " ")
 			case trackName := <-s.playbackState.NewTrackNotify:
@@ -145,4 +172,43 @@ func (s *Server) listenEvents() {
 			}
 		}
 	}()
+
+	go s.runScheduler()
+}
+
+// runScheduler checks the radio clock rules every few seconds and inserts a
+// jingle, ad or station ID at the next available slot. The playback engine
+// re-segments the upcoming track so listeners hear it seamlessly.
+func (s *Server) runScheduler() {
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
+
+	for now := range ticker.C {
+		queue, err := s.queueService.Queue()
+		if err != nil {
+			s.logger.Warn("Scheduler failed to read queue: " + err.Error())
+			continue
+		}
+
+		decision, err := s.scheduleService.Tick(now, queue, s.playbackState.IsPlaying)
+		if err != nil {
+			s.logger.Warn("Scheduler tick failed: " + err.Error())
+			continue
+		}
+		if decision == nil {
+			continue
+		}
+
+		if err := s.enqueueTrack(decision.Track.ID, false); err != nil {
+			s.logger.Warn("Scheduler failed to enqueue interlude: " + err.Error())
+			continue
+		}
+
+		if err := s.scheduleService.MarkPlayed(decision, now); err != nil {
+			s.logger.Warn("Scheduler failed to update state: " + err.Error())
+		}
+
+		s.eventsEmitter.RegisterEvent(eventInterlude, decision.Track.Name)
+		s.logger.Info("Queued scheduled interlude", slog.String("name", decision.Track.Name), slog.String("rule", decision.Rule.Name))
+	}
 }

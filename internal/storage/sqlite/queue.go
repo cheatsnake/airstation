@@ -28,7 +28,7 @@ func (qs *QueueStore) Queue() ([]*track.Track, error) {
 	tracks := make([]*track.Track, 0, 10)
 
 	query := `
-		SELECT t.id, t.name, t.path, t.duration, t.bitRate
+		SELECT ` + trackColumnsAliased + `
 		FROM tracks t
 		JOIN queue q ON t.id = q.track_id
 		ORDER BY q.id ASC`
@@ -39,12 +39,11 @@ func (qs *QueueStore) Queue() ([]*track.Track, error) {
 	defer rows.Close()
 
 	for rows.Next() {
-		var track track.Track
-		err := rows.Scan(&track.ID, &track.Name, &track.Path, &track.Duration, &track.BitRate)
+		t, err := scanTrack(rows)
 		if err != nil {
 			return tracks, fmt.Errorf("failed to scan track: %w", err)
 		}
-		tracks = append(tracks, &track)
+		tracks = append(tracks, t)
 	}
 
 	if err = rows.Err(); err != nil {
@@ -114,7 +113,7 @@ func (qs *QueueStore) CurrentAndNextTrack() (*track.Track, *track.Track, error) 
 	defer qs.mutex.Unlock()
 
 	query := `
-	SELECT t.id, t.name, t.path, t.duration, t.bitRate
+	SELECT ` + trackColumnsAliased + `
 	FROM tracks t
 	JOIN queue q ON t.id = q.track_id
 	ORDER BY q.id ASC
@@ -125,35 +124,33 @@ func (qs *QueueStore) CurrentAndNextTrack() (*track.Track, *track.Track, error) 
 	}
 	defer rows.Close()
 
-	var firstTrack, secondTrack track.Track
-	count := 0
+	firstTrack := (*track.Track)(nil)
+	secondTrack := (*track.Track)(nil)
 
 	for rows.Next() {
-		if count == 0 {
-			err := rows.Scan(&firstTrack.ID, &firstTrack.Name, &firstTrack.Path, &firstTrack.Duration, &firstTrack.BitRate)
-			if err != nil {
-				return nil, nil, fmt.Errorf("failed to scan first track: %w", err)
-			}
-		} else if count == 1 {
-			err := rows.Scan(&secondTrack.ID, &secondTrack.Name, &secondTrack.Path, &secondTrack.Duration, &secondTrack.BitRate)
-			if err != nil {
-				return nil, nil, fmt.Errorf("failed to scan second track: %w", err)
-			}
+		t, err := scanTrack(rows)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to scan track: %w", err)
 		}
-		count++
+		if firstTrack == nil {
+			firstTrack = t
+		} else if secondTrack == nil {
+			secondTrack = t
+		}
 	}
 
 	if err = rows.Err(); err != nil {
 		return nil, nil, fmt.Errorf("error iterating over rows: %w", err)
 	}
 
-	if count == 0 {
+	if firstTrack == nil {
 		return nil, nil, nil
-	} else if count == 1 {
-		return &firstTrack, &firstTrack, nil
+	}
+	if secondTrack == nil {
+		return firstTrack, firstTrack, nil
 	}
 
-	return &firstTrack, &secondTrack, nil
+	return firstTrack, secondTrack, nil
 }
 
 func (qs *QueueStore) SpinQueue() error {

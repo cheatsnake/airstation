@@ -7,19 +7,23 @@ import (
 	"math"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/cheatsnake/airstation/internal/pkg/ffmpeg"
 	"github.com/cheatsnake/airstation/internal/pkg/fs"
 	"github.com/cheatsnake/airstation/internal/pkg/hls"
+	"github.com/cheatsnake/airstation/internal/station"
 )
 
 // Service provides audio processing functionalities by interacting with a database and the FFmpeg CLI.
 type Service struct {
-	store     Store       // An instance of Storage for managing audio file storage.
-	ffmpegCLI *ffmpeg.CLI // A pointer to the FFmpeg CLI wrapper for executing media processing commands.
+	store     Store
+	station   *station.Service
+	ffmpegCLI *ffmpeg.CLI
 	log       *slog.Logger
 
 	LoadedTracksNotify chan int // Notification of the number of loaded tracks
+	loadMutex          sync.Mutex
 }
 
 // New creates and returns a new instance of Service.
@@ -30,9 +34,10 @@ type Service struct {
 //
 // Returns:
 //   - A pointer to an initialized Service instance.
-func NewService(store Store, ffmpegCLI *ffmpeg.CLI, log *slog.Logger) *Service {
+func NewService(store Store, stationSvc *station.Service, ffmpegCLI *ffmpeg.CLI, log *slog.Logger) *Service {
 	return &Service{
 		store:     store,
+		station:   stationSvc,
 		ffmpegCLI: ffmpegCLI,
 		log:       log,
 
@@ -45,10 +50,31 @@ func NewService(store Store, ffmpegCLI *ffmpeg.CLI, log *slog.Logger) *Service {
 // Parameters:
 //   - name: The name to assign to the new track.
 //   - path: The file path of the audio track to be added.
+//   - kind: The asset kind (music, jingle, ad, station_id or voice).
+//   - fadeIn/fadeOut/duckDB: Default mix settings stored on voice assets.
 //
 // Returns:
 //   - A pointer to the newly added Track, or an error if any step in the process fails.
-func (s *Service) AddTrack(name, path string) (*Track, error) {
+//
+// audioBitRate returns the operator-configured target bitrate for converted
+// audio, falling back to the built-in default when unset or unavailable.
+func (s *Service) audioBitRate() int {
+	if s.station != nil {
+		if info, err := s.station.Info(); err == nil && info.AudioBitRate > 0 {
+			return info.AudioBitRate
+		}
+	}
+	return defaultAudioBitRate
+}
+
+func (s *Service) AddTrack(name, path, kind string, fadeIn, fadeOut, duckDB float64) (*Track, error) {
+	if kind == "" {
+		kind = KindMusic
+	}
+	if !IsValidKind(kind) {
+		return nil, fmt.Errorf("unsupported track kind: %s", kind)
+	}
+
 	metadata, err := s.ffmpegCLI.AudioMetadata(path)
 	if err != nil {
 		return nil, err
@@ -59,7 +85,11 @@ func (s *Service) AddTrack(name, path string) (*Track, error) {
 		return nil, err
 	}
 
-	if modDuration < minAllowedTrackDuration {
+	minDuration := float64(minAllowedTrackDuration)
+	if kind != KindMusic {
+		minDuration = minAllowedAssetDuration
+	}
+	if modDuration < minDuration {
 		return nil, fmt.Errorf("%s is too short for streaming", name)
 	}
 
@@ -67,8 +97,22 @@ func (s *Service) AddTrack(name, path string) (*Track, error) {
 		return nil, fmt.Errorf("%s is too long for streaming", name)
 	}
 
+	if kind == KindVoice {
+		if fadeIn <= 0 {
+			fadeIn = 1.5
+		}
+		if fadeOut <= 0 {
+			fadeOut = 2.0
+		}
+		if duckDB == 0 {
+			duckDB = -12
+		}
+	} else {
+		fadeIn, fadeOut, duckDB = 0, 0, 0
+	}
+
 	trackName := defineTrackName(name, metadata.Name)
-	newTrack, err := s.store.AddTrack(trackName, path, modDuration, metadata.BitRate)
+	newTrack, err := s.store.AddTrack(trackName, path, modDuration, metadata.BitRate, kind, fadeIn, fadeOut, duckDB)
 	if err != nil {
 		return nil, err
 	}
@@ -84,9 +128,12 @@ func (s *Service) AddTrack(name, path string) (*Track, error) {
 //
 // Returns:
 //   - The path to the converted .m4a file, or an error if the conversion fails.
-func (s *Service) PrepareTrack(filePath string) (string, error) {
+func (s *Service) PrepareTrack(filePath string, bitRate int) (string, error) {
+	if bitRate <= 0 {
+		bitRate = s.audioBitRate()
+	}
 	newPath := replaceExtension(filePath, m4aExtension)
-	err := s.ffmpegCLI.ConvertAudioToAAC(filePath, newPath, defaultAudioBitRate)
+	err := s.ffmpegCLI.ConvertAudioToAAC(filePath, newPath, bitRate)
 	if err != nil {
 		return "", err
 	}
@@ -105,7 +152,7 @@ func (s *Service) PrepareTrack(filePath string) (string, error) {
 //
 // Returns:
 //   - A TracksPage object with paginated track data, or an error.
-func (s *Service) Tracks(page, limit int, search, sortBy, sortOrder string) (*Page, error) {
+func (s *Service) Tracks(page, limit int, search, sortBy, sortOrder, kind string) (*Page, error) {
 	if sortBy != "id" && sortBy != "name" && sortBy != "duration" {
 		sortBy = "id"
 	}
@@ -114,7 +161,14 @@ func (s *Service) Tracks(page, limit int, search, sortBy, sortOrder string) (*Pa
 		sortOrder = "desc"
 	}
 
-	tracks, total, err := s.store.Tracks(page, limit, search, sortBy, sortOrder)
+	if kind == "all" {
+		kind = ""
+	}
+	if kind != "" && !IsValidKind(kind) {
+		return nil, fmt.Errorf("unsupported track kind: %s", kind)
+	}
+
+	tracks, total, err := s.store.Tracks(page, limit, search, sortBy, sortOrder, kind)
 	if err != nil {
 		return nil, err
 	}
@@ -125,6 +179,24 @@ func (s *Service) Tracks(page, limit int, search, sortBy, sortOrder string) (*Pa
 		Limit:  limit,
 		Total:  total,
 	}, nil
+}
+
+// Carts returns every non-music asset (jingles, ads, station IDs and voice
+// clips) that can be fired from the broadcast console.
+func (s *Service) Carts() ([]*Track, error) {
+	page, err := s.Tracks(1, 1000, "", "name", "asc", "")
+	if err != nil {
+		return nil, err
+	}
+
+	carts := make([]*Track, 0, len(page.Tracks))
+	for _, t := range page.Tracks {
+		if t.Kind != KindMusic {
+			carts = append(carts, t)
+		}
+	}
+
+	return carts, nil
 }
 
 // DeleteTracks deletes tracks from the database and also removes their files from disk.
@@ -191,51 +263,64 @@ func (s *Service) MakeHLSPlaylist(trackPath string, outDir string, segName strin
 // Returns:
 //   - A slice of loaded Track pointers, or an error.
 func (s *Service) LoadTracksFromDisk(tracksDir string) ([]*Track, error) {
-	tracks := make([]*Track, 0)
+	extensions := []string{mp3Extension, aacExtension, wavExtension, flacExtension}
+	paths := make([]string, 0)
 
-	mp3Filenames, err := fs.ListFilesFromDir(tracksDir, mp3Extension)
-	if err != nil {
-		return tracks, err
-	}
-
-	aacFilenames, err := fs.ListFilesFromDir(tracksDir, aacExtension)
-	if err != nil {
-		return tracks, err
-	}
-
-	wavFilenames, err := fs.ListFilesFromDir(tracksDir, wavExtension)
-	if err != nil {
-		return tracks, err
-	}
-
-	flacFilenames, err := fs.ListFilesFromDir(tracksDir, flacExtension)
-	if err != nil {
-		return tracks, err
-	}
-
-	trackFilenames := make([]string, 0, len(mp3Filenames)+len(aacFilenames)+len(wavFilenames)+len(flacFilenames))
-	trackFilenames = append(trackFilenames, mp3Filenames...)
-	trackFilenames = append(trackFilenames, aacFilenames...)
-	trackFilenames = append(trackFilenames, wavFilenames...)
-	trackFilenames = append(trackFilenames, flacFilenames...)
-
-	for _, trackFilename := range trackFilenames {
-		trackPath := filepath.Join(tracksDir, trackFilename)
-		preparedTrackPath, err := s.PrepareTrack(trackPath)
+	for _, ext := range extensions {
+		filenames, err := fs.ListFilesFromDir(tracksDir, ext)
 		if err != nil {
-			s.log.Warn("Failed to prepare a track for streaming: "+err.Error(), "track", trackFilename)
+			return nil, err
+		}
+		for _, filename := range filenames {
+			paths = append(paths, filepath.Join(tracksDir, filename))
+		}
+	}
+
+	tracks, _ := s.loadPaths(paths, KindMusic)
+	return tracks, nil
+}
+
+// LoadUploadedTracks processes a specific set of freshly uploaded files. It is
+// used by the HTTP upload handler so the caller can choose the asset kind
+// (music, jingle, ad, station ID or voice) without re-scanning the directory.
+// It returns the assets that were stored plus one error per rejected file.
+func (s *Service) LoadUploadedTracks(paths []string, kind string) ([]*Track, []error) {
+	if kind == "" {
+		kind = KindMusic
+	}
+	if !IsValidKind(kind) {
+		return nil, []error{fmt.Errorf("unsupported track kind: %s", kind)}
+	}
+
+	return s.loadPaths(paths, kind)
+}
+
+func (s *Service) loadPaths(paths []string, kind string) ([]*Track, []error) {
+	s.loadMutex.Lock()
+	defer s.loadMutex.Unlock()
+
+	tracks := make([]*Track, 0, len(paths))
+	errs := make([]error, 0)
+	for _, trackPath := range paths {
+		filename := filepath.Base(trackPath)
+		preparedTrackPath, err := s.PrepareTrack(trackPath, s.audioBitRate())
+		if err != nil {
+			s.log.Warn("Failed to prepare a track for streaming: "+err.Error(), "track", filename)
+			errs = append(errs, fmt.Errorf("%s: %w", filename, err))
 			continue
 		}
 
-		track, err := s.AddTrack(trackFilename, preparedTrackPath)
+		track, err := s.AddTrack(filename, preparedTrackPath, kind, 0, 0, 0)
 		if err != nil {
-			s.log.Warn("Failed to save track to database: "+err.Error(), "track", trackFilename)
+			s.log.Warn("Failed to save track to database: "+err.Error(), "track", filename)
+			errs = append(errs, fmt.Errorf("%s: %w", filename, err))
+			_ = fs.DeleteFile(preparedTrackPath)
 			continue
 		}
 
 		err = fs.DeleteFile(trackPath)
 		if err != nil {
-			s.log.Warn("Failed to delete original copy of prepared track: "+err.Error(), "track", trackFilename)
+			s.log.Warn("Failed to delete original copy of prepared track: "+err.Error(), "track", filename)
 		}
 
 		tracks = append(tracks, track)
@@ -243,10 +328,13 @@ func (s *Service) LoadTracksFromDisk(tracksDir string) ([]*Track, error) {
 
 	if len(tracks) > 0 {
 		s.log.Info(fmt.Sprintf("Loaded %d new track(s) from disk.", len(tracks)))
-		s.LoadedTracksNotify <- len(tracks)
+		select {
+		case s.LoadedTracksNotify <- len(tracks):
+		default:
+		}
 	}
 
-	return tracks, nil
+	return tracks, errs
 }
 
 // modifyTrackDuration changes the original track duration (slightly) to avoid small HLS segments.
@@ -284,6 +372,8 @@ func defineTrackName(fileName, metaName string) string {
 	name = strings.ReplaceAll(name, ".aac", "")
 	name = strings.ReplaceAll(name, ".wav", "")
 	name = strings.ReplaceAll(name, ".flac", "")
+	name = strings.ReplaceAll(name, ".m4a", "")
+	name = strings.ReplaceAll(name, ".M4A", "")
 	name = strings.ReplaceAll(name, "_", " ")
 
 	return name

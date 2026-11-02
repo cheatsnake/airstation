@@ -12,7 +12,6 @@ import {
     Text,
     LoadingOverlay,
     CloseButton,
-    Menu,
     Select,
 } from "@mantine/core";
 import { modals } from "@mantine/modals";
@@ -183,7 +182,7 @@ const PlaylistModal: FC<{
 
     return (
         <>
-            <Modal size="lg" centered opened={opened} onClose={close} withCloseButton={false}>
+            <Modal size="lg" centered opened={opened} onClose={close} withCloseButton={false} stackId={`playlist-${data.id}`}>
                 <LoadingOverlay visible={isLoading} overlayProps={{ radius: "md" }} />
                 <Box>
                     <TextInput
@@ -248,21 +247,24 @@ const PlaylistModal: FC<{
     );
 };
 
-const CreatePlaylistModal: FC<{}> = () => {
-    const [opened, { open, close }] = useDisclosure(false);
+const CreatePlaylistModal: FC<{ opened: boolean; onClose: () => void }> = ({ opened, onClose }) => {
     const [isLoading, loading] = useDisclosure(false);
     const [name, setName] = useState("");
     const [descr, setDescr] = useState("");
     const addPlaylist = usePlaylistStore((s) => s.addPlaylist);
 
+    const handleClose = () => {
+        setName("");
+        setDescr("");
+        onClose();
+    };
+
     const handleCreate = async () => {
         loading.open();
         try {
-            await addPlaylist(name, [], descr);
+            await addPlaylist(name.trim(), [], descr);
             okNotify("A new playlist has been successfully created.");
-            close();
-            setName("");
-            setDescr("");
+            handleClose();
         } catch (error) {
             errNotify(error);
         } finally {
@@ -271,42 +273,57 @@ const CreatePlaylistModal: FC<{}> = () => {
     };
 
     return (
-        <>
-            <Modal centered opened={opened} onClose={close} title="New playlist">
-                <Flex direction="column" gap="md">
-                    <TextInput
-                        required
-                        placeholder="Name*"
-                        value={name}
-                        onChange={(event) => setName(event.currentTarget.value)}
-                    />
-                    <Textarea
-                        placeholder="Description"
-                        maxLength={4096}
-                        rows={4}
-                        value={descr}
-                        onChange={(event) => setDescr(event.currentTarget.value)}
-                    />
-                    <Button loading={isLoading} variant="light" disabled={name.length < 3} onClick={handleCreate}>
+        <Modal centered opened={opened} onClose={handleClose} title="New playlist" stackId="create-playlist">
+            <Flex
+                direction="column"
+                gap="md"
+                component="form"
+                onSubmit={(event) => {
+                    event.preventDefault();
+                    if (name.trim().length < 3) return;
+                    void handleCreate();
+                }}
+            >
+                <TextInput
+                    required
+                    autoFocus
+                    placeholder="Name*"
+                    value={name}
+                    onChange={(event) => setName(event.currentTarget.value)}
+                />
+                <Textarea
+                    placeholder="Description"
+                    maxLength={4096}
+                    rows={4}
+                    value={descr}
+                    onChange={(event) => setDescr(event.currentTarget.value)}
+                />
+                <Flex justify="flex-end" gap="sm">
+                    <Button onClick={handleClose} variant="light" color="dimmed">
+                        Cancel
+                    </Button>
+                    <Button type="submit" loading={isLoading} variant="light" disabled={name.trim().length < 3}>
                         Create
                     </Button>
                 </Flex>
-            </Modal>
-
-            <Button onClick={open} variant="light" color="green">
-                New playlist
-            </Button>
-        </>
+            </Flex>
+        </Modal>
     );
 };
 
 export const PlaylistsModal: FC<{}> = () => {
     const [opened, { open, close }] = useDisclosure(false);
+    const [createOpened, { open: openCreate, close: closeCreate }] = useDisclosure(false);
     const playlists = usePlaylistStore((s) => s.playlists);
     const fetchPlaylists = usePlaylistStore((s) => s.fetchPlaylists);
     const deletePlaylist = usePlaylistStore((s) => s.deletePlaylist);
     const [search, setSearch] = useDebouncedState("", 200);
     const [isLoading, loading] = useDisclosure(true);
+
+    const closeAll = () => {
+        closeCreate();
+        close();
+    };
 
     const loadPlaylists = async () => {
         loading.open();
@@ -352,8 +369,16 @@ export const PlaylistsModal: FC<{}> = () => {
     }, []);
 
     return (
-        <>
-            <Modal centered size="lg" opened={opened} onClose={close} withCloseButton={false} radius="md">
+        <Modal.Stack>
+            <Modal
+                centered
+                size="lg"
+                opened={opened}
+                onClose={closeAll}
+                withCloseButton={false}
+                radius="md"
+                stackId="playlists"
+            >
                 <Flex direction="column" gap="md">
                     <Text>Playlists</Text>
                     {playlists.length > 7 ? (
@@ -375,30 +400,45 @@ export const PlaylistsModal: FC<{}> = () => {
                         ) : null}
                     </Box>
                     <Flex justify="end" gap="sm">
-                        <Button onClick={close} color="dimmed" variant="light">
+                        <Button onClick={closeAll} color="dimmed" variant="light">
                             Close
                         </Button>
-                        <CreatePlaylistModal />
+                        <Button onClick={openCreate} variant="light" color="green">
+                            New playlist
+                        </Button>
                     </Flex>
                 </Flex>
             </Modal>
+
+            <CreatePlaylistModal opened={createOpened} onClose={closeCreate} />
 
             <Tooltip openDelay={500} label="Playlists">
                 <ActionIcon onClick={open} variant="transparent" size="md">
                     <IconPlaylist size={18} color="gray" />
                 </ActionIcon>
             </Tooltip>
-        </>
+        </Modal.Stack>
     );
 };
 
-export const AddToPalylistModal: FC<{ trackIDs: string[] }> = ({ trackIDs }) => {
-    const [opened, { open, close }] = useDisclosure(false);
+export const AddToPalylistModal: FC<{ trackIDs: string[]; opened: boolean; onClose: () => void }> = ({
+    trackIDs,
+    opened,
+    onClose,
+}) => {
     const playlists = usePlaylistStore((s) => s.playlists);
     const [selected, setSelected] = useState<string | null>(null);
+    const [newName, setNewName] = useState("");
     const fetchPlaylists = usePlaylistStore((s) => s.fetchPlaylists);
     const editPlaylist = usePlaylistStore((s) => s.editPlaylist);
+    const addPlaylist = usePlaylistStore((s) => s.addPlaylist);
     const [isLoading, loading] = useDisclosure(true);
+
+    const handleClose = () => {
+        setSelected(null);
+        setNewName("");
+        onClose();
+    };
 
     const loadPlaylists = async () => {
         loading.open();
@@ -411,19 +451,24 @@ export const AddToPalylistModal: FC<{ trackIDs: string[] }> = ({ trackIDs }) => 
         }
     };
 
-    const handleAppendToPlaylist = async () => {
+    const handleConfirm = async () => {
+        if (!selected && newName.trim().length < 3) return;
         loading.open();
         try {
-            if (!selected) return;
-            const p = await airstationAPI.getPlaylist(selected);
-            const { message } = await editPlaylist(
-                p.id,
-                p.name,
-                [...new Set([...(p.tracks || [])?.map((t) => t.id), ...trackIDs])],
-                p.description,
-            );
-            okNotify(message);
-            close();
+            if (selected) {
+                const p = await airstationAPI.getPlaylist(selected);
+                const { message } = await editPlaylist(
+                    p.id,
+                    p.name,
+                    [...new Set([...(p.tracks || [])?.map((t) => t.id), ...trackIDs])],
+                    p.description,
+                );
+                okNotify(message);
+            } else {
+                await addPlaylist(newName.trim(), trackIDs);
+                okNotify("Playlist created with the selected tracks.");
+            }
+            handleClose();
         } catch (error) {
             errNotify(error);
         } finally {
@@ -436,28 +481,38 @@ export const AddToPalylistModal: FC<{ trackIDs: string[] }> = ({ trackIDs }) => 
     }, [opened]);
 
     return (
-        <>
-            <Modal size="sm" centered onClose={close} opened={opened} withCloseButton={false}>
-                <LoadingOverlay visible={isLoading} overlayProps={{ radius: "md" }} />
-                <Select
-                    searchable
-                    placeholder="Select a playlist"
-                    value={selected}
-                    onChange={setSelected}
-                    data={[{ group: "", items: playlists.map((p) => ({ label: p.name, value: p.id })) }]}
-                />
-                <Flex mt="md" gap="sm" justify="end">
-                    <Button onClick={close} color="dimmed" variant="light">
-                        Cancel
-                    </Button>
-                    <Button disabled={!selected} variant="light" onClick={handleAppendToPlaylist}>
-                        Confirm
-                    </Button>
-                </Flex>
-            </Modal>
-            <Menu.Item onClick={open} leftSection={<IconPlaylist size={14} />}>
-                Add to playlist
-            </Menu.Item>
-        </>
+        <Modal size="sm" centered onClose={handleClose} opened={opened} withCloseButton={false}>
+            <LoadingOverlay visible={isLoading} overlayProps={{ radius: "md" }} />
+            <Select
+                searchable
+                label="Add to an existing playlist"
+                placeholder={playlists.length ? "Select a playlist" : "No playlists yet"}
+                value={selected}
+                onChange={setSelected}
+                data={[{ group: "", items: playlists.map((p) => ({ label: p.name, value: p.id })) }]}
+            />
+            <TextInput
+                mt="md"
+                label="Or create a new playlist"
+                placeholder="New playlist name"
+                value={newName}
+                onChange={(event) => {
+                    setNewName(event.currentTarget.value);
+                    if (event.currentTarget.value) setSelected(null);
+                }}
+            />
+            <Flex mt="md" gap="sm" justify="end">
+                <Button onClick={handleClose} color="dimmed" variant="light">
+                    Cancel
+                </Button>
+                <Button
+                    disabled={!selected && newName.trim().length < 3}
+                    variant="light"
+                    onClick={handleConfirm}
+                >
+                    Confirm
+                </Button>
+            </Flex>
+        </Modal>
     );
 };

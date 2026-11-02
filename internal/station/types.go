@@ -1,14 +1,15 @@
 package station
 
 type Info struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	FaviconURL  string `json:"faviconURL"`
-	LogoURL     string `json:"logoURL"`
-	Location    string `json:"location"`
-	Timezone    string `json:"timezone"`
-	Links       string `json:"links"`
-	Theme       string `json:"theme"`
+	Name         string `json:"name"`
+	Description  string `json:"description"`
+	FaviconURL   string `json:"faviconURL"`
+	LogoURL      string `json:"logoURL"`
+	Location     string `json:"location"`
+	Timezone     string `json:"timezone"`
+	Links        string `json:"links"`
+	Theme        string `json:"theme"`
+	AudioBitRate int    `json:"audioBitRate"`
 }
 
 type Property struct {

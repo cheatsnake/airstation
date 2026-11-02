@@ -20,13 +20,13 @@ func NewPlaybackStore(db *sql.DB, mutex *sync.Mutex) PlaybackStore {
 	}
 }
 
-func (ps *PlaybackStore) AddPlaybackHistory(playedAt int64, trackName string) error {
+func (ps *PlaybackStore) AddPlaybackHistory(playedAt int64, trackName, kind string) error {
 	ps.mutex.Lock()
 	defer ps.mutex.Unlock()
 
-	query := `INSERT INTO playback_history (played_at, track_name) VALUES (?, ?)`
+	query := `INSERT INTO playback_history (played_at, track_name, kind) VALUES (?, ?, ?)`
 
-	_, err := ps.db.Exec(query, playedAt, trackName)
+	_, err := ps.db.Exec(query, playedAt, trackName, kind)
 	if err != nil {
 		return fmt.Errorf("failed to insert playback entry: %v", err)
 	}
@@ -39,8 +39,8 @@ func (ps *PlaybackStore) RecentPlaybackHistory(limit int) ([]*playback.History, 
 	defer ps.mutex.Unlock()
 
 	query := `
-		SELECT id, played_at, track_name 
-		FROM playback_history 
+		SELECT id, played_at, track_name, kind
+		FROM playback_history
 		ORDER BY played_at DESC`
 
 	query += fmt.Sprintf(" LIMIT %d", limit)
@@ -54,7 +54,7 @@ func (ps *PlaybackStore) RecentPlaybackHistory(limit int) ([]*playback.History, 
 	var history []*playback.History
 	for rows.Next() {
 		var item playback.History
-		if err := rows.Scan(&item.ID, &item.PlayedAt, &item.TrackName); err != nil {
+		if err := rows.Scan(&item.ID, &item.PlayedAt, &item.TrackName, &item.Kind); err != nil {
 			return nil, err
 		}
 		history = append(history, &item)
@@ -67,7 +67,7 @@ func (ps *PlaybackStore) DeleteOldPlaybackHistory() (int64, error) {
 	defer ps.mutex.Unlock()
 
 	query := `
-		DELETE FROM playback_history 
+		DELETE FROM playback_history
 		WHERE played_at < (strftime('%s', 'now') - 30 * 24 * 60 * 60)`
 
 	result, err := ps.db.Exec(query)
@@ -81,4 +81,20 @@ func (ps *PlaybackStore) DeleteOldPlaybackHistory() (int64, error) {
 	}
 
 	return rowsAffected, nil
+}
+
+func (ps *PlaybackStore) MusicPlayedSince(ts int64) (int, error) {
+	ps.mutex.Lock()
+	defer ps.mutex.Unlock()
+
+	var count int
+	err := ps.db.QueryRow(
+		`SELECT COUNT(*) FROM playback_history WHERE kind = 'music' AND played_at >= ?`,
+		ts,
+	).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("failed to count played music: %v", err)
+	}
+
+	return count, nil
 }

@@ -16,6 +16,8 @@ type Instance struct {
 	PlaybackStore
 	PlaylistStore
 	StationStore
+	VoiceOverStore
+	ScheduleStore
 
 	db    *sql.DB
 	log   *slog.Logger
@@ -54,6 +56,8 @@ func New(dbPath string, log *slog.Logger) (*Instance, error) {
 	instance.PlaybackStore = NewPlaybackStore(db, &instance.mutex)
 	instance.PlaylistStore = NewPlaylistStore(db, &instance.mutex)
 	instance.StationStore = NewStationStore(db, &instance.mutex)
+	instance.VoiceOverStore = NewVoiceOverStore(db, &instance.mutex)
+	instance.ScheduleStore = NewScheduleStore(db, &instance.mutex)
 
 	return instance, nil
 }

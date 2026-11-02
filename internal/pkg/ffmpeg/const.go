@@ -5,3 +5,5 @@ const (
 	ffmpegBin  = "ffmpeg"
 	ffprobeBin = "ffprobe"
 )
+
+const defaultMixBitRate = 48

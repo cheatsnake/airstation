@@ -23,6 +23,11 @@ The backend is organized simply. Track metadata and playback history are stored 
 - Playback history
 - Listener counter
 - Playlists mechanism
+- Asset kinds: music, jingles, ads, station IDs and voice links
+- Cart wall for firing jingles and ads instantly
+- Automatic scheduling rules (every N tracks or at a minute of the hour)
+- Pre-recorded RJ voice-overs mixed into the music with ducking and fades
+- Delayed live mode: continuous microphone ingest encoded into 2-second HLS segments, plus external stream relays
 - Player page customization
 
 ## Deep under the hood
@@ -43,6 +48,16 @@ To ensure all listeners are at the same point in track playback, a special playb
 - As soon as the track enters the playback state, playback time starts counting.
 - Based on the elapsed time, the corresponding chunks are selected from the playlist (usually at least 3 chunks to provide a buffer on the listener's side).
 - Each listener periodically requests the current chunks to maintain uninterrupted playback.
+
+## Radio automation
+
+Jingles, ads, station IDs and pre-recorded RJ links are first-class assets in
+the library. They can be fired from the studio's cart wall, inserted
+automatically by schedule rules, or mixed into the music as a voice-over. Voice
+links are rendered into the music bed with the requested fades and ducking
+before HLS segmentation, so listeners still receive one continuous programme.
+See [Radio automation](./radio-automation.md) for the workflow, mixing
+semantics and API endpoints.
 
 ## Who is this app suitable for?
 

@@ -1,5 +1,6 @@
 import {
     ActionIcon,
+    Badge,
     Box,
     Flex,
     MantineSize,
@@ -15,7 +16,7 @@ import { airstationAPI, API_HOST } from "../api";
 import { usePlaybackStore } from "../store/playback";
 import { formatTime } from "../utils/time";
 import { useTrackQueueStore } from "../store/track-queue";
-import { IconHeadphones, IconPlayerPlayFilled, IconPlayerStopFilled, IconVolumeOff, IconVolumeOn } from "../icons";
+import { IconPlayerPlayFilled, IconPlayerStopFilled, IconVolumeOff, IconVolumeOn } from "../icons";
 import { useDisclosure } from "@mantine/hooks";
 import { errNotify } from "../notifications";
 import { EVENTS, useEventSourceStore } from "../store/events";
@@ -23,6 +24,8 @@ import { PlaybackState } from "../api/types";
 import { SettingsModal } from "./Settings";
 import Hls from "hls.js";
 import { modals } from "@mantine/modals";
+import { KindBadge } from "../components/KindBadge";
+import { ListenerCounter } from "../components/ListenerCounter";
 import styles from "./styles.module.css";
 
 export const Playback: FC<{ isMobile?: boolean }> = (props) => {
@@ -124,13 +127,38 @@ export const Playback: FC<{ isMobile?: boolean }> = (props) => {
                     <StreamToggler size={props.isMobile ? "xl" : "md"} playback={playback} />
                 </Flex>
                 <Flex w="100%" direction="column">
-                    <Flex justify="space-between" direction={props.isMobile ? "column-reverse" : "row"} gap="sm">
-                        {playback.isPlaying ? (
-                            <Text>{playback?.currentTrack?.name}</Text>
-                        ) : (
-                            <Text c="dimmed">Stream is stopped</Text>
-                        )}
+                    <Flex justify="space-between" align="flex-start" gap="sm">
+                        <Flex align="center" gap="xs" wrap="wrap">
+                            <Badge color={playback.isPlaying ? "red" : "gray"} variant="filled" size="sm">
+                                {playback.isPlaying ? "ON AIR" : "OFF AIR"}
+                            </Badge>
+                            {playback.isPlaying ? (
+                                <>
+                                    <Text fw={700} size="lg">
+                                        {playback.currentTrack?.name}
+                                    </Text>
+                                    <KindBadge kind={playback.currentTrack?.kind} size="sm" />
+                                    {playback.currentVoiceOver ? (
+                                        <Badge color="green" variant="light" size="sm">
+                                            {`Voice link: ${playback.currentVoiceOver.voiceName ?? "voice"}`}
+                                        </Badge>
+                                    ) : null}
+                                </>
+                            ) : (
+                                <Text c="dimmed">Stream is stopped</Text>
+                            )}
+                        </Flex>
                         <SettingsModal />
+                    </Flex>
+                    <Flex justify="space-between" align="center" gap="sm" mt={4}>
+                        <Text size="sm" c="dimmed">
+                            {playback.nextTrack
+                                ? `Up next: ${playback.nextTrack.name}`
+                                : "Up next: queue is empty"}
+                        </Text>
+                        <Text size="xs" c="dimmed" tt="uppercase">
+                            {playback.mode ?? "automation"}
+                        </Text>
                     </Flex>
                     <Space h={10} />
                     <Box>
@@ -148,28 +176,6 @@ export const Playback: FC<{ isMobile?: boolean }> = (props) => {
                 </Flex>
             </Flex>
         </Paper>
-    );
-};
-
-const ListenerCounter = () => {
-    const [count, setCount] = useState(0);
-    const addEventHandler = useEventSourceStore((s) => s.addEventHandler);
-
-    const handleCounter = (msg: MessageEvent<string>) => {
-        setCount(Number(msg.data));
-    };
-
-    useEffect(() => {
-        addEventHandler(EVENTS.countListeners, handleCounter);
-    }, []);
-
-    return (
-        <Tooltip openDelay={500} label={`Listener counter`}>
-            <Flex gap={5} justify="center" align="center" opacity={0.5}>
-                <IconHeadphones size={18} />
-                <Text>{!count ? "" : count}</Text>
-            </Flex>
-        </Tooltip>
     );
 };
 
