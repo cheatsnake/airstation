@@ -3,7 +3,7 @@
 To run Airstation on your machine, there are two ways: using [Docker](https://docs.docker.com/) (recommended) or building it yourself using the [Go](https://go.dev/) compiler for server, [Node.js](https://nodejs.org/) with [npm](https://www.npmjs.com/) for web clients and also have [FFmpeg](https://ffmpeg.org/) installed on your system.
 ## ARM64 EDITION FOR TERMUX
 
-Grant storage permissions as per termux wiki and may use cloudflared tunnel to route it to web
+Grant storage permissions as per termux wiki and may use cloudflared tunnel to route it to web. Download from Releases: [ARM64 Release](https://github.com/goldenration77/airstation/releases/download/arm64/airstation-gr7edition-arm64.tar.gz)
 
 ## Docker
 
