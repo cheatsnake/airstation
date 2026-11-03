@@ -8,7 +8,7 @@ Get the prebuilt image [here](https://github.com/goldenration77/airstation/relea
 1.  Clone Airstation repository
 
     ```sh
-    git clone https://github.com/cheatsnake/airstation.git
+    git clone https://github.com/goldenration/airstation.git
     ```
 
     ```sh
@@ -53,7 +53,7 @@ docker compose down
 
 ### Docker Compose
 
-You can get pre-built image from [Docker Hub](https://hub.docker.com/r/cheatsnake/airstation) and run it quickly with custom `docker-compose.yml` file as shown bellow:
+You can get pre-built image from [Docker Hub](https://hub.docker.com/r/goldenration77/airstation-gr7edition) and run it quickly with custom `docker-compose.yml` file as shown bellow:
 
 ```yml
 # docker-compose.yml
