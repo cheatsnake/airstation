@@ -1,6 +1,6 @@
 <br>
 <p align="center">
-  <a href="https://github.com/cheatsnake/airstation">
+  <a href="https://github.com/goldenration77/airstation">
     <img src="./docs/images/logo.png" alt="logo" height="128">
   </a>
 </p>
@@ -12,7 +12,7 @@
 &nbsp; 💻 <a href="https://radio.yurace.pro/">Demo</a>
 &nbsp; ⚙️ <a href="./docs/installation.md">Installation</a>
 &nbsp; 🗺️ <a href="./docs/roadmap.md">Roadmap</a>
-&nbsp; 🚨 <a href="https://github.com/cheatsnake/airstation/issues/new">Bug report</a>
+&nbsp; 🚨 <a href="https://github.com/goldenration77/airstation/issues/new">Bug report</a>
 </p>
 <br />
 
