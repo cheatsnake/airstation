@@ -2,7 +2,7 @@
 
 To run Airstation on your machine, there are two ways: using [Docker](https://docs.docker.com/) (recommended) or building it yourself using the [Go](https://go.dev/) compiler for server, [Node.js](https://nodejs.org/) with [npm](https://www.npmjs.com/) for web clients and also have [FFmpeg](https://ffmpeg.org/) installed on your system.
 ## ARM64 Edition
-Get the prebuilt image [here](https://github.com/goldenration77/airstation/releases/download/arm64/airstation-gr7edition-arm64.tar.gz) and do as directed for secrets and for executing main as below 
+Get the prebuilt image [here](https://github.com/goldenration77/airstation/releases/download/arm64/airstation-gr7edition-arm64.tar.gz) and do as directed for secrets and for executing main as below or get from original repo: [cheatsnake](https://github.com/cheatsnake/airstation)
 ## Docker
 
 1.  Clone Airstation repository
