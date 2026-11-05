@@ -8,6 +8,7 @@ import { addHistory } from "../store/history";
 import { getCssVariable } from "../utils/document";
 import { getHueFromHex } from "../utils/color";
 import { setVolume, volume } from "../store/volume";
+import { IconVolumeOff, IconVolumeOn } from "../icons";
 
 const STREAM_SOURCE = "/stream";
 
@@ -85,7 +86,11 @@ export const RadioButton = () => {
                     aria-label={volume() > 0 ? "Mute" : "Unmute"}
                     title={volume() > 0 ? "Mute" : "Unmute"}
                 >
-                    <span class={`${styles.volume_icon} ${volume() === 0 ? styles.volume_icon_muted : ""}`} />
+                    {volume() > 0 ? (
+                        <IconVolumeOn size={20} class={styles.volume_icon} />
+                    ) : (
+                        <IconVolumeOff size={20} class={styles.volume_icon} />
+                    )}
                 </button>
                 <input
                     type="range"

@@ -74,21 +74,14 @@ video {
 }
 
 .volume_icon {
-    width: 20px;
-    height: 20px;
-    background-color: var(--text-dimmed-color);
-    -webkit-mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 8a5 5 0 0 1 0 8" /><path d="M18 5a9 9 0 0 1 0 14" /><path d="M11 4l-6 5h-3v6h3l6 5v-16" /></svg>') center / contain no-repeat;
-    mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 8a5 5 0 0 1 0 8" /><path d="M18 5a9 9 0 0 1 0 14" /><path d="M11 4l-6 5h-3v6h3l6 5v-16" /></svg>') center / contain no-repeat;
-    transition: background-color 0.2s ease;
-}
-
-.volume_icon_muted {
-    -webkit-mask-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4l-6 5h-3v6h3l6 5v-16" /><path d="M16 9l5 6" /><path d="M21 9l-5 6" /></svg>');
-    mask-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4l-6 5h-3v6h3l6 5v-16" /><path d="M16 9l5 6" /><path d="M21 9l-5 6" /></svg>');
+    display: block;
+    flex-shrink: 0;
+    color: var(--text-dimmed-color);
+    transition: color 0.2s ease;
 }
 
 .volume_button:hover .volume_icon {
-    background-color: var(--text-color);
+    color: var(--text-color);
 }
 
 .volume_slider {
