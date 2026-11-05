@@ -1,18 +1,29 @@
 import HLS from "hls.js";
 import styles from "./RadioButton.module.css";
 import { setTrackStore, trackStore } from "../store/track";
-import { Component, onCleanup, onMount } from "solid-js";
+import { Component, createEffect, createSignal, onCleanup, onMount } from "solid-js";
 import { addEventListener, EVENTS } from "../store/events";
 import { getUnixTime } from "../utils/date";
 import { addHistory } from "../store/history";
 import { getCssVariable } from "../utils/document";
 import { getHueFromHex } from "../utils/color";
+import { setVolume, volume } from "../store/volume";
 
 const STREAM_SOURCE = "/stream";
 
 export const RadioButton = () => {
     let videoRef: HTMLAudioElement | undefined;
     let hls: HLS | undefined;
+    const [lastAudibleVolume, setLastAudibleVolume] = createSignal(volume() || 1);
+
+    const updateVolume = (value: number) => {
+        if (value > 0) setLastAudibleVolume(value);
+        setVolume(value);
+    };
+
+    const toggleMute = () => {
+        updateVolume(volume() > 0 ? 0 : lastAudibleVolume());
+    };
 
     const initStream = () => {
         if (!trackStore.isPlay && HLS.isSupported()) {
@@ -66,6 +77,28 @@ export const RadioButton = () => {
                     <div class={styles.play_icon} tabIndex={0} role="button" onClick={() => videoRef?.play()}></div>
                 )}
             </div>
+            <div class={styles.volume}>
+                <button
+                    type="button"
+                    class={styles.volume_button}
+                    onClick={toggleMute}
+                    aria-label={volume() > 0 ? "Mute" : "Unmute"}
+                    title={volume() > 0 ? "Mute" : "Unmute"}
+                >
+                    <span class={`${styles.volume_icon} ${volume() === 0 ? styles.volume_icon_muted : ""}`} />
+                </button>
+                <input
+                    type="range"
+                    class={styles.volume_slider}
+                    min="0"
+                    max="1"
+                    step="0.01"
+                    value={volume()}
+                    style={`--volume-progress: ${volume() * 100}%`}
+                    onInput={(event) => updateVolume(Number(event.currentTarget.value))}
+                    aria-label="Volume"
+                />
+            </div>
         </div>
     );
 };
@@ -83,6 +116,10 @@ const AnimatedPauseButton: Component<{ pause: () => void; media?: HTMLAudioEleme
     let currentHue = 0;
     let currentSaturation = 50;
     let currentLightness = 60;
+
+    createEffect(() => {
+        if (gainNode) gainNode.gain.value = volume();
+    });
 
     const loadAccentColor = () => {
         const accentColor = getCssVariable("--accent-color");
@@ -134,12 +171,12 @@ const AnimatedPauseButton: Component<{ pause: () => void; media?: HTMLAudioEleme
             analyser = audioContext.createAnalyser();
             analyser.fftSize = 256;
             gainNode = audioContext.createGain();
-            gainNode.gain.value = 1;
+            gainNode.gain.value = volume();
 
             if (!audioSource) audioSource = audioContext.createMediaElementSource(props.media);
-            audioSource.connect(gainNode);
-            gainNode.connect(analyser);
-            analyser.connect(audioContext.destination);
+            audioSource.connect(analyser);
+            analyser.connect(gainNode);
+            gainNode.connect(audioContext.destination);
 
             const bufferLength = analyser.frequencyBinCount;
             dataArray = new Uint8Array(bufferLength);
