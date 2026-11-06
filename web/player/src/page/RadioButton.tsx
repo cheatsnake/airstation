@@ -123,7 +123,10 @@ const AnimatedPauseButton: Component<{ pause: () => void; media?: HTMLAudioEleme
     let currentLightness = 60;
 
     createEffect(() => {
-        if (gainNode) gainNode.gain.value = volume();
+        // Read the signal before the check so the effect subscribes even when the gain node
+        // has not been created yet (it is initialized later in onMount).
+        const value = volume();
+        if (gainNode) gainNode.gain.value = value;
     });
 
     const loadAccentColor = () => {
