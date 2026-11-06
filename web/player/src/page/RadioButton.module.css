@@ -4,11 +4,15 @@ video {
 
 .container {
     flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
 }
 
 .box {
     width: 100%;
-    height: 100%;
+    flex: 1;
+    min-height: 0;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -47,4 +51,83 @@ video {
 .play_icon {
     cursor: pointer;
     user-select: none;
+}
+
+.volume {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0 0.5rem 1rem;
+}
+
+.volume_button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border: none;
+    background: none;
+    cursor: pointer;
+}
+
+.volume_icon {
+    display: block;
+    flex-shrink: 0;
+    color: var(--text-dimmed-color);
+    transition: color 0.2s ease;
+}
+
+.volume_button:hover .volume_icon {
+    color: var(--text-color);
+}
+
+.volume_slider {
+    width: min(220px, 60vw);
+    height: 4px;
+    border-radius: 999px;
+    appearance: none;
+    -webkit-appearance: none;
+    background: linear-gradient(
+        to right,
+        var(--text-color) var(--volume-progress, 100%),
+        color-mix(in srgb, var(--text-color) 25%, transparent) var(--volume-progress, 100%)
+    );
+    cursor: pointer;
+    outline: none;
+}
+
+.volume_slider::-webkit-slider-thumb {
+    width: 14px;
+    height: 14px;
+    border: none;
+    border-radius: 50%;
+    background: var(--text-color);
+    box-shadow: 0 0 4px rgb(0 0 0 / 35%);
+    appearance: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+}
+
+.volume_slider::-moz-range-track {
+    height: 4px;
+    border-radius: 999px;
+    background: transparent;
+}
+
+.volume_slider::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    border: none;
+    border-radius: 50%;
+    background: var(--text-color);
+    box-shadow: 0 0 4px rgb(0 0 0 / 35%);
+    cursor: pointer;
+}
+
+.volume_slider:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--text-color) 60%, transparent);
+    outline-offset: 4px;
 }
